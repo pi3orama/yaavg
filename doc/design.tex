@@ -1,0 +1,379 @@
+\documentclass{ctexart}
+\begin{document}
+\CJKtilde
+\title{yaavg 设计}
+\author{WN}
+
+\maketitle
+\tableofcontents
+
+\section{概述}
+
+\section{体系结构}
+
+Yaavg 致力于模块化设计, 通过定义各个组件之间的接口,   各个组件可以有各种不同的实
+现.
+
+本引擎的结构:
+\begin{itemize}
+\item 表示层;
+\item 控制层;
+\item 模型层.
+\end{itemize}
+
+表示层:
+
+\begin{itemize}
+\item 视频组件;
+\item 音频组件;
+\item 系统/输入系统.
+\end{itemize}
+
+表示层的组件用于展示和截获用户输入. 它们在控制层的控制下显示动画,  播放音频. 另
+外, 通过事件层为控制层提供获得事件的接口.
+
+控制层:
+
+控制程序的运行. 控制视频系统的定期刷新(或根据系统事件停止刷新), 控制音频的播放和
+结束, 从音频和视频组件中获取事件并分发给模型层. 控制层通过模型层传入的回调函数可
+控制模型层的状态机.
+
+模型层:
+\begin{itemize}
+\item 剧本组件.
+\item 引擎组件;
+\end{itemize}
+
+剧本组件负责按照剧本自动机, 发出音频和视频指令; 引擎组件负责控制剧本之外的行为,
+例如配置窗口的打开等.
+
+为方便剧本和引擎组件发出视频指令, 需要两个库:
+\begin{itemize}
+\item 图层库;
+\item 窗口库.
+\end{itemize}
+
+图层库提供类似语义: 某图层, 主位图为某某, 执行某某动作, 加某某特效...
+
+窗口库提供更高层的事件处理接口, 提供可覆盖,   可移动,   不可改变大小的窗口和基本
+控件, 包括按钮, 复选框, 滑动条, 位图.
+
+另外需要配置子层处理持久配置与动态配置的读取与更新. 认为存档与读取也属于配置的范
+范围.
+
+资源管理是服务程序, 它根据剧本, 在动作执行时提前从下层存储系统中获得位图, 音频,
+文字等资源. 资源管理建立了一个单独的线程.
+
+本引擎运行的流程如下:
+
+\begin{verbatim}
+
+begin
+
+    configuration = readConfiguration();
+    audio = initAudio(configuration.audio);
+    video = initVideo(configuration.video);
+    controller = initController(configuration, video, audio);
+
+    layerLibrary = initLayerLibrary(controller.video);
+    windowLibrary = initWindowLibrary(layerLibrary);
+    resourceManager = initResourceManager(configuration);
+
+    /* engineSystem and drama can only read event from pool */
+    /* engineSystem can read and set configuration */
+    /* register callback into controller.eventPool */
+    engineSystem = initEngineSystem(video, audio,
+        controller.eventPool,
+        resourceManager, layerLibrary, windowLibrary, configuration);
+    /* drama need the configuration such as name, saved data and so on... */
+    /* register callback into controller.eventPool */
+    drama = initDrama(video, audio,
+        controller.eventPool,
+        resourceManager, layerLibrary, windowLibrary, configuration);
+
+    /* Init the engine and drama state machine */
+    engineSystem.registerInitCallback(controller);
+    drama.registerInitCallback(controller);
+
+    controller.startMainLoop();
+end.
+
+controller initController(configuration, video, audio):
+begin
+    controller = newController(configuration.controller);
+    controller.video = video;
+    controller.audio = audio;
+    controller.eventPool = newEventPool();
+    /* controller can send event to event pool */
+    controller.eventPool.addSource(video);
+    controller.eventPool.addSource(audio);
+    controller.eventPool.addSource(inputSystem);
+end.
+
+controller.startMainLoop():
+begin
+    while(controller.ifFinish()):
+    begin
+        controller.video.refresh(getTime());
+
+        /* Control audio threads. */
+        controller.audio.process(); 
+
+        /* collect events from video, audio and system*/
+        controller.eventPool.collectEvents();
+
+        /* run the drama and engine state machine */
+        control.run();
+        /* update the video and audio units */
+        control.update(video, audio);
+        waitSomeTime();
+    end;
+end.
+
+\end{verbatim}
+
+
+
+\section{坐标系}
+
+以左上点为(0, 0), X 轴向左增长, Y 轴向下增长.
+
+\section{视频组件}
+
+
+
+视频组件要达到一定的~FPS, 同时不能过多地占用~CPU 时间.
+还是一个事件源. 
+
+视频组件实现最基本的绘制.
+
+\begin{itemize}
+\item 窗口的建立与销毁;
+\item 显示位图与动画;
+\item 电影播放;
+\item 调试信息和错误信息的显示;
+\item Loading 界面的显示;
+\item 纹理管理;
+\item Display List 管理;
+\item 顶点程序管理;
+\item 位图程序管理;
+\item 特效插件的管理;
+\item OpenGL 系统的初始化;
+\item 绘制事件的收集.
+\end{itemize}
+
+\subsection{绘制}
+
+本组件处于单一的一个线程. 它维护和管理一个链表. 该链表上每个元素称为绘制单元. 每
+次重绘时, 按照链表的顺序运行绘制单元中的绘图程序.   控制子层将按照从配置系统获得
+的~FSP 设定, 每隔一定时间(例如~1/60 秒) 重绘一次.  每个绘图单元有一个唯一的编号,
+在事件传递中用这个编号加以识别. 实际上, 这个``编号''就是相应单元的地址.
+
+\subsection{视频组件的接口}
+对控制层, 视频组件提供刷新, 事件生成的接口如下.
+
+\subsubsection{为控制层提供的接口}
+
+视频的刷新:
+
+\begin{verbatim}
+video.refresh(time):
+begin
+    foreach(unit in video.unitList):
+        unit.run(time, getConfiguration());
+    infoLayer.run(time);
+end.
+\end{verbatim}
+
+视频事件的产生:
+
+\begin{verbatim}
+video.genEvents():
+begin
+    foreach(unit in video.unitList):
+        events = unit.genEvents();
+        genEvents(events, unit.ID);
+end.
+\end{verbatim}
+
+\subsubsection{为模型层提供的接口}
+对于上层的剧本和引擎组件, 提供绘制接口:
+\begin{itemize}
+\item 插入绘制单元;
+\item 删除绘制单元;
+\item 移动绘制单元.
+\end{itemize}
+
+\begin{verbatim}
+int video.linkDrawUnit(unit):
+    /* 在链表最后插入一个绘制单元 */
+    /* 0 号 ID 保留, 代表链表最后 */
+    /* 返回 unit 编号 */
+    linkDrawUnitAfter(unit, 0);
+    return unit.UID;
+
+int video.linkDrawUnitAfterUID(unit, UID):
+    /* 0 号 ID 保留, 代表链表最后 */
+    /* 将 unit 插入编号为 UID 的 unit 之后,
+     * 为其分配新的 UID */
+    lastUnit = getUnit(UID);
+    unit.UID = genNewUID(unit);
+    linkDrawUnitAfter(unit, lastUnit);
+
+int video.linkDrawUnitListAfter(unit[], int nr, UID):
+    /* 将 nr 个 unit 连进绘制链表, 为它们分配 UID */
+    lastUnit = getUnit(UID);
+    i = 0;
+    do:
+        unit[i].UID = genNewUID(unit[i]);
+        linkDrawUnitListAfter(unit[i], lastUnit);
+        lastUnit = uint[i];
+        i++;
+    while(i < nr);
+
+int video.unlinkDrawUnit(int UID):
+    /* 移除并销毁一个 draw unit */
+    unlinkNDrawUnit(UID, 1);
+
+int video.unlinkNDrawUnit(int UID, int n):
+    unit = getUnit(UID);
+    foreach(unit 及之后共 n 个 units):
+        unlink(unit);
+        unit.destroy();
+
+int video.getDrawUnit(int UID):
+
+int video.getNDrawUnit(int UID, int n):
+
+int video.getNRAllDrawUnit():
+
+int video.getAllDrawUnit(unit[]):
+
+\end{verbatim}
+
+\subsubsection{绘制单元}
+
+绘制单元是最基本的绘图指令的封装. 绘制单元的~draw 方法运行一组~OpenGL 指令. 与一
+一般~OpenGL 程序不同的是:
+
+\begin{enumerate}
+\item 使用经绘制单元测试过的~OpenGL 函数(在一些低级的系统上, 没有高级函数);
+\item 含有私有的数据结构, 不同种类的绘制单元不一样;
+\item 为模型层提供接口, 包括快进, 终止回退等;
+\item 通过配置读取系统中~OpenGL 的情况, 对不同等级的~OpenGL, 使用不同绘制方法;
+\item 从纹理管理器, 程序管理器中获取~OpenGL 程序和纹理;
+\item 提供~genDisplayList, 在初始化时生成需要的~DisplayList;
+\item 析构时释放纹理和程序, 销毁~DisplayList.
+\end{enumerate}
+
+绘制单元本身:
+\begin{verbatim}
+class drawUnit:
+    int UID;
+    int type; /* 绘制单元的类型 */
+    static char * name; /* 单元的名称 */
+
+    /* 对控制层的接口 */
+    init(configuration):
+        /* 分配纹理, 程序 */
+    getNRDisplayList():
+        /* 返回本单元 DisplayList 的数量 */
+    genDisplayList(int i):
+        /* 发出~OpenGL 指令绘制~DisplayList */
+    draw(time):
+        /* 根据 time 参数刷新一帧 */
+        /* OpenGL 指令及下文的绘制指令 */
+    getEvents():
+        /* 绘制完毕后产生事件 */
+
+    /* 对模型层的接口 */
+    start(time):
+        /* 开始绘制, time 参数是本单元开始绘制的时间 */
+    destroy():
+        /* 释放纹理, 程序. 被 destroy 时必须已经通过 unlink 移除了 */
+    speedFoward(int x):
+        /* x 倍快进, 供模型层用 */
+    pause():
+        /* 暂停, 供模型层用 */
+    resume():
+        /* 从暂停中恢复, 供模型层用 */
+    stop():
+        /* 快进到动作结尾, 停止, 触发停止事件.
+         * 供模型层用. */
+    setAttribute(char* tmpl, ...):
+        /* 设置该类型绘制单元特有的属性 */
+    getAttribute(char * tmpl, ...):
+        /* 获取这些属性 */
+    struct list_head; /* 连接在链表上 */
+
+\end{verbatim}
+
+绘制单元的读取: 在初始化视频接口时, 注册绘制单元
+
+\subsubsection{为绘制单元提供的接口}
+
+\begin{itemize}
+\item 纹理绑定;
+\item displaylist 绑定;
+\end{itemize}
+
+\subsection{初始化和反初始化}
+
+初始化窗口和~OpenGL; 读取视频配置; 注册默认绘制单元; 根据配置注册额外绘制单元; 读取
+插件配置; 建立窗口;
+
+反初始化;
+
+\subsection{数据结构}
+OpenGL 函数包装;
+
+\subsection{资源管理}
+
+纹理的动态管理;
+
+\subsection{绘图单元的注册和管理}
+
+统一的绘图单元类列表(静态数组); 每个绘制单元类有~Create 方法,   返回上述绘制单元
+结构 ~(对象).
+
+\subsection{字体}
+字体的读取和渲染.
+
+\subsection{图层库}
+\subsection{窗口库}
+
+
+\section{音频}
+
+\section{事件处理}
+
+所有事件都是通过轮询的方法获得的.
+
+\section{配置}
+
+配置分静态配置, 动态配置和剧本配置.
+
+\subsection{静态配置}
+
+在配置文件中的配置为静态配置;
+
+\subsection{动态配置}
+
+通过配置界面进行的配置为动态配置;
+
+\subsection{剧本配置}
+
+剧本特有的配置为剧本配置.
+
+\section{资源管理}
+
+\section{界面}
+
+\section{剧本和运行}
+
+\section{存档和读档}
+
+\section{调试与性能分析}
+
+\end{document}
+
