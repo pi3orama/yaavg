@@ -10,6 +10,16 @@ AC_CONFIG_HEADER([config.h])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_LIBTOOL
+
+CFLAGS="-std=gnu99"
+AC_ARG_ENABLE([link-rdynamic], [AC_HELP_STRING(--enable-link-rdynamic, [Use -rdynamic option for backtrace])],
+	[LDFLAGS="$LDFLAGS -rdynamic"],
+	[])
+
+AC_ARG_ENABLE([debug], [AC_HELP_STRING(--enable-debug, [set CFLAGS="-g -O0"])],
+	[CFLAGS="$CFLAGS -g -O0"],
+	[])
 
 # Checks for libraries.
 
@@ -85,6 +95,13 @@ AC_HEADER_STDC
 
 # Checks for library functions.
 
+AC_CHECK_HEADER([execinfo.h],[
+    AC_CHECK_LIB(c, backtrace, [
+        AC_DEFINE(HAVE_BACKTRACE, 1, [Has backtrace support])
+        AC_DEFINE(HAVE_EXECINFO_H, 1, [Have execinfo.h])
+    ])]
+)
+
 AC_SUBST(GL_CFLAGS)
 AC_SUBST(GL_LIBS)
 AC_SUBST([SDL_CFLAGS])
@@ -92,6 +109,7 @@ AC_SUBST([SDL_LIBS])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
+		 src/common/Makefile
 		 src/video/Makefile])
 
 AC_OUTPUT

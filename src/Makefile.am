@@ -1,2 +1,2 @@
-SUBDIRS = video
+SUBDIRS = common video
 
