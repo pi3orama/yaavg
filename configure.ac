@@ -110,6 +110,7 @@ AC_SUBST([SDL_LIBS])
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 src/common/Makefile
+		 src/config/Makefile
 		 src/video/Makefile])
 
 AC_OUTPUT

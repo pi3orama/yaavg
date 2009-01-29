@@ -22,7 +22,7 @@
  * Program always has only 1 render list, therefore I don't define a
  * alloc_rlist.
  */
-void init_rlist(struct RenderList * rlist, void * context)
+void RListInit(struct RenderList * rlist, void * context)
 {
 	rlist->context = context;
 	INIT_LIST_HEAD(&rlist->command_list);
@@ -58,11 +58,6 @@ int sprint_rlist(char * str, struct RenderList * rlist)
 
 
 #if 1
-static void init_rc(struct RenderCommand * rc)
-{
-	memset(rc, 0, sizeof(*rc));
-	return;
-}
 
 int main()
 {
@@ -70,14 +65,14 @@ int main()
 	struct RenderList list;
 	struct RenderCommand rc1, rc2;
 
-	init_rc(&rc1);
-	init_rc(&rc2);
+	RCommandInit(&rc1);
+	RCommandInit(&rc2);
 
 	rc2.name = "Test RC";
 
-	init_rlist(&list, NULL);
-	link_tail(&list, &rc1);
-	link_tail(&list, &rc2);
+	RListInit(&list, NULL);
+	RListLinkTail(&list, &rc1);
+	RListLinkTail(&list, &rc2);
 
 	sprint_rlist(buf, &list);
 	printf("%s\n", buf);

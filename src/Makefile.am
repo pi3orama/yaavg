@@ -1,2 +1,2 @@
-SUBDIRS = common video
+SUBDIRS = common config video
 

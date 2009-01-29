@@ -28,35 +28,35 @@ struct RenderList {
 	void * context;	/* context of the engine. See comment in rcommand.h */
 };
 
-extern void init_rlist(struct RenderList * rlist, void * context);
+extern void RListInit(struct RenderList * rlist, void * context);
 
 
 /* functions operate RenderList */
-static inline void link_tail(struct RenderList * list,
+static inline void RListLinkTail(struct RenderList * list,
 		struct RenderCommand * command)
 {
 	list_add_tail(&command->list, &list->command_list);
 }
 
-static inline void link_head(struct RenderList * list,
+static inline void RListLinkHead(struct RenderList * list,
 		struct RenderCommand * command)
 {
 	list_add(&command->list, &list->command_list);
 }
 
-static inline void link_before(struct RenderCommand * dest,
+static inline void RListLinkBefore(struct RenderCommand * dest,
 		struct RenderCommand * command)
 {
 	list_add_tail(&command->list, &dest->list);
 }
 
-static inline void link_after(struct RenderCommand * dest,
+static inline void RListLinkAfter(struct RenderCommand * dest,
 		struct RenderCommand * command)
 {
 	list_add(&command->list, &dest->list);
 }
 
-static inline int link_foreach(struct RenderList * link, void * args,
+static inline int RListForeachCommand(struct RenderList * link, void * args,
 		int (*func)(struct RenderCommand *, void * args))
 {
 	struct RenderCommand * pos, *n;
@@ -68,8 +68,9 @@ static inline int link_foreach(struct RenderList * link, void * args,
 	return 0;
 }
 
-static inline int link_foreach_force(struct RenderList * link, void * args,
-		int (*func)(struct RenderCommand *, void * args))
+static inline int RListForeachCommandSafe(struct RenderList * link,
+		int (*func)(struct RenderCommand *, void * args),
+		void * args)
 {
 	struct RenderCommand * pos, *n;
 	int res = 0, res2;
@@ -82,7 +83,7 @@ static inline int link_foreach_force(struct RenderList * link, void * args,
 }
 
 /* for debug use */
-extern int sprint_rlink(char * str, struct RenderCommand * command);
+extern int sprint_rlist(char * str, struct RenderList * list);
 
 __END_DECLS
 

@@ -58,7 +58,7 @@ struct RenderCommand {
 
 /* operations */
 /* use memset to set each field to 0 */
-extern void init_rcommand(struct RenderCommand * command);
+extern void RCommandInit(struct RenderCommand * command);
 
 /* There's no "alloc_rcommand", because user always alloc rcommand's
  * subclass */

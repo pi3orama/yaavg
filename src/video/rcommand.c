@@ -8,7 +8,7 @@
 
 #include <video/rcommand.h>
 
-void init_rcommand(struct RenderCommand * command)
+void RCommandInit(struct RenderCommand * command)
 {
 	memset(command, 0, sizeof(*command));
 	INIT_LIST_HEAD(&command->list);
