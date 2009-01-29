@@ -18,7 +18,7 @@
 #endif
 
 #define YAAVG_DEBUG_C /* Debug masks */
-#include "debug.h"
+#include "common/debug.h"
 
 static FILE * fdebug_out = NULL;
 
@@ -117,7 +117,9 @@ static inline void debug_backtrace(FILE * fp)
 
 	for (i = 0; i < count; i++)
 		fprintf(fp, "%s\n", strings[i]);
-
+#ifdef free
+# undef free
+#endif
 	free(strings);
 #endif
 	return;
@@ -152,3 +154,68 @@ void __bug_on(const char * __assertion, const char * __file,
 
 	exit(1);
 }
+
+/* Memory leak detection */
+static int malloc_times = 0;
+static int calloc_times = 0;
+static int free_times = 0;
+static int strdup_times = 0;
+
+#define MEM_MSG(str...) DEBUG_MSG(VERBOSE, MEMORY, str)
+#define MEM_TRACE(str...) DEBUG_MSG(TRACE, MEMORY, str)
+
+void show_mem_info()
+{
+	MEM_MSG("malloc times:\t %d\n", malloc_times);
+	MEM_MSG("calloc times:\t %d\n", calloc_times);
+	MEM_MSG("free times:\t %d\n", free_times);
+	MEM_MSG("strdup times:\t %d\n", strdup_times);
+
+	if (free_times != malloc_times +
+			calloc_times +
+			strdup_times)
+		MEM_MSG("Memery leak found!!!!\n");
+	else
+		MEM_MSG("No memory leak found.\n");
+	return;
+}
+
+void * yaavg_malloc(size_t size)
+{
+	void * res;
+	res = malloc(size);
+	assert(res != NULL);
+	MEM_TRACE("malloc %d, res=%p\n", size, res);
+	malloc_times ++;
+	return res;
+}
+
+
+void yaavg_free(void * ptr)
+{
+	MEM_TRACE("free %p\n", ptr);
+	free(ptr);
+	free_times ++;
+	return;
+}
+
+void * yaavg_calloc(size_t count, size_t eltsize)
+{
+	void * res = NULL;
+	res = calloc (count, eltsize);
+	assert(res != NULL);
+	MEM_TRACE("calloc %d\tres=%p\n", count, res);
+	calloc_times ++;
+	return res;
+}
+
+char * yaavg_strdup(const char * S)
+{
+	char * res = NULL;
+	res = strdup (S);
+	assert(res != NULL);
+	MEM_TRACE("strdup %s\tres=%p\n", S, res);
+	strdup_times ++;
+	return res;
+}
+

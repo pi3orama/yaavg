@@ -5,7 +5,7 @@ AC_PREREQ(2.61)
 AC_INIT(yaavg, 0.00, pi3orama@gmail.com)
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
-AC_CONFIG_SRCDIR([src/video/vcommand.h])
+AC_CONFIG_SRCDIR([src/video/rcommand.h])
 AC_CONFIG_HEADER([config.h])
 
 # Checks for programs.
