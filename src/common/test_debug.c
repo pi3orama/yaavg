@@ -8,7 +8,7 @@ int func2()
 	DEBUG_MSG(FATAL, SYSTEM, "Debug test system fatal: i=%d, j=%d\n", i, j);
 
 	if (i < j)
-		BUG_ON(0);
+		assert(0);
 	printf("Haha\n");
 }
 
@@ -20,7 +20,7 @@ int func()
 
 int main()
 {
-	DEBUG_INIT("/tmp/debug_out");
+	DEBUG_INIT(NULL);
 
 	DEBUG_MSG(TRACE, RCOMMAND, "Debug test trace\n");
 	DEBUG_MSG(VERBOSE, RCOMMAND, "Debug test verbose\n");

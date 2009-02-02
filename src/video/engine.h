@@ -10,7 +10,7 @@
 
 __BEGIN_DECLS
 
-struct video_engine_context {
+struct VideoEngineContext {
 	const char * engine_name;
 	int width, height;
 	struct RenderList * render_list;

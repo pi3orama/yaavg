@@ -23,6 +23,21 @@ AC_ARG_ENABLE([debug], [AC_HELP_STRING(--enable-debug, [set CFLAGS="-g -O0"])],
 
 # Checks for libraries.
 
+dnl Check if we have malloc_stats. see debug.c/h
+AC_CHECK_FUNC([malloc_stats], [have_malloc_stats=yes])
+if test "x${have_malloc_stats}" = "xyes"; then
+   AC_DEFINE(HAVE_MALLOC_STATS, 1, [define if found malloc_stats])
+fi
+AC_SUBST(HAVE_MALLOC_STATS)
+
+dnl Check if we have mallinfo. see debug.c/h
+AC_CHECK_FUNC([mallinfo], [have_mallinfo=yes])
+if test "x${have_mallinfo}" = "xyes"; then
+   AC_DEFINE(HAVE_MALLINFO, 1, [define if found mallinfo])
+fi
+AC_SUBST(HAVE_MALLINFO)
+
+
 # Check for SDL
 AC_PATH_PROGS([SDL_CONFIG], [sdl-config], [none])
 if test "x$SDL_CONFIG" = "xnone"; then
@@ -110,7 +125,7 @@ AC_SUBST([SDL_LIBS])
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 src/common/Makefile
-		 src/config/Makefile
+		 src/econfig/Makefile
 		 src/video/Makefile])
 
 AC_OUTPUT

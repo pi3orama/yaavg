@@ -6,7 +6,7 @@
 #include <common/defs.h>
 #include <common/list.h>
 
-#include <texture.h>
+#include <video/texture.h>
 
 __BEGIN_DECLS
 

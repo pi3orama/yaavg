@@ -17,12 +17,49 @@
 # include <execinfo.h>
 #endif
 
+#include <stdint.h>
+#include <malloc.h>
+#include <signal.h>
+
 #define YAAVG_DEBUG_C /* Debug masks */
 #include "common/debug.h"
 
 static FILE * fdebug_out = NULL;
 
-static void debug_close()
+static inline void print_backtrace(FILE * fp);
+
+static void
+debug_malloc_stats(int signum)
+{
+	enum debug_level level_save = get_comp_level(MEMORY);
+	set_comp_level(MEMORY, VERBOSE);
+	show_mem_info();
+	set_comp_level(MEMORY, level_save);
+}
+
+#define SYS_FATAL(str...) DEBUG_MSG(FATAL, SYSTEM, str)
+static void
+debug_backtrace(int signum)
+{
+	switch (signum) {
+		case SIGSEGV:
+			SYS_FATAL("Received SIGSEGV:\n");
+			break;
+		case SIGABRT:
+			SYS_FATAL("Received SIGABRT:\n");
+			break;
+		default:
+			SYS_FATAL("Received signal %d\n", signum);
+			break;
+	}
+	print_backtrace(fdebug_out);
+
+	signal(signum, SIG_DFL);
+	raise(signum);
+}
+
+static void
+debug_close()
 {
 	fclose(fdebug_out);
 	fdebug_out = NULL;
@@ -31,34 +68,53 @@ static void debug_close()
 #ifdef debug_init
 #undef debug_init
 #endif
-void debug_init(const char * filename)
+void
+debug_init(const char * filename)
 {
 	int i;
 	if (filename == NULL)
 		fdebug_out = stderr;
 	else {
 		fdebug_out = fopen(filename, "a");
+		/* We have not install SIGABRT yet */
 		assert(fdebug_out != NULL);
 		atexit(debug_close);
 	}
 
+	/* install signal handlers */
+	signal(SIGUSR1, debug_malloc_stats);
+	signal(SIGSEGV, debug_backtrace);
+	signal(SIGABRT, debug_backtrace);
 }
 
 
 #ifdef set_comp_level
 #undef set_comp_level
 #endif
-void set_comp_level(enum debug_component comp, enum debug_level level)
+void
+set_comp_level(enum debug_component comp, enum debug_level level)
 {
 	debug_levels[comp] = level;
 }
 
-static const char * get_comp_name(enum debug_component comp)
+#ifdef get_comp_level
+#undef get_comp_level
+#endif
+enum debug_level
+get_comp_level(enum debug_component comp)
+{
+	return debug_levels[comp];
+}
+
+
+static const char *
+get_comp_name(enum debug_component comp)
 {
 	return debug_comp_name[comp];
 }
 
-static const char * get_level_name(enum debug_level level)
+static const char *
+get_level_name(enum debug_level level)
 {
 	if (level == SILENT)
 		return "silent";
@@ -79,7 +135,8 @@ static const char * get_level_name(enum debug_level level)
 #ifdef debug_out
 #undef debug_out
 #endif
-void debug_out(int prefix, enum debug_level level, enum debug_component comp,
+void
+debug_out(int prefix, enum debug_level level, enum debug_component comp,
 	       const char * func_name, int line_no,
        	       const char * fmt, ...)
 {
@@ -100,60 +157,21 @@ void debug_out(int prefix, enum debug_level level, enum debug_component comp,
 	}
 }
 
-#ifdef debug_backtrace
-#undef debug_backtrace
-#endif
-
 /* Define backtrace facilities */
 static void * buffer[256];
-static inline void debug_backtrace(FILE * fp)
+static inline void print_backtrace(FILE * fp)
 {
+	if (fp == NULL)
+		fp = stderr;
 #ifdef HAVE_BACKTRACE
 	size_t count, i;
-	char **strings;
 
 	count = backtrace(buffer, 256);
-	strings = backtrace_symbols(buffer, count);
-
-	for (i = 0; i < count; i++)
-		fprintf(fp, "%s\n", strings[i]);
-#ifdef free
-# undef free
-#endif
-	free(strings);
+	backtrace_symbols_fd(&buffer[1], count-1, fileno(fp));
 #endif
 	return;
 }
 
-void __bug_on(const char * __assertion, const char * __file,
-	                unsigned int __line, const char * __function)
-		 __attribute__((__noreturn__));
-
-void __bug_on(const char * __assertion, const char * __file,
-	                unsigned int __line, const char * __function)
-{
-	FILE * files[2];
-	int i;
-
-	if (fdebug_out == NULL)
-		fdebug_out = stderr;
-
-	files[0] = stderr;
-	if (fdebug_out != stderr)
-		files[1] = fdebug_out;
-	else
-		files[1] = NULL;
-
-	for (i = 0; i < 2; i++) {
-		if (files[i] == NULL)
-			break;
-		fprintf(files[i], "Bug on %s (%s:%d): assertion `%s' failed\n",
-				__function, __file, __line, __assertion);
-		debug_backtrace(files[i]);
-	}
-
-	exit(1);
-}
 
 /* Memory leak detection */
 static int malloc_times = 0;
@@ -164,6 +182,7 @@ static int strdup_times = 0;
 #define MEM_MSG(str...) DEBUG_MSG(VERBOSE, MEMORY, str)
 #define MEM_TRACE(str...) DEBUG_MSG(TRACE, MEMORY, str)
 
+
 void show_mem_info()
 {
 	MEM_MSG("malloc times:\t %d\n", malloc_times);
@@ -171,12 +190,29 @@ void show_mem_info()
 	MEM_MSG("free times:\t %d\n", free_times);
 	MEM_MSG("strdup times:\t %d\n", strdup_times);
 
+#ifdef HAVE_MALLINFO
+	MEM_MSG("------ mallinfo ------\n");
+	struct mallinfo mi = mallinfo();
+	MEM_MSG("System bytes\t=\t\t%d\n", mi.arena+mi.hblkhd);
+	MEM_MSG("In use bytes\t=\t\t%d\n", mi.uordblks);
+	MEM_MSG("Freed bytes\t=\t\t%d\n", mi.fordblks);
+	MEM_MSG("----------------------\n");
+#endif
+
+#ifdef HAVE_MALLOC_STATS
+	/* FIXME */
+	/* malloc_stats output string to stderr. We can
+	 * try to temporarily reset stderr to our debug output. */
+	malloc_stats();
+#endif
+#if 0
 	if (free_times != malloc_times +
 			calloc_times +
 			strdup_times)
 		MEM_MSG("Memery leak found!!!!\n");
 	else
 		MEM_MSG("No memory leak found.\n");
+#endif
 	return;
 }
 

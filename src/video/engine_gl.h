@@ -10,8 +10,8 @@
 
 #include <video/engine.h>
 
-struct gl_engine_context {
-	struct video_engine_context base;
+struct GLEngineContext {
+	struct VideoEngineVontext base;
 	/* need some flags to indicate the gl status, like the extension... */
 };
 
