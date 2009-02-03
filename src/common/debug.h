@@ -25,6 +25,8 @@ enum debug_component {
 	RLIST,
 	SYSTEM,
 	MEMORY,
+	OPENGL,
+	SDL,
 	NR_COMPONENTS
 };
 
@@ -34,7 +36,9 @@ static const char * debug_comp_name[NR_COMPONENTS] = {
 	[RCOMMAND] = "video-command",
 	[RLIST] = "video-list",
 	[SYSTEM] = "system",
-	[MEMORY] = "memory"
+	[MEMORY] = "memory",
+	[OPENGL] = "gl",
+	[SDL] = "SDL",
 };
 
 static enum debug_level debug_levels[NR_COMPONENTS] = {
@@ -42,6 +46,8 @@ static enum debug_level debug_levels[NR_COMPONENTS] = {
 	[RLIST] = TRACE,
 	[MEMORY] = VERBOSE,
 	[SYSTEM] = TRACE,
+	[OPENGL] = TRACE,
+	[SDL] = TRACE
 };
 #endif
 
@@ -67,9 +73,15 @@ extern enum debug_level get_comp_level(enum debug_component comp);
 
 #define TRACE(comp, str...) DEBUG_MSG(TRACE, comp, str)
 #define VERBOSE(comp, str...) DEBUG_MSG(VERBOSE, comp, str)
-#define WARNING(comp, str...) DEBUG_MSG(WARNING, comp, str)
-#define ERROR(comp, str...) DEBUG_MSG(ERROR, comp, str)
-#define FATAL(comp, str...) DEBUG_MSG(FATAL, comp, str)
+#ifndef YAAVG_DEBUG_OFF
+# define WARNING(comp, str...) DEBUG_MSG(WARNING, comp, str)
+# define ERROR(comp, str...) DEBUG_MSG(ERROR, comp, str)
+# define FATAL(comp, str...) DEBUG_MSG(FATAL, comp, str)
+#else
+extern void WARNING(enum debug_component, char * fmt, ...);
+extern void ERROR(enum debug_component, char * fmt, ...);
+extern void FATAL(enum debug_component, char * fmt, ...);
+#endif
 
 
 /* Define bug functions. Reference: assert.h */
@@ -86,18 +98,20 @@ extern void __bug_on(const char * __assertion, const char * __file,
 	 : (void)0
 #endif
 
+
+#ifndef YAAVG_DEBUG_OFF
 /* memory leak detection */
 extern void * yaavg_malloc(size_t size);
 extern void yaavg_free(void * ptr);
 extern char * yaavg_strdup(const char * S);
 extern void * yaavg_calloc(size_t count, size_t eltsize);
 extern void show_mem_info();
-
 #ifndef YAAVG_DEBUG_C
 # define malloc(s)	yaavg_malloc(s)
 # define free(p)		yaavg_free(p)
 # define strdup(S)	yaavg_strdup(S)
 # define readline(S)	yaavg_readline(S)
+#endif
 #endif
 
 __END_DECLS

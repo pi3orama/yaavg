@@ -41,9 +41,7 @@ AC_SUBST(HAVE_MALLINFO)
 # Check for SDL
 AC_PATH_PROGS([SDL_CONFIG], [sdl-config], [none])
 if test "x$SDL_CONFIG" = "xnone"; then
-
 	AC_MSG_ERROR([*** SDL not found!])
-
 fi
 
 

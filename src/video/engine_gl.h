@@ -58,12 +58,13 @@ extern struct GLEngineContext * GLContext;
  * reference: darkplaces - vid_sdl.c
  */
 
-extern struct GLEngineContext * GLPlatformInit(void);
+extern int GLPlatformInit(void);
+extern void GLPlatformClose(struct GLEngineContext * context);
 extern void *GLGetProcAddress(const char *name);
-extern int GLInitWindow(void);
+extern struct GLEngineContext * GLInitWindow(void);
 
 /* WM operations */
-extern void WMSetCaption(const char * name);
+extern void WMSetCaption(const char * caption);
 extern void WMSetIcon(const icon_t icon);
 __END_DECLS
 

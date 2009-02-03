@@ -117,17 +117,17 @@ static const char *
 get_level_name(enum debug_level level)
 {
 	if (level == SILENT)
-		return "silent";
+		return "S";
 	if (level == VERBOSE)
-		return "verbose";
+		return "V";
 	if (level == TRACE)
-		return "trace";
+		return "T";
 	if (level == WARNING)
-		return "warning";
+		return "WW";
 	if (level == ERROR)
-		return "error";
+		return "EE";
 	if (level == FATAL)
-		return "fatal";
+		return "FF";
 	return "unknown";
 
 }

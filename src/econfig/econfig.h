@@ -13,6 +13,7 @@ typedef enum _ConfType {
 	TypeInteger,
 	TypeString,
 	TypeFloat,
+	TypeBool,
 } ConfType;
 
 struct ConfigEntry {
@@ -22,6 +23,7 @@ struct ConfigEntry {
 		char * s;
 		int i;
 		float f;
+		bool_t b;
 	} value;
 };
 
@@ -36,6 +38,7 @@ extern void ConfInit(int argc, char * argv[]);
 extern char * ConfGetString(const char * name);
 extern int ConfGetInteger(const char * name);
 extern float ConfGetFloat(const char * name);
+extern bool_t ConfGetBool(const char * name);
 
 __END_DECLS
 

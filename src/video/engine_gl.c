@@ -17,11 +17,30 @@
 #include <econfig/econfig.h>
 
 #include <video/engine_gl.h>
+#include <video/engine.h>
 
-/* 
- * 
- */
+int EngineInit(void)
+{
+	if (GLPlatformInit()) {
+		FATAL(OPENGL, "OpenGL Platform init failed\n");
+		exit(1);
+	}
+	return 0;
+}
 
+void EngineClose(struct VideoEngineContext * context)
+{
+	GLPlatformClose(context);
+	return 0;
+}
 
+struct VideoEngineContext * EngineOpenWindow(void)
+{
+	return NULL;
+}
 
+void EngineCloseWindow(struct VideoEngineContext * context)
+{
+	return;
+}
 
