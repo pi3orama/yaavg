@@ -25,6 +25,14 @@ struct ConfigEntry {
 	} value;
 };
 
+/*
+ * Config initialize. command line options and ENV can overwrite
+ * default config value.
+ * priorities:
+ * 	command line > env > config file > default
+ */
+extern void ConfInit(int argc, char * argv[]);
+
 extern char * ConfGetString(const char * name);
 extern int ConfGetInteger(const char * name);
 extern float ConfGetFloat(const char * name);

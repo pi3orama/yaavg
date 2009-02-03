@@ -25,7 +25,6 @@ struct texture {
 	/* define an enum */
 	int format; /* This field define the format of data, rgba or rgb */
 	void * data; /* the image data */
-	void * private; /* texture manager's private struct */
 };
 
 __END_DECLS

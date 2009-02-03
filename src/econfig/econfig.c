@@ -45,3 +45,8 @@ DEF_CONF_GET(String, s, "");
 DEF_CONF_GET(Integer, i, 0);
 DEF_CONF_GET(Float, f, 0.0f);
 
+void ConfInit(int argc, char * argv[])
+{
+	return;
+}
+

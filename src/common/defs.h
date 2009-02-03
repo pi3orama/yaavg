@@ -13,6 +13,8 @@ typedef int bool_t;
 
 typedef uint32_t tick_t;
 
+typedef void * icon_t;
+
 __END_DECLS
 
 #endif

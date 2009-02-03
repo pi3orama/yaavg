@@ -96,9 +96,48 @@ private: 绘制元素私有的指针;
 
 \subsection{初始化}
 
-1. 初始化 OpenGL 管理器, 检查 opengl 版本是否符合最低要求;
-2. 读取配置, 初始化 SDL 和 OpenGL;
-3. 初始化绘制指令链表. 
+%1. 初始化 OpenGL 管理器, 检查 opengl 版本是否符合最低要求;
+%2. 读取配置, 初始化 SDL 和 OpenGL;
+%3. 初始化绘制指令链表. 
+
+参考 darkplaces 的做法:
+
+1. 初始化 video 配置;
+2. 初始化 SDL (仅仅是调用 SDL\_Init)
+3. 在窗口显示阶段, 初始化 OpenGL.
+
+视频引擎的层次:
+
+\begin{verbatim}
+engine
+engine_gl
+engine_gl_sdl
+\end{verbatim}
+
+将 OpenGL 所在的层次称为``driver'', 将 SDL 和 glx 所在的层次称为 ``platform''
+
+它们分别含有一下内容:
+
+\begin{description}
+
+\item[engine] engine 定义了抽象的视频引擎. 无论 driver 为何, 有一些 renderlist 
+	操作, 插件操作(包括插件查询等)是各个 drivers 共享的, 使用 engine.c 实现.
+	driver 特有的部分由 engine\_xx.c 实现. engine.h 不但包括共享的部分, 也包
+	括 engine\_xx 需要提供的接口, 还定义了 struct VideoEngineContext, 这是各
+	个 driver 共享的数据结构. 各个 driver 还需要实现自己独有的数据结构.
+
+\item[engine\_gl] engine\_gl 定义了 OpenGL 视频引擎. engine\_gl.c 实现了 engine
+	定义的特有操作. 另外, 支持 OpenGL 的 platform 也有多种, 所以将
+	engine\_gl 定义的特有数据结构放在 engine\_gl.h 中. 在
+	engine\_gl.h 中还定义了 OpenGL 需要的支撑函数. 
+
+\item[engine\_gl\_sdl] 提供支持各种 OpenGL 操作的函数. 接口在 engine\_gl.h 中定
+	义了,因此没有自己的头文件.
+\end{description}
+
+总结: engine 的接口和数据结构在 engine.h 中定义, 接口一部分由 engine.c 实现, 另
+一部分由 engine\_xxx 实现. 对于 engine\_gl, 由于有各种 platform, 因此在
+engine\_gl.h 中定义接口和数据结构, 由 engine\_gl 和 engine\_gl\_xxx 共通实现.
 
 \subsection{纹理管理器}
 
@@ -116,6 +155,24 @@ private: 绘制元素私有的指针;
 初始化时读取 OpenGL 串, 提供接口用于查询; 对于一些扩展函数, 用 get address 获得
 函数地址.
 
+参考 SDL 的例子. 使用静态的 OpenGL 或者动态的 OpenGL 都是可以的, 但是如果使用静
+态的 GL, 会造成在某个机器上能够编译, 在另一个机器上却因为找不到函数地址而无法运
+行的情况. 使用动态的 OpenGL 看上去比较好, 可以在调用有疑问的函数之前检查以下函数
+是否为空. 关于 GL 各种函数的情况, 可以参考darkplaces 中 vid\_shared.c:
+GL\_CheckExtension. 这个文件里有一些列表. 它把 SDL和其它平台的相关函数进行了封装.
+
+OpenGL 的初始化要分两个阶段. 第一阶段是 OpenGL 本体的 check, 使用 sdl 或者 glx 
+提供的函数检查自己有没有某些函数, 并建立列表. 第二阶段是检查各种 Extension, 使用
+glGetString(GL\_EXTENSIONS) 检查平台有没有相应的 Extensions. 这个函数会返回一个
+字符串, 使用 strstr 去检查即可.
+
+为了便于以后剥离 SDL, 有必要参考 darkplaces 的做法.
+
+目前, 为了以后剥离 OpenGL, 首先定义了 engine.h. 对于 OpenGL, 使用
+engine\_gl.[ch]. 对于 SDL 支持的 OpenGL, 应当命名为 engine\_gl\_sdl, 以后还会有
+engine\_gl\_glx.
+
+可以通过宏引入一个编译选项, 实现完全静态的 OpenGL.
 
 \end{document}
 

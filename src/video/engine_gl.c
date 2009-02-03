@@ -9,15 +9,19 @@
 #include <assert.h>
 #include <sys/stat.h>
 
-//#include <SDL.h>
-//#include <SDL_image.h>
-//#include <GL/gl.h>
-//#include <GL/glu.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 #include <common/defs.h>
+#include <common/debug.h>
+#include <econfig/econfig.h>
 
-struct engine_context * init_engine()
-{
-	return NULL;
-}
+#include <video/engine_gl.h>
+
+/* 
+ * 
+ */
+
+
+
 

@@ -1,4 +1,4 @@
-AM_CPPFLAGS= -g -O0 -I$(top_srcdir)/src
+AM_CPPFLAGS= -g -O0 -I$(top_srcdir)/src $(GL_CFLAGS)
 
 noinst_LTLIBRARIES=libvideo.la
 libvideo_la_SOURCES=rlist.c rcommand.c \
@@ -9,3 +9,4 @@ libvideo_la_SOURCES=rlist.c rcommand.c \
 noinst_PROGRAMS=test_rlist
 test_rlist_SOURCES=test_rlist.c
 test_rlist_LDADD=libvideo.la
+

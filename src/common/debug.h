@@ -11,12 +11,12 @@ __BEGIN_DECLS
 
 
 enum debug_level {
-	SILENT = 0,
-	TRACE,
+	TRACE = 0,
 	VERBOSE,
 	WARNING,
 	ERROR,
 	FATAL,
+	SILENT,
 	NR_DEBUG_LEVELS
 };
 
@@ -41,7 +41,7 @@ static enum debug_level debug_levels[NR_COMPONENTS] = {
 	[RCOMMAND] = WARNING,
 	[RLIST] = TRACE,
 	[MEMORY] = VERBOSE,
-	[SYSTEM] = VERBOSE,
+	[SYSTEM] = TRACE,
 };
 #endif
 
@@ -65,6 +65,11 @@ extern enum debug_level get_comp_level(enum debug_component comp);
 #define DEBUG_MSG_CONT(level, comp, str...) do{ debug_out(0, level, comp, __FUNCTION__, __LINE__, str); } while(0)
 #define DEBUG_SET_COMP_LEVEL(mask, level) do { set_comp_level(mask, level); } while(0)
 
+#define TRACE(comp, str...) DEBUG_MSG(TRACE, comp, str)
+#define VERBOSE(comp, str...) DEBUG_MSG(VERBOSE, comp, str)
+#define WARNING(comp, str...) DEBUG_MSG(WARNING, comp, str)
+#define ERROR(comp, str...) DEBUG_MSG(ERROR, comp, str)
+#define FATAL(comp, str...) DEBUG_MSG(FATAL, comp, str)
 
 
 /* Define bug functions. Reference: assert.h */
