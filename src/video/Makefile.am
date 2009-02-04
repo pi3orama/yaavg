@@ -1,4 +1,4 @@
-AM_CPPFLAGS= -g -O0 -I$(top_srcdir)/src $(GL_CFLAGS) $(SDL_CFLAGS)
+AM_CPPFLAGS= -I$(top_srcdir)/src $(GL_CFLAGS) $(SDL_CFLAGS)
 
 noinst_LTLIBRARIES=libvideo.la
 

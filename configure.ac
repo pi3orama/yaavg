@@ -17,9 +17,10 @@ AC_ARG_ENABLE([link-rdynamic], [AC_HELP_STRING(--enable-link-rdynamic, [Use -rdy
 	[LDFLAGS="$LDFLAGS -rdynamic"],
 	[])
 
-AC_ARG_ENABLE([debug], [AC_HELP_STRING(--enable-debug, [set CFLAGS="-g -O0"])],
+AC_ARG_ENABLE([debug], [AC_HELP_STRING(--enable-debug, [set CFLAGS to "-g -O0"])],
 	[CFLAGS="$CFLAGS -g -O0"],
-	[])
+	[CFLAGS="$CFLAGS -g -O2"])
+
 
 # Checks for libraries.
 
@@ -53,39 +54,39 @@ AC_PATH_X
 
 AC_MSG_CHECKING(for GL_CFLAGS)
 AC_ARG_WITH(gl-cflags, [  --with-gl-cflags=CFLAGS ],
-		       [GL_CFLAGS="$withval"],
-		       [GL_CFLAGS="-I$x_includes"])
+		       [GL_CFLAGS_TEMP="$withval"],
+		       [GL_CFLAGS_TEMP="-I$x_includes"])
 CFLAGS_save=$CFLAGS
-CFLAGS="$CFLAGS $GL_CFLAGS"
+CFLAGS="$CFLAGS $GL_CFLAGS_TEMP"
 AC_COMPILE_IFELSE([[
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <GL/glu.h>
 		   ]],, [AC_MSG_ERROR([*** OpenGL Header not found!])])
 CFLAGS=$CFLAGS_save
-AC_MSG_RESULT($GL_CFLAGS)
+AC_MSG_RESULT($GL_CFLAGS_TEMP)
 
 
 AC_MSG_CHECKING(for GL_LDFLAGS)
 AC_ARG_WITH(gl-ldflags, [  --with-gl-ldflags=LDFLAGS ],
-		       [GL_LDFLAGS="$withval"],
-		       [GL_LDFLAGS="$x_libraries"])
-AC_MSG_RESULT($GL_LDFLAGS)
+		       [GL_LDFLAGS_TEMP="$withval"],
+		       [GL_LDFLAGS_TEMP="$x_libraries"])
+AC_MSG_RESULT($GL_LDFLAGS_TEMP)
 
 AC_MSG_CHECKING(for GL_LIBS)
 AC_ARG_WITH(gl-libs, [  --with-gl-libs=LIBS ],
-		     [GL_LIBS="$withval"],
-		     [GL_LIBS="-lGL -lGLU -lglut"])
-AC_MSG_RESULT($GL_LIBS)
+		     [GL_LIBS_TEMP="$withval"],
+		     [GL_LIBS_TEMP="-lGL -lGLU -lglut"])
+AC_MSG_RESULT($GL_LIBS_TEMP)
 
 
 CFLAGS_save=$CFLAGS
 LDFLAGS_save=$LDFLAGS
 LIBS_save=$LIBS
 
-CFLAGS="$CFLAGS $GL_CFLAGS"
-LDFLAGS="$LDFLAGS $GL_LDFLAGS"
-LIBS="$LIBS $GL_LIBS"
+CFLAGS="$CFLAGS $GL_CFLAGS_TEMP"
+LDFLAGS="$LDFLAGS $GL_LDFLAGS_TEMP"
+LIBS="$LIBS $GL_LIBS_TEMP"
 AC_COMPILE_IFELSE([[
 #include <GL/gl.h>
 #include <GL/glx.h>
@@ -114,6 +115,18 @@ AC_CHECK_HEADER([execinfo.h],[
         AC_DEFINE(HAVE_EXECINFO_H, 1, [Have execinfo.h])
     ])]
 )
+
+AC_ARG_ENABLE([static-opengl], [AC_HELP_STRING(--enable-static-opengl, [use ld link opengl symbol directly])],
+	[
+	 GL_CFLAGS="$GL_CFLAGS_TEMP -DSTATIC_OPENGL"
+	 GL_LDFLAGS="$GL_LDFLAGS_TEMP"
+	 GL_LIBS="$GL_LIBS_TEMP"
+	 ],
+	[
+	 GL_CFLAGS="$GL_CFLAGS_TEMP"
+	 GL_LDFLAGS=""
+	 GL_LIBS=""
+	 ])
 
 AC_SUBST(GL_CFLAGS)
 AC_SUBST(GL_LIBS)

@@ -46,7 +46,7 @@ struct GLEngineContext {
  * This pointer is OK after platform inited. In fact, it is the return
  * value of PlatformInit. The real structure is defined in engine_gl_sdl/glx...
  */
-extern struct GLEngineContext * GLContext;
+extern const struct GLEngineContext * GLContext;
 
 #define GLOPS	(&GLContext->gl_funcs)
 /* OpenGL init has 2 phases: 

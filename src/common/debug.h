@@ -107,10 +107,25 @@ extern char * yaavg_strdup(const char * S);
 extern void * yaavg_calloc(size_t count, size_t eltsize);
 extern void show_mem_info();
 #ifndef YAAVG_DEBUG_C
+# ifdef malloc
+#  undef malloc
+# endif
 # define malloc(s)	yaavg_malloc(s)
-# define free(p)		yaavg_free(p)
+
+# ifdef free
+#  undef free
+# endif
+# define free(p)	yaavg_free(p)
+
+# ifdef strdup
+#  undef strdup
+# endif
 # define strdup(S)	yaavg_strdup(S)
-# define readline(S)	yaavg_readline(S)
+
+# ifdef calloc
+#  undef calloc
+# endif
+# define calloc(S)	yyavg_calloc(S)
 #endif
 #endif
 

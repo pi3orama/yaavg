@@ -20,7 +20,24 @@
 #include <video/engine_gl.h>
 #include <video/engine.h>
 
-struct GLEngineContext * GLContext = NULL;
+const struct GLEngineContext * GLContext = NULL;
+
+static int init_glfunc(void)
+{
+#ifndef STATIC_OPENGL
+	/* define the GLFuncInitList */
+#define INIT_GL_FUNC_LIST
+#include "gl_funcs.h"
+#undef INIT_GL_FUNC_LIST
+	struct glfunc_init_item * item = &GLFuncInitList[0];
+	while (item->name != NULL) {
+		*(item->func) = (void*)GLGetProcAddress(item->name);
+		if (*item->func == NULL)
+			WARNING(OPENGL, "gl function %s not found\n", item->name);
+		item ++;
+	}
+#endif
+}
 
 int EngineInit(void)
 {
@@ -50,8 +67,8 @@ struct VideoEngineContext * EngineOpenWindow(void)
 
 	/* Init OpenGL */
 	/* first, get opengl func pointer */
+	init_glfunc();
 
-	/* ??? */
 
 	TRACE(OPENGL, "Vendor: %s\n", glGetString(GL_VENDOR));
 

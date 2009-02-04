@@ -9,13 +9,16 @@ class func:
 		self.name = name;
 
 	def output_prototype(self):
-		print '\ttypeof(%s) * %s%s;' % (self.name, gl_prefix, self.name)
+		print '\ttypeof(%s)\t * %s%s;' % (self.name, gl_prefix, self.name)
 	
 	def output_macro_static(self):
 		pass
 	
 	def output_macro_dynamic(self):
-		print '# define %s (GLOPS->%s%s)' % (self.name, gl_prefix, self.name)
+		print '# define %s ((GLOPS)->%s%s)' % (self.name, gl_prefix, self.name)
+	
+	def output_init_list(self):
+		print "\t{\"%s\", (void**)&((GLOPS)->%s%s)}," % (self.name, gl_prefix, self.name)
 
 
 class comment:
@@ -30,6 +33,8 @@ class comment:
 		print '/* %s */ ' % (self.comm)
 
 	def output_macro_dynamic(self):
+		print '/* %s */ ' % (self.comm)
+	def output_init_list(self):
 		print '/* %s */ ' % (self.comm)
 
 
@@ -58,14 +63,17 @@ for line in file:
 	objects.append(func(line))
 
 # print header
+print "#ifndef INIT_GL_FUNC_LIST"
 print "#ifndef __GL_GLFUNCS_H"
 print "#define __GL_GLFUNCS_H"
 print "#include <GL/gl.h>"
 print "#include <GL/glext.h>"
 print ""
 print "struct GLFuncs {"
+print "#ifndef STATIC_OPENGL"
 for o in objects:
 	o.output_prototype()
+print "#endif"
 print "};"
 
 
@@ -80,3 +88,11 @@ print "#endif"
 
 print "#endif"
 
+print "#else"
+print "struct glfunc_init_item {const char * name; void ** func;};"
+print "struct glfunc_init_item GLFuncInitList[] = {"
+for o in objects:
+	o.output_init_list()
+print "\t{NULL, NULL}"
+print "};"
+print "#endif"
