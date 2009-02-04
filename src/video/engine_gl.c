@@ -20,7 +20,7 @@
 #include <video/engine_gl.h>
 #include <video/engine.h>
 
-const struct GLEngineContext * GLContext = NULL;
+struct GLEngineContext * GLContext = NULL;
 
 static int init_glfunc(void)
 {
@@ -69,8 +69,17 @@ struct VideoEngineContext * EngineOpenWindow(void)
 	/* first, get opengl func pointer */
 	init_glfunc();
 
+	/* Set opengl context */
+	GLContext->vendor     = glGetString(GL_VENDOR);
+	GLContext->renderer   = glGetString(GL_RENDERER);
+	GLContext->version    = glGetString(GL_VERSION);
+	GLContext->extensions = glGetString(GL_EXTENSIONS);
 
-	TRACE(OPENGL, "Vendor: %s\n", glGetString(GL_VENDOR));
+	VERBOSE(OPENGL, "GL driver info:\n");
+	VERBOSE(OPENGL, "Vendor     : %s\n", GLContext->vendor);
+	VERBOSE(OPENGL, "Renderer   : %s\n", GLContext->renderer);
+	VERBOSE(OPENGL, "Version    : %s\n", GLContext->version);
+	VERBOSE(OPENGL, "Extensions : %s\n", GLContext->extensions);
 
 	return &gl_context->base;
 }

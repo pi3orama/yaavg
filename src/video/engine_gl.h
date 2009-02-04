@@ -46,7 +46,7 @@ struct GLEngineContext {
  * This pointer is OK after platform inited. In fact, it is the return
  * value of PlatformInit. The real structure is defined in engine_gl_sdl/glx...
  */
-extern const struct GLEngineContext * GLContext;
+extern struct GLEngineContext * GLContext;
 
 #define GLOPS	(&GLContext->gl_funcs)
 /* OpenGL init has 2 phases: 
@@ -69,9 +69,9 @@ extern const struct GLEngineContext * GLContext;
  * reference: darkplaces - vid_sdl.c
  */
 
-extern int GLPlatformInit(void);
-extern void GLPlatformClose(struct GLEngineContext * context);
-extern void *GLGetProcAddress(const char *name);
+extern int    GLPlatformInit(void);
+extern void   GLPlatformClose(struct GLEngineContext * context);
+extern void * GLGetProcAddress(const char *name);
 extern struct GLEngineContext * GLOpenWindow(void);
 
 /* WM operations */
@@ -82,5 +82,4 @@ extern void WMSetIcon(const icon_t icon);
 __END_DECLS
 
 #endif
-
 

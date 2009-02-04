@@ -60,7 +60,8 @@ int GLPlatformInit(void)
 	memset(&sdl_context, sizeof(sdl_context), '\0');
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		FATAL(SDL, "Failed to init SDL video subsystem: %s\n", SDL_GetError());
+		FATAL(SDL, "Failed to init SDL video subsystem, SDL report: \"%s\", "
+				"check for your configuration.\n", SDL_GetError());
 		/* exit immediatly */
 		exit(1);
 	}
@@ -164,7 +165,8 @@ struct GLEngineContext * GLOpenWindow(void)
 
 	screen = SDL_SetVideoMode(w, h, sdl_context.bpp, flags);
 	if (screen == NULL) {
-		FATAL(SDL, "Failed to set video mode to %ix%i: %s\n", w, h,
+		FATAL(SDL, "Failed to set video mode to %ix%i, SDL report: \"%s\", "
+				"check for your configuration!\n", w, h,
 				SDL_GetError());
 		sdl_close();
 		return NULL;

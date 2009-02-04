@@ -14,12 +14,17 @@
 static struct ConfigEntry entries[] = {
 	{"video.resolution.w", TypeInteger, vcast(800)},
 	{"video.resolution.h", TypeInteger, vcast(600)},
+//	{"video.fullscreen", TypeBool, vcast(TRUE)},
 	{"video.fullscreen", TypeBool, vcast(FALSE)},
 	{"video.resizable", TypeBool, vcast(FALSE)},
-	{"video.opengl.driver.gllibrary", TypeString, vcast((const char*)NULL)},
+	{"video.opengl.driver.gllibrary", TypeString, vcast((const char*)"/home/wn/src/Mesa-7.0.1/lib/libGL.so")},
+//	{"video.opengl.driver.gllibrary", TypeString, vcast((const char*)NULL)},
+//	{"video.opengl.driver.gllibrary", TypeString, vcast((const char*)"/usr/lib/libGL.so")},
 	{"video.opengl.driver.bpp", TypeInteger, vcast(16)},
-	{"video.opengl.driver.vsync", TypeBool, vcast(TRUE)},
-	{"video.opengl.driver.multisample", TypeInteger, vcast(4)},
+	{"video.opengl.driver.vsync", TypeBool, vcast(FALSE)},
+//	{"video.opengl.driver.vsync", TypeBool, vcast(TRUE)},
+	{"video.opengl.driver.multisample", TypeInteger, vcast(0)},
+//	{"video.opengl.driver.multisample", TypeInteger, vcast(4)},
 	{NULL, TypeNone, vcast(0)},
 };
 
