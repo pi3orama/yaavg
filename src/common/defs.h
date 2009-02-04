@@ -15,6 +15,21 @@ typedef uint32_t tick_t;
 
 typedef void * icon_t;
 
+/* Copy code from list.h */
+#ifndef offsetof
+# ifdef __compiler_offsetof
+#  define offsetof(TYPE,MEMBER) __compiler_offsetof(TYPE,MEMBER)
+# else
+#  define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+# endif
+#endif
+
+#ifndef container_of
+# define container_of(ptr, type, member) ({			\
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+	(type *)( (char *)__mptr - offsetof(type,member) );})
+#endif
+
 __END_DECLS
 
 #endif

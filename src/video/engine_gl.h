@@ -8,9 +8,16 @@
 #ifndef VIDEO_ENGINE_GL_H
 #define VIDEO_ENGINE_GL_H
 
+#include <common/defs.h>
 #include <video/engine.h>
 
 __BEGIN_DECLS
+
+/* Below is opengl functions definitions */
+/* define struct GLFuncs  */
+
+#include "gl_funcs.h"
+
 
 struct GLEngineContext {
 	struct VideoEngineContext base;
@@ -25,7 +32,10 @@ struct GLEngineContext {
 	const char *platform;
 
 	/* belong is for dynamic gl use: func pointers */
+	struct GLFuncs gl_funcs;
 };
+
+#define GetGLCtx(x) container_of(x, struct GLEngineContext, base)
 
 /* 
  * in engine_gl, we define a global gl engine context pointer. for
@@ -38,6 +48,7 @@ struct GLEngineContext {
  */
 extern struct GLEngineContext * GLContext;
 
+#define GLOPS	(&GLContext->gl_funcs)
 /* OpenGL init has 2 phases: 
  * 1. platform(sdl or glx) initialization, find gl functions, check extentions;
  * 2. Windows initialization, show window, wait for render command.
@@ -61,11 +72,13 @@ extern struct GLEngineContext * GLContext;
 extern int GLPlatformInit(void);
 extern void GLPlatformClose(struct GLEngineContext * context);
 extern void *GLGetProcAddress(const char *name);
-extern struct GLEngineContext * GLInitWindow(void);
+extern struct GLEngineContext * GLOpenWindow(void);
 
 /* WM operations */
 extern void WMSetCaption(const char * caption);
 extern void WMSetIcon(const icon_t icon);
+
+
 __END_DECLS
 
 #endif

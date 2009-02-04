@@ -35,14 +35,20 @@ extern void EngineRender(struct VideoEngineContext * context);
 
 
 /* below functions should be implentmented in engine_xxx.c */
-extern int EngineInit(void);
-extern void EngineClose(struct VideoEngineContext * context);
+extern int
+EngineInit(void);
+
+extern void
+EngineClose(struct VideoEngineContext * context);
 
 /* 
  * only after the window is opened, we can actually get the engine context.
  */
-extern struct VideoEngineContext * EngineOpenWindow(void);
-extern void EngineCloseWindow(struct VideoEngineContext * context);
+extern struct VideoEngineContext *
+EngineOpenWindow(void);
+
+extern void
+EngineCloseWindow(struct VideoEngineContext * context);
 
 
 /* Some WM operations */

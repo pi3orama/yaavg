@@ -33,12 +33,12 @@ enum debug_component {
 #ifdef YAAVG_DEBUG_C
 
 static const char * debug_comp_name[NR_COMPONENTS] = {
-	[RCOMMAND] = "video-command",
-	[RLIST] = "video-list",
-	[SYSTEM] = "system",
-	[MEMORY] = "memory",
-	[OPENGL] = "gl",
-	[SDL] = "SDL",
+	[RCOMMAND] = "VCOM",
+	[RLIST] = "VLST",
+	[SYSTEM] = "SYS ",
+	[MEMORY] = "MEM ",
+	[OPENGL] = "GL  ",
+	[SDL] = "SDL ",
 };
 
 static enum debug_level debug_levels[NR_COMPONENTS] = {

@@ -20,7 +20,7 @@ struct ConfigEntry {
 	const char * name;
 	ConfType type;
 	union _conf_value{
-		char * s;
+		const char * s;
 		int i;
 		float f;
 		bool_t b;
@@ -35,10 +35,10 @@ struct ConfigEntry {
  */
 extern void ConfInit(int argc, char * argv[]);
 
-extern char * ConfGetString(const char * name);
-extern int ConfGetInteger(const char * name);
-extern float ConfGetFloat(const char * name);
-extern bool_t ConfGetBool(const char * name);
+extern const char * ConfGetString(const char * name, const char * def);
+extern int ConfGetInteger(const char * name, int def);
+extern float ConfGetFloat(const char * name, float def);
+extern bool_t ConfGetBool(const char * name, bool_t def);
 
 __END_DECLS
 

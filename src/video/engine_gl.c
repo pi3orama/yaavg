@@ -14,10 +14,13 @@
 
 #include <common/defs.h>
 #include <common/debug.h>
+
 #include <econfig/econfig.h>
 
 #include <video/engine_gl.h>
 #include <video/engine.h>
+
+struct GLEngineContext * GLContext = NULL;
 
 int EngineInit(void)
 {
@@ -30,13 +33,29 @@ int EngineInit(void)
 
 void EngineClose(struct VideoEngineContext * context)
 {
-	GLPlatformClose(context);
-	return 0;
+	GLPlatformClose(GetGLCtx(context));
+	return;
 }
 
 struct VideoEngineContext * EngineOpenWindow(void)
 {
-	return NULL;
+	struct GLEngineContext * gl_context;
+	gl_context = GLOpenWindow();
+	if (gl_context == NULL) {
+		WARNING(OPENGL, "Open Window failed\n");
+		return NULL;
+	}
+
+	GLContext = gl_context;
+
+	/* Init OpenGL */
+	/* first, get opengl func pointer */
+
+	/* ??? */
+
+	TRACE(OPENGL, "Vendor: %s\n", glGetString(GL_VENDOR));
+
+	return &gl_context->base;
 }
 
 void EngineCloseWindow(struct VideoEngineContext * context)
