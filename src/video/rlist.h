@@ -38,50 +38,28 @@ static inline void RListLinkTail(struct RenderList * list,
 	list_add_tail(&command->list, &list->command_list);
 }
 
-static inline void RListLinkHead(struct RenderList * list,
-		struct RenderCommand * command)
-{
-	list_add(&command->list, &list->command_list);
-}
+#define RListLinkHead(rlist, command) \
+	list_add(&(command)->list, &(rlist)->command_list)
 
-static inline void RListLinkBefore(struct RenderCommand * dest,
-		struct RenderCommand * command)
-{
-	list_add_tail(&command->list, &dest->list);
-}
+#define RListLinkBefore(dest, command)	\
+	list_add_tail(&(command)->list, &(dest)->list)
 
-static inline void RListLinkAfter(struct RenderCommand * dest,
-		struct RenderCommand * command)
-{
-	list_add(&command->list, &dest->list);
-}
+#define RListLinkAfter(dest, command)	\
+	list_add(&(command)->list, &(dest)->list)
 
-static inline int RListForeachCommand(struct RenderList * link, void * args,
-		int (*func)(struct RenderCommand *, void * args))
-{
-	struct RenderCommand * pos, *n;
-	int res;
-	list_for_each_entry_safe(pos, n, &link->command_list, list) {
-		if ((res = func(pos, args)) != 0)
-			return res;
-	}
-	return 0;
-}
+#define RListForEachCommand(pos, rlist) \
+	list_for_each_entry(pos, &((rlist)->command_list), list)
 
-static inline int RListForeachCommandSafe(struct RenderList * link,
-		int (*func)(struct RenderCommand *, void * args),
-		void * args)
-{
-	struct RenderCommand * pos, *n;
-	int res = 0, res2;
-	list_for_each_entry_safe(pos, n, &link->command_list, list) {
-		res2 = func(pos, args);
-		if (res2 != 0)
-			res = res2;
-	}
-	return res;
-}
+#define RListRemove(cmd) \
+	do { \
+		list_del(&(cmd)->list);		\
+		if (cmd->remove != NULL)	\
+			(cmd)->remove(cmd);	\
+	} while(0)
 
+
+#define RListForEachCommandSafe(pos, n, rlist) \
+	list_for_each_entry_safe(pos, n, &((rlist)->command_list), list)
 /* for debug use */
 extern int sprint_rlist(char * str, struct RenderList * list);
 

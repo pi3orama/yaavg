@@ -33,6 +33,7 @@ glNormalPointer
 glColorPointer
 glTexCoordPointer
 glArrayElement
+glColor3f
 glColor4f
 glTexCoord1f
 glTexCoord2f
@@ -40,6 +41,8 @@ glTexCoord3f
 glTexCoord4f
 glVertex2f
 glVertex3f
+glVertex2d
+glVertex3d
 glBegin
 glEnd
 glLineWidth

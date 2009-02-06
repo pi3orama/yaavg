@@ -186,6 +186,10 @@ struct GLEngineContext * GLOpenWindow(void)
 	return &sdl_context.gl_context;
 }
 
+void GLSwapBuffers(struct GLEngineContext * gl_context)
+{
+	SDL_GL_SwapBuffers();
+}
 
 void WMSetCaption(const char * caption)
 {

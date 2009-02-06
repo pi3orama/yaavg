@@ -16,7 +16,8 @@ __BEGIN_DECLS
 /* Below is opengl functions definitions */
 /* define struct GLFuncs  */
 
-#include "gl_funcs.h"
+#include <GL/gl.h>
+#include <video/gl_funcs.h>
 
 
 struct GLEngineContext {
@@ -73,6 +74,7 @@ extern int    GLPlatformInit(void);
 extern void   GLPlatformClose(struct GLEngineContext * context);
 extern void * GLGetProcAddress(const char *name);
 extern struct GLEngineContext * GLOpenWindow(void);
+extern void GLSwapBuffers();
 
 /* WM operations */
 extern void WMSetCaption(const char * caption);

@@ -137,6 +137,7 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 src/common/Makefile
 		 src/econfig/Makefile
+		 src/event/Makefile
 		 src/video/Makefile])
 
 AC_OUTPUT

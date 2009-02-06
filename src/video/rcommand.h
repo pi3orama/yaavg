@@ -24,6 +24,27 @@ __BEGIN_DECLS
 struct RenderElement;
 
 /* 
+ * How to use RenderCommand?
+ *
+ * struct XXXRenderCommand {
+ *	struct RenderCommand base;
+ *	int arg1, arg2 ...
+ * };
+ *
+ * int XXXRender(struct RenderCommand * cmd, tick_t current_time)
+ * {
+ *	struct XXXRenderCommand * base = container_of(cmd, struct XXXRenderCommand, base);
+ *	....
+ * }
+ */
+
+struct RenderCommand;
+
+typedef int (*render_func)(struct RenderCommand * command, tick_t current_time);
+typedef	int (*sprintf_func)(struct RenderCommand * command, char * dest);
+typedef	int (*remove_func)(struct RenderCommand * command);
+
+/* 
  * struct RenderCommand - The core structure.
  */
 struct RenderCommand {
@@ -34,10 +55,13 @@ struct RenderCommand {
 	tick_t start_time;
 	bool_t stopped;		/* the animate has stopped, render command should draw final
        				   picture, not the middle picture. */
+
+	/* if animate paused, below two fields indicate how to resume drawing */
+	bool_t paused;
+	tick_t pause_time;
 	struct RenderElement * father;
-	void * arguments;	/* arguments of this command */
-	void * context;		/* context of the engine.
-				  for OpenGL, like the avaliable of fragment render... */
+	struct VideoEngineContext * context;
+		/* context of the engine. for OpenGL, like the avaliable of fragment shader... */
 
 	struct texture * texture;	/* main texture */
 	
@@ -47,18 +71,31 @@ struct RenderCommand {
 	 * return value is flags:
 	 * 	whether we need to render next command or not? 
 	 * 	does this command successed? */
-	int (*render)(struct RenderCommand * command, tick_t current_time, bool_t stop);
+	render_func render;
 
 	/* for debug use. return value is the number of charas printed */
-	int (*sprint)(struct RenderCommand * command, char * dest);
+	sprintf_func sprintf;
+
+	/* the command is removed, do some release works */
+	remove_func remove;
+
 
 	struct list_head list;
-	void * private;		/* A pointer point to its private data, maybe container */
 };
+
+/* below is some rcommand's render return flags */
+#define RENDER_FAIL	(1)	/* the command met an error */
+#define RENDER_CONT	(2)	/* we should continue rendering */
+#define RENDER_REMOVE	(4)	/* we should remove this command from list */
 
 /* operations */
 /* use memset to set each field to 0 */
-extern void RCommandInit(struct RenderCommand * command);
+extern void RCommandInit(struct RenderCommand * command,
+		const char * name, 
+		struct VideoEngineContext * context,
+		render_func render,
+		sprintf_func sprintf,
+		remove_func remove);
 
 /* There's no "alloc_rcommand", because user always alloc rcommand's
  * subclass */

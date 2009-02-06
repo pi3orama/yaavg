@@ -27,7 +27,7 @@ static int init_glfunc(void)
 #ifndef STATIC_OPENGL
 	/* define the GLFuncInitList */
 #define INIT_GL_FUNC_LIST
-#include "gl_funcs.h"
+#include <video/gl_funcs.h>
 #undef INIT_GL_FUNC_LIST
 	struct glfunc_init_item * item = &GLFuncInitList[0];
 	while (item->name != NULL) {
@@ -57,12 +57,16 @@ void EngineClose(struct VideoEngineContext * context)
 struct VideoEngineContext * EngineOpenWindow(void)
 {
 	struct GLEngineContext * gl_context;
+	int w, h;
+
+
 	gl_context = GLOpenWindow();
 	if (gl_context == NULL) {
 		WARNING(OPENGL, "Open Window failed\n");
 		return NULL;
 	}
 
+	RListInit(&(gl_context->base.render_list), &gl_context->base);
 	GLContext = gl_context;
 
 	/* Init OpenGL */
@@ -81,11 +85,61 @@ struct VideoEngineContext * EngineOpenWindow(void)
 	VERBOSE(OPENGL, "Version    : %s\n", GLContext->version);
 	VERBOSE(OPENGL, "Extensions : %s\n", GLContext->extensions);
 
+	/* init opengl environment: */
+	/* set view port and coordinator system */
+	if (EngineReshape(&GLContext->base, GLContext->base.width, GLContext->base.height)) {
+		GLPlatformClose(GLContext);
+		return NULL;
+	}
+
+	/* Set other OpenGL properties */
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glEnable(GL_BLEND);
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	glEnable(GL_TEXTURE_1D);
+	glEnable(GL_TEXTURE_2D);
+
 	return &gl_context->base;
+}
+
+int EngineReshape(struct VideoEngineContext * ctx, int w, int h)
+{
+	int err;
+	GLContext->base.width = w;
+	GLContext->base.height = h;
+	glViewport(0, 0, w, h);
+
+	/* revert y axis */
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, 1, 1, 0, -1, 1);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	err = glGetError();
+	if (err != GL_NO_ERROR) {
+		ERROR(OPENGL, "Set Coordinator failed, errno=%d\n", err);
+		EngineClose(&GLContext->base);
+		return -1;
+	}
+	return 0;
 }
 
 void EngineCloseWindow(struct VideoEngineContext * context)
 {
+	EngineClose(context);
 	return;
+}
+
+void EngineSwapBuffers(struct VideoEngineContext * context)
+{
+	GLSwapBuffers(GLContext);
+	return;
+}
+
+void EngineSetCaption(struct VideoEngineContext * contest, const char * caption)
+{
+	WMSetCaption(caption);
 }
 

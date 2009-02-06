@@ -40,6 +40,18 @@ int sprint_rlist(char * str, struct RenderList * rlist)
 
 	p += sprintf(p, "Render list %p:\n", rlist);
 
+	RListForEachCommand(pos, rlist) {
+		if (pos->name != NULL)
+			p += sprintf(p, "Render command %s: ", pos->name);
+		else
+			p += sprintf(p, "Render command %p: ", pos);
+
+		if (pos->sprintf != NULL)
+			p += pos->sprintf(pos, p);
+		else
+			p += sprintf(p, "(no sprint func)\n");
+	}
+#if 0
 	list_for_each_entry(pos, &rlist->command_list, list) {
 		if (pos->name != NULL)
 			p += sprintf(p, "Render command %s: ", pos->name);
@@ -51,7 +63,7 @@ int sprint_rlist(char * str, struct RenderList * rlist)
 		else
 			p += sprintf(p, "(no sprint func)\n");
 	}
-
+#endif
 	p += sprintf(p, "End");
 	return (p - str) / sizeof(char);
 }

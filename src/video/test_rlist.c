@@ -9,10 +9,9 @@ int main()
 	struct RenderList list;
 	struct RenderCommand rc1, rc2;
 
-	RCommandInit(&rc1);
-	RCommandInit(&rc2);
+	RCommandInit(&rc1, "Test Name", NULL, NULL, NULL, NULL);
+	RCommandInit(&rc2, NULL, NULL, NULL, NULL, NULL);
 
-	rc2.name = "Test RC";
 
 	RListInit(&list, NULL);
 	RListLinkTail(&list, &rc1);

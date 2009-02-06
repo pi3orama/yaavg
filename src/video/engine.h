@@ -7,6 +7,8 @@
 #define VIDEO_ENGINE_H
 
 #include <common/defs.h>
+#include <video/rlist.h>
+#include <video/rcommand.h>
 
 __BEGIN_DECLS
 
@@ -20,13 +22,27 @@ struct VideoEngineContext {
 	tick_t current_time;
 
 	/* the render list */
-	struct RenderList * render_list;
+	struct RenderList render_list;
 };
 
 
 /* below functions should be implentmented in engine.c */
 /* Render is for render a ``SINGLE'' frame, not animination */
-extern void EngineRender(struct VideoEngineContext * context);
+/* return value indicates whether we have a successfully rendering or not,
+ * 0 is OK. */
+extern int EngineRender(struct VideoEngineContext * context,
+		tick_t current_time);
+
+/* 
+ * prepare render, set start time.
+ */
+extern void EnginePrepareRender(struct VideoEngineContext * context,
+		tick_t start_time);
+
+/* 
+ * between 2 frame, we need a swap buffers.
+ */
+extern void EngineSwapBuffers(struct VideoEngineContext * context);
 /* FIXME */
 
 /* 
@@ -49,6 +65,9 @@ EngineOpenWindow(void);
 
 extern void
 EngineCloseWindow(struct VideoEngineContext * context);
+
+extern int
+EngineReshape(struct VideoEngineContext * context, int w, int h);
 
 
 /* Some WM operations */

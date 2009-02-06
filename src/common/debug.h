@@ -23,6 +23,7 @@ enum debug_level {
 enum debug_component {
 	RCOMMAND = 0,
 	RLIST,
+	VIDEO,
 	SYSTEM,
 	MEMORY,
 	OPENGL,
@@ -39,6 +40,7 @@ static const char * debug_comp_name[NR_COMPONENTS] = {
 	[MEMORY] = "MEM ",
 	[OPENGL] = "GL  ",
 	[SDL] = "SDL ",
+	[VIDEO]="VENG",
 };
 
 static enum debug_level debug_levels[NR_COMPONENTS] = {
@@ -47,7 +49,8 @@ static enum debug_level debug_levels[NR_COMPONENTS] = {
 	[MEMORY] = VERBOSE,
 	[SYSTEM] = TRACE,
 	[OPENGL] = TRACE,
-	[SDL] = TRACE
+	[SDL] = TRACE,
+	[VIDEO] = TRACE,
 };
 #endif
 

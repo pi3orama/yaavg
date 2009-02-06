@@ -1,8 +1,12 @@
-SUBDIRS = common econfig video
+SUBDIRS = common econfig video event
 
 bin_PROGRAMS = test_video
 
 test_video_SOURCES=test_video.c
 
-test_video_LDADD=common/libcommon.la econfig/libeconfig.la video/libvideo.la
+test_video_LDADD=common/libcommon.la \
+		 econfig/libeconfig.la \
+		 video/libvideo.la \
+		 event/libevent.la
+
 
