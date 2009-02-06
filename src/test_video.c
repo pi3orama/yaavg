@@ -23,7 +23,7 @@ int DrawLineRender(struct RenderCommand * cmd, tick_t current_time)
 {
 	struct CommDrawLine * base = container_of(cmd, struct CommDrawLine, cmd);
 
-	float r_color = (float)((current_time - cmd->start_time) % 1000) / 1000.0f;
+	float r_color = (float)((current_time - cmd->start_time) % 4000) / 4000.0f;
 
 	float y = r_color;
 
@@ -42,15 +42,15 @@ int DrawLineSprintf(struct RenderCommand * cmd, char * dest)
 	return sprintf(dest, "draw line from (0,0) to (%f, %f)\n", base->x, base->y);
 }
 
-int DrawLineRemove(struct RenderCommand * cmd)
+int DrawLineRemove(struct RenderCommand * command, enum RemoveReason r, int flags)
 {
-	struct CommDrawLine * base = container_of(cmd, struct CommDrawLine, cmd);
+	struct CommDrawLine * base = container_of(command, struct CommDrawLine, cmd);
 	VERBOSE(VIDEO, "Remove drawline cmd\n");
 	free(base);
 	return 0;
 }
 
-struct RenderCommand * alloc_drawline(struct VideoEngineContext * context,
+struct RenderCommand * alloc_drawline(struct VideoContext * context,
 		float x, float y)
 {
 	struct CommDrawLine * cmd = malloc(sizeof(*cmd));
@@ -80,7 +80,7 @@ int ClearSprintf(struct RenderCommand * cmd, char * dest)
 	return sprintf(dest, "clear color bit\n");
 }
 
-int ClearRemove(struct RenderCommand * cmd)
+int ClearRemove(struct RenderCommand * cmd, enum RemoveReason r, int flags)
 {
 	struct CommClear * base = container_of(cmd, struct CommClear, cmd);
 	VERBOSE(VIDEO, "Remove Clear cmd");
@@ -88,7 +88,7 @@ int ClearRemove(struct RenderCommand * cmd)
 	return 0;
 }
 
-struct RenderCommand * alloc_clear(struct VideoEngineContext * context)
+struct RenderCommand * alloc_clear(struct VideoContext * context)
 {
 	struct CommClear * cmd = malloc(sizeof(*cmd));
 	RCommandInit(&(cmd->cmd),
@@ -108,15 +108,15 @@ struct RenderCommand * alloc_clear(struct VideoEngineContext * context)
 int main(int argc, char * argv[])
 {
 
-	struct VideoEngineContext * vcontext = NULL;
+	struct VideoContext * vcontext = NULL;
 
 	DEBUG_INIT(NULL);
 	DEBUG_MSG(VERBOSE, SYSTEM, "System start!!!\n");
 
 	ConfInit(argc, argv);
-	EngineInit();
+	VideoInit();
 
-	vcontext = EngineOpenWindow();
+	vcontext = VideoOpenWindow();
 	if (!vcontext) {
 		FATAL(SYSTEM, "Unable to open window!\n");
 		goto err_eclose;
@@ -134,11 +134,11 @@ int main(int argc, char * argv[])
 		struct RenderCommand * draw_line = alloc_drawline(vcontext,
 				0.5, 0.6);
 		struct RenderCommand * clear = alloc_clear(vcontext);
-		EngineSetCaption(vcontext, "Test");
+		VideoSetCaption("Test");
 		RListLinkHead(&(vcontext->render_list), draw_line);
 		RListLinkHead(&(vcontext->render_list), clear);
 		char * buffer = malloc(4096);
-		sprint_rlist(buffer, &(vcontext->render_list));
+		rlist_sprint(buffer, &(vcontext->render_list));
 		printf("%s\n", buffer);
 		free(buffer);
 	}
@@ -151,7 +151,7 @@ int main(int argc, char * argv[])
 	while(!event) {
 		ticks_start = GetTicks();
 
-		EngineRender(vcontext, ticks_start);
+		VideoRender(ticks_start);
 #if 0
 		glColor3f (0.2, 0.4, 0.7);
 		glBegin(GL_LINES);
@@ -159,7 +159,7 @@ int main(int argc, char * argv[])
 			glVertex2d(1,1);
 		glEnd();
 #endif
-		EngineSwapBuffers(vcontext);
+		VideoSwapBuffers();
 
 		ticks_end = GetTicks();
 
@@ -182,10 +182,9 @@ int main(int argc, char * argv[])
 		event = EventPoll();
 	}
 
-	EngineCloseWindow(vcontext);
-
 err_eclose:
-	EngineClose(vcontext);
+	VideoClose();
+	show_mem_info();
 	return 0;
 }
 

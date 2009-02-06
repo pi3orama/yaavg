@@ -5,8 +5,8 @@
 
 #include <common/defs.h>
 #include <common/list.h>
-#include <video/rcommand.h>
 #include <common/debug.h>
+#include <video/rcommand.h>
 
 __BEGIN_DECLS
 
@@ -28,18 +28,18 @@ struct RenderList {
 	void * context;	/* context of the engine. See comment in rcommand.h */
 };
 
-extern void RListInit(struct RenderList * rlist, void * context);
+extern void
+RListInit(struct RenderList * rlist, void * context);
 
+extern void
+RListClear(struct RenderList * rlist);
 
-/* functions operate RenderList */
-static inline void RListLinkTail(struct RenderList * list,
-		struct RenderCommand * command)
-{
-	list_add_tail(&command->list, &list->command_list);
-}
 
 #define RListLinkHead(rlist, command) \
 	list_add(&(command)->list, &(rlist)->command_list)
+
+#define RListLinkTail(rlist, command) \
+	list_add_tail(&(command)->list, &(rlist)->command_list)
 
 #define RListLinkBefore(dest, command)	\
 	list_add_tail(&(command)->list, &(dest)->list)
@@ -51,18 +51,19 @@ static inline void RListLinkTail(struct RenderList * list,
 	list_for_each_entry(pos, &((rlist)->command_list), list)
 
 /* don't call remove!  */
-#define RListRemove(cmd) \
+#define RListRemove(cmd, reason, flags) \
 	do { \
 		list_del(&(cmd)->list);		\
-//		if (cmd->remove != NULL)	\
-//			(cmd)->remove(cmd);	\
+		if (cmd->remove != NULL)	\
+			cmd->remove(cmd, reason, flags); \
 	} while(0)
 
 
 #define RListForEachCommandSafe(pos, n, rlist) \
 	list_for_each_entry_safe(pos, n, &((rlist)->command_list), list)
 /* for debug use */
-extern int sprint_rlist(char * str, struct RenderList * list);
+extern int
+rlist_sprint(char * dest, struct RenderList * list);
 
 __END_DECLS
 

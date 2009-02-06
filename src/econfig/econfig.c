@@ -25,7 +25,7 @@ static struct ConfigEntry entries[] = {
 //	{"video.opengl.driver.bpp", TypeInteger, vcast(32)},
 	{"video.opengl.driver.vsync", TypeBool, vcast(FALSE)},
 //	{"video.opengl.driver.vsync", TypeBool, vcast(TRUE)},
-	{"video.opengl.driver.multisample", TypeInteger, vcast(0)},
+//	{"video.opengl.driver.multisample", TypeInteger, vcast(0)},
 //	{"video.opengl.driver.multisample", TypeInteger, vcast(4)},
 	{NULL, TypeNone, vcast(0)},
 };

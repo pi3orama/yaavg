@@ -41,15 +41,15 @@ struct RenderElement;
 struct RenderCommand;
 
 enum RemoveReason {
-	CLEAR = 0,	/* clear render list */
-	FINISH,		/* render func return REMOVE */
-	ERROR,		/* Error happend */
-	OTHER,		/*  */
+	REMOVE_CLEAR = 0,	/* clear render list */
+	REMOVE_FINISH,		/* render func return REMOVE */
+	REMOVE_ERROR,		/* Error happend */
+	REMOVE_OTHER,		/*  */
 };
 
 typedef int (*render_func)(struct RenderCommand * command, tick_t current_time);
 typedef	int (*sprintf_func)(struct RenderCommand * command, char * dest);
-typedef	int (*remove_func)(struct RenderCommand * command, int reason);
+typedef	int (*remove_func)(struct RenderCommand * command, enum RemoveReason reason, int flags);
 
 /* 
  * struct RenderCommand - The core structure.
@@ -67,7 +67,7 @@ struct RenderCommand {
 	bool_t paused;
 	tick_t pause_time;
 	struct RenderElement * father;
-	struct VideoEngineContext * context;
+	struct VideoContext * context;
 		/* context of the engine. for OpenGL, like the avaliable of fragment shader... */
 
 	struct texture * texture;	/* main texture */
@@ -99,7 +99,7 @@ struct RenderCommand {
 /* use memset to set each field to 0 */
 extern void RCommandInit(struct RenderCommand * command,
 		const char * name, 
-		struct VideoEngineContext * context,
+		struct VideoContext * context,
 		render_func render,
 		sprintf_func sprintf,
 		remove_func remove);
