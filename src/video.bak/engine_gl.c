@@ -66,8 +66,9 @@ struct VideoEngineContext * EngineOpenWindow(void)
 		return NULL;
 	}
 
-	RListInit(&(gl_context->base.render_list), &gl_context->base);
 	GLContext = gl_context;
+
+	RListInit(&(gl_context->base.render_list), &gl_context->base);
 
 	/* Init OpenGL */
 	/* first, get opengl func pointer */

@@ -39,7 +39,7 @@ int DrawLineRender(struct RenderCommand * cmd, tick_t current_time)
 int DrawLineSprintf(struct RenderCommand * cmd, char * dest)
 {
 	struct CommDrawLine * base = container_of(cmd, struct CommDrawLine, cmd);
-	sprintf(dest, "draw line from (0,0) to (%f, %f)\n", base->x, base->y);
+	return sprintf(dest, "draw line from (0,0) to (%f, %f)\n", base->x, base->y);
 }
 
 int DrawLineRemove(struct RenderCommand * cmd)
@@ -77,7 +77,7 @@ int ClearRender(struct RenderCommand * cmd, tick_t current_time)
 
 int ClearSprintf(struct RenderCommand * cmd, char * dest)
 {
-	sprintf(dest, "clear color bit\n");
+	return sprintf(dest, "clear color bit\n");
 }
 
 int ClearRemove(struct RenderCommand * cmd)
@@ -137,10 +137,10 @@ int main(int argc, char * argv[])
 		EngineSetCaption(vcontext, "Test");
 		RListLinkHead(&(vcontext->render_list), draw_line);
 		RListLinkHead(&(vcontext->render_list), clear);
-	//	char * buffer = malloc(4096);
-	//	sprint_rlist(buffer, &(vcontext->render_list));
-	//	printf("%s\n", buffer);
-	//	free(buffer);
+		char * buffer = malloc(4096);
+		sprint_rlist(buffer, &(vcontext->render_list));
+		printf("%s\n", buffer);
+		free(buffer);
 	}
 
 	int event = EventPoll();
