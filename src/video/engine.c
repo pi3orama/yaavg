@@ -13,6 +13,7 @@
 #include <video/rcommand.h>
 
 static struct VideoContext * VideoCtx = NULL;
+static tick_t game_ticks = 0;
 
 /* Some init funcs */
 int
@@ -36,6 +37,7 @@ VideoOpenWindow(void)
 		exit(1);
 	}
 	RListInit(&(VideoCtx->render_list), VideoCtx);
+	game_ticks = 0;
 	return VideoCtx;
 }
 
@@ -50,50 +52,74 @@ VideoClose(void)
 	return;
 }
 
-
-
-static bool_t Prepared = FALSE;
-
-void
-VideoPrepareRender(tick_t start_time)
-{
-	struct RenderCommand * cmd;
-
-	TRACE(VIDEO, "Prepare render\n");
-	assert(VideoCtx != NULL);
-
-	VideoCtx->start_time = start_time;
-	/* foreach already linked command, set their start time to
-	 * start_time */
-	RListForEachCommand(cmd, &VideoCtx->render_list) {
-		cmd->start_time = start_time;
-		cmd->stopped = FALSE;
-	}
-	Prepared = TRUE;
-	return;
-}
-
 int
-VideoRender(tick_t current_time)
+VideoPhy(dtick_t delta_time)
 {
 	struct RenderCommand * cmd, *n;
 
+	game_ticks += delta_time;
+
 	RListForEachCommandSafe(cmd, n, &VideoCtx->render_list) {
-		int flags;
-		flags = cmd->render(cmd, current_time);
+		int flags = 0;
+		dtick_t t;
+
+		t = delta_time;
+
+		if (cmd->first) {
+			t = 0;
+			cmd->first = FALSE;
+		}
+
+		if (cmd->paused)
+			t = 0;
+
+		if (cmd->phy)
+			flags = cmd->phy(cmd, t);
+
 		if (flags & RENDER_FAIL) {
-			ERROR(VIDEO, "Render command %s failed.\n", cmd->name);
+			ERROR(VIDEO, "Render command %s phy failed.\n", cmd->name);
 			RListRemove(cmd, REMOVE_ERROR, flags);
 		}
 		if (flags & RENDER_REMOVE) {
 			/* the macro on RListRemove contain a call to cmd->remove */
 			RListRemove(cmd, REMOVE_FINISH, flags);
 		}
-		if (!(flags & RENDER_CONT))
+
+		if (flags & RENDER_STOP)
+			break;
+	}
+	return 0;
+}
+
+int
+VideoRender(void)
+{
+	struct RenderCommand * cmd, *n;
+
+	RListForEachCommandSafe(cmd, n, &VideoCtx->render_list) {
+		int flags = 0;
+		if (cmd->render)
+			flags = cmd->render(cmd);
+
+		if (flags & RENDER_FAIL) {
+			ERROR(VIDEO, "Render command %s render failed.\n", cmd->name);
+			RListRemove(cmd, REMOVE_ERROR, flags);
+		}
+		if (flags & RENDER_REMOVE) {
+			/* the macro on RListRemove contain a call to cmd->remove */
+			RListRemove(cmd, REMOVE_FINISH, flags);
+		}
+		if (flags & RENDER_STOP)
 			break;
 	}
 
 	return 0;
+}
+
+tick_t
+GetGameTicks(void)
+{
+	return game_ticks;
 }
 
 /* Implentmented in engine_xx */

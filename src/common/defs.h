@@ -12,6 +12,8 @@ typedef int bool_t;
 #define FALSE	(!TRUE)
 
 typedef uint32_t tick_t;
+/* dtick is difference between ticks */
+typedef int32_t dtick_t;
 
 typedef void * icon_t;
 

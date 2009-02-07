@@ -47,7 +47,9 @@ enum RemoveReason {
 	REMOVE_OTHER,		/*  */
 };
 
-typedef int (*render_func)(struct RenderCommand * command, tick_t current_time);
+
+typedef int (*phy_func)(struct RenderCommand * command, dtick_t delta_ticks);
+typedef int (*render_func)(struct RenderCommand * command);
 typedef	int (*sprintf_func)(struct RenderCommand * command, char * dest);
 typedef	int (*remove_func)(struct RenderCommand * command, enum RemoveReason reason, int flags);
 
@@ -56,10 +58,10 @@ typedef	int (*remove_func)(struct RenderCommand * command, enum RemoveReason rea
  */
 struct RenderCommand {
 	const char * name;
-	/* RenderCommand renders not only statical images, it
-	 * also renders animate. This because some common animatation,
-	 * like move and rotate,  */
-	tick_t start_time;
+
+	/* Whether the phy func is the first time called. if first is true,
+	 * phy will be called with delta_time = 0 */
+	bool_t first;
 	bool_t stopped;		/* the animate has stopped, render command should draw final
        				   picture, not the middle picture. */
 
@@ -72,9 +74,18 @@ struct RenderCommand {
 
 	struct texture * texture;	/* main texture */
 	
+
+	/* phy func: compute the needed value, how to do the rendering? like the
+	 * position of each elements, the alpha value in a fade in/out command.
+	 * the delta_ticks is the interval mss between last rendering and this
+	 * rendering. if the command is marked 'paused', then phy will receive 0
+	 * as delta_ticks. the return value of phy is same as render. if phy
+	 * return remove, then the command will be removed immediately. */
+	phy_func phy;
+
 	/* The main render function  */
-	/* current_time is the time when the main display func is called
-	 * NOT the time render function be called. 
+	/* This func needn't do any computation, all computation should be done
+	 * in phy func.
 	 * return value is flags:
 	 * 	whether we need to render next command or not? 
 	 * 	does this command successed? */
@@ -88,18 +99,21 @@ struct RenderCommand {
 
 
 	struct list_head list;
+
+	void * pprivate;
 };
 
 /* below is some rcommand's render return flags */
 #define RENDER_FAIL	(1)	/* the command met an error */
-#define RENDER_CONT	(2)	/* we should continue rendering */
-#define RENDER_REMOVE	(4)	/* we should remove this command from list */
+#define RENDER_REMOVE	(2)	/* we should remove this command from list */
+#define RENDER_STOP	(4)	/* we shouldn't continue rendering */
 
 /* operations */
 /* use memset to set each field to 0 */
 extern void RCommandInit(struct RenderCommand * command,
 		const char * name, 
 		struct VideoContext * context,
+		phy_func phy,
 		render_func render,
 		sprintf_func sprintf,
 		remove_func remove);

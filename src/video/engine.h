@@ -12,14 +12,13 @@
 
 __BEGIN_DECLS
 
+
 struct VideoContext {
 	const char * driver_name;
 	int width, height;
 	bool_t is_full_screen;
 
-	/* 2 clock value, used in rendreing */
 	tick_t start_time;
-	tick_t current_time;
 
 	/* the render list */
 	struct RenderList render_list;
@@ -38,14 +37,14 @@ extern void
 VideoClose(void);
 
 
-extern void
-VideoPrepareRender(tick_t start_time);
+extern int
+VideoPhy(dtick_t delta_time);
 
 /* Render is for render a ``SINGLE'' frame, not animination */
 /* return value indicates whether we have a successfully rendering or not,
  * 0 is OK. */
 extern int
-VideoRender(tick_t current_time);
+VideoRender(void);
 
 
 /* below implentmented in engine_xxx.c */
@@ -62,6 +61,10 @@ VideoSetCaption(const char * caption);
 
 extern void
 VideoSetIcon(const icon_t icon);
+
+/* Video engine is respond to generate game time */
+extern tick_t
+GetGameTicks(void);
 
 /* Some Future plan */
 

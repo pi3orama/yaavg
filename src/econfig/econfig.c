@@ -14,7 +14,8 @@
 static struct ConfigEntry entries[] = {
 	{"video.resolution.w", TypeInteger, vcast(800)},
 	{"video.resolution.h", TypeInteger, vcast(600)},
-	{"video.fps", TypeInteger, vcast(60)},
+	{"video.mspf.fallback", TypeInteger, vcast(100)},
+	{"video.mspf", TypeInteger, vcast(17)},	/* 17ms: 60fps */
 //	{"video.fullscreen", TypeBool, vcast(TRUE)},
 	{"video.fullscreen", TypeBool, vcast(FALSE)},
 //	{"video.resizable", TypeBool, vcast(TRUE)},
