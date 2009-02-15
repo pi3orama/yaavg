@@ -51,6 +51,10 @@ int DrawLineRender(struct RenderCommand * cmd)
 	glBegin(GL_LINES);
 	glVertex2d(0, 0);
 	glVertex2d(base->x, base->y);
+	glVertex2d(-1, 0);
+	glVertex2d( 1, 0);
+	glVertex2d(0, -1);
+	glVertex2d(0, 1);
 	glEnd();
 
 	return 0;
@@ -62,7 +66,7 @@ int DrawLineSprintf(struct RenderCommand * cmd, char * dest)
 	return sprintf(dest, "draw line from (0,0) to (%f, %f)\n", base->x, base->y);
 }
 
-int DrawLineRemove(struct RenderCommand * command, enum RemoveReason r, int flags)
+int DrawLineRemove(struct RenderCommand * command, RemoveReason_t r, int flags)
 {
 	struct CommDrawLine * base = container_of(command, struct CommDrawLine, cmd);
 	VERBOSE(VIDEO, "Remove drawline cmd\n");
@@ -70,17 +74,22 @@ int DrawLineRemove(struct RenderCommand * command, enum RemoveReason r, int flag
 	return 0;
 }
 
+struct RenderCommandOperations draw_line_ops = {
+	.phy		= DrawLinePhy,
+	.render		= DrawLineRender,
+	.sprintf	= DrawLineSprintf,
+	.remove		= DrawLineRemove,
+};
+
 struct RenderCommand * alloc_drawline(struct VideoContext * context,
 		float x, float y)
 {
 	struct CommDrawLine * cmd = malloc(sizeof(*cmd));
 	RCommandInit(&(cmd->cmd),
 			"DrawLine",
+			FALSE,
 			context,
-			DrawLinePhy,
-			DrawLineRender,
-			DrawLineSprintf,
-			DrawLineRemove);
+			&draw_line_ops);
 	cmd->x = x;
 	cmd->y = y;
 	cmd->total_time = 0;
@@ -102,7 +111,7 @@ int ClearSprintf(struct RenderCommand * cmd, char * dest)
 	return sprintf(dest, "clear color bit\n");
 }
 
-int ClearRemove(struct RenderCommand * cmd, enum RemoveReason r, int flags)
+int ClearRemove(struct RenderCommand * cmd, RemoveReason_t r, int flags)
 {
 	struct CommClear * base = container_of(cmd, struct CommClear, cmd);
 	VERBOSE(VIDEO, "Remove Clear cmd");
@@ -110,19 +119,107 @@ int ClearRemove(struct RenderCommand * cmd, enum RemoveReason r, int flags)
 	return 0;
 }
 
+struct RenderCommandOperations clear_ops = {
+	.render		= ClearRender,
+	.sprintf	= ClearSprintf,
+	.remove		= ClearRemove,
+};
+
 struct RenderCommand * alloc_clear(struct VideoContext * context)
 {
 	struct CommClear * cmd = malloc(sizeof(*cmd));
 	RCommandInit(&(cmd->cmd),
 			"Clear",
+			FALSE,
 			context,
-			NULL,
-			ClearRender,
-			ClearSprintf,
-			ClearRemove);
+			&clear_ops);
 	return &(cmd->cmd);
 }
 
+struct CommRotate {
+	struct RenderCommand cmd;
+	float angle;
+};
+
+int
+RotatePhy(struct RenderCommand * cmd, dtick_t delta_time)
+{
+	struct CommRotate * base = container_of(cmd, struct CommRotate, cmd);
+	base->angle += (float)delta_time / 10000.0f * 360.0f;
+	if (base->angle >= 360.0f)
+		base->angle = 0.0f;
+	if (base->angle <= -360.0f)
+		base->angle = 0.0f;
+	return 0;
+}
+
+int
+RotateRender(struct RenderCommand * cmd)
+{
+	struct CommRotate * base = container_of(cmd, struct CommRotate, cmd);
+	/* we need check context first... */
+	glMatrixMode(GL_MODELVIEW);
+	glRotatef(base->angle, 0,0,1);
+	glBegin(GL_LINES);
+	glVertex2d(0, 0.5);
+	glVertex2d(1, 0.5);
+	glVertex2d(0.5, 0);
+	glVertex2d(0.5, 1);
+	glEnd();
+	return 0;
+}
+
+int
+RotateSprintf(struct RenderCommand * cmd, char * dest)
+{
+	struct CommRotate * base = container_of(cmd, struct CommRotate, cmd);
+	return sprintf(dest, "rotate %.3f from (0,0,0)\n", base->angle);
+}
+
+int
+RotateRemove(struct RenderCommand * cmd, RemoveReason_t r, int flags)
+{
+	struct CommRotate * base = container_of(cmd, struct CommRotate, cmd);
+	VERBOSE(VIDEO, "Remove rotate\n");
+	free(base);
+	return 0;
+}
+
+struct RenderCommandOperations rotate_ops = {
+	.phy		= RotatePhy,
+	.render		= RotateRender,
+	.sprintf	= RotateSprintf,
+	.remove		= RotateRemove,
+};
+
+int alloc_rotates(struct VideoContext * context,
+		struct RenderCommand ** left,
+		struct RenderCommand ** right)
+{
+	struct CommRotate * lcmd = malloc(sizeof(*lcmd));
+	assert(lcmd != NULL);
+
+	struct CommRotate * rcmd = malloc(sizeof(*rcmd));
+	assert(rcmd != NULL);
+
+	RCommandInit(&(lcmd->cmd),
+			"Rotate(left)",
+			FALSE,
+			context,
+			&rotate_ops);
+
+	RCommandInit(&(rcmd->cmd),
+			"Rotate(right)",
+			TRUE,
+			context,
+			&rotate_ops);
+
+	lcmd->angle = 0;
+	rcmd->angle = 0;
+	*left = &lcmd->cmd;
+	*right = &rcmd->cmd;
+	return 0;
+}
 
 /* 
  * test video-engine, rlist and rcommand
@@ -161,19 +258,35 @@ int main(int argc, char * argv[])
 	VERBOSE(VIDEO, "Fps fallback is %f\n", 1000.0 / mspf_fallback);
 
 	/* Link commands */
-	{
-		struct RenderCommand * draw_line = alloc_drawline(vcontext,
-				0.5, 0.6);
-		struct RenderCommand * clear = alloc_clear(vcontext);
-		VideoSetCaption("Test");
-		RListLinkHead(&(vcontext->render_list), draw_line);
-		RListLinkHead(&(vcontext->render_list), clear);
-		char * buffer = malloc(4096);
-		rlist_sprint(buffer, &(vcontext->render_list));
-		printf("%s\n", buffer);
-		free(buffer);
-	}
+	struct RenderCommand * draw_line = alloc_drawline(vcontext,
+			0.5, 0.6);
+	struct RenderCommand * clear = alloc_clear(vcontext);
+	struct RenderCommand * lrotate, * rrotate;
 
+	alloc_rotates(vcontext, &lrotate, &rrotate);
+	VideoSetCaption("Test");
+
+	/* Insert commands */
+	VideoInsertCommand(draw_line, AFTER, NULL);
+	VideoInsertCommand(clear, AFTER, NULL);
+	VideoInsertCommandPair(lrotate,
+			AFTER,
+			clear,
+			rrotate,
+			BEFORE,
+			NULL);
+
+	RCommandSetActive(draw_line);
+	RCommandSetActive(clear);
+	RCommandSetActive(lrotate);
+
+	/* print commands */
+	char * buffer = malloc(4096);
+	rlist_sprint(buffer, &(vcontext->render_list));
+	printf("%s\n", buffer);
+	free(buffer);
+
+	/* start render */
 	int event = EventPoll();
 	int frames = 0;
 

@@ -54,13 +54,18 @@ int rlist_sprint(char * str, struct RenderList * rlist)
 	p += sprintf(p, "Render list %p:\n", rlist);
 
 	RListForEachCommand(pos, rlist) {
-		if (pos->name != NULL)
-			p += sprintf(p, "Render command %s: ", pos->name);
+		const char * ifactive;
+		if (pos->active)
+			ifactive = "active";
 		else
-			p += sprintf(p, "Render command %p: ", pos);
+			ifactive = "inactive";
+		if (pos->name != NULL)
+			p += sprintf(p, "%s render command %s: ", ifactive, pos->name);
+		else
+			p += sprintf(p, "%s render command %p: ", ifactive, pos);
 
-		if (pos->sprintf != NULL)
-			p += pos->sprintf(pos, p);
+		if (pos->ops->sprintf != NULL)
+			p += pos->ops->sprintf(pos, p);
 		else
 			p += sprintf(p, "(no sprint func)\n");
 	}

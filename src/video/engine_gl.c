@@ -98,6 +98,8 @@ int VideoReshape(int w, int h)
 	GLCtx->base.width = w;
 	GLCtx->base.height = h;
 	glViewport(0, 0, w, h);
+//	glViewport(0, 0, w, h);
+//	glViewport(100, 100, w-200, h-200);
 
 	/* revert y axis */
 	glMatrixMode(GL_PROJECTION);

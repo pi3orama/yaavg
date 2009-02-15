@@ -35,27 +35,90 @@ extern void
 RListClear(struct RenderList * rlist);
 
 
+static inline struct RenderCommand *
+RListGetFirstCommand(struct RenderList * rlist)
+{
+	if (list_empty(&(rlist->command_list)))
+		return NULL;
+	return list_entry(rlist->command_list.next,
+			struct RenderCommand, list);
+}
+
+static inline struct RenderCommand *
+RListGetLastCommand(struct RenderList * rlist)
+{
+	if (list_empty(&(rlist->command_list)))
+		return NULL;
+	return list_entry(rlist->command_list.prev,
+			struct RenderCommand, list);
+}
+
+static inline struct RenderCommand *
+RListGetNextCommand(struct RenderList * rlist,
+		struct RenderCommand * rcommand)
+{
+	if (rcommand == NULL)
+		return RListGetFirstCommand(rlist);
+	if (rcommand->list.next == &(rlist->command_list))
+		return NULL;
+	return list_entry(rcommand->list.next,
+			struct RenderCommand,
+			list);
+}
+
+static inline struct RenderCommand *
+RListGetPrevCommand(struct RenderList * rlist,
+		struct RenderCommand * rcommand)
+{
+	if (rcommand == NULL)
+		return RListGetLastCommand(rlist);
+	if (rcommand->list.prev == &(rlist->command_list))
+		return NULL;
+	return list_entry(rcommand->list.prev,
+			struct RenderCommand,
+			list);
+}
+
 #define RListLinkHead(rlist, command) \
 	list_add(&(command)->list, &(rlist)->command_list)
 
 #define RListLinkTail(rlist, command) \
 	list_add_tail(&(command)->list, &(rlist)->command_list)
 
-#define RListLinkBefore(dest, command)	\
-	list_add_tail(&(command)->list, &(dest)->list)
+static inline void
+RListLinkBefore(struct RenderList * rlist,
+		struct RenderCommand * dest,
+		struct RenderCommand * command)
+{
+	if (dest == NULL) {
+		RListLinkTail(rlist, command);
+		return;
+	}
+	list_add_tail(&(command->list), &(dest->list));
 
-#define RListLinkAfter(dest, command)	\
-	list_add(&(command)->list, &(dest)->list)
+}
+
+static inline void
+RListLinkAfter(struct RenderList * rlist,
+		struct RenderCommand * dest,
+		struct RenderCommand * command)
+{
+	if (dest == NULL) {
+		RListLinkHead(rlist, command);
+		return;
+	}
+	list_add(&(command->list), &(dest->list));
+}
+
 
 #define RListForEachCommand(pos, rlist) \
 	list_for_each_entry(pos, &((rlist)->command_list), list)
 
-/* don't call remove!  */
 #define RListRemove(cmd, reason, flags) \
 	do { \
 		list_del(&(cmd)->list);		\
-		if (cmd->remove != NULL)	\
-			cmd->remove(cmd, reason, flags); \
+		if ((cmd)->ops->remove != NULL)	\
+			(cmd)->ops->remove((cmd), (reason), (flags)); \
 	} while(0)
 
 

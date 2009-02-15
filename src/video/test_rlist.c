@@ -9,8 +9,8 @@ int main()
 	struct RenderList list;
 	struct RenderCommand rc1, rc2;
 
-	RCommandInit(&rc1, "Test Name", NULL, NULL, NULL, NULL, NULL);
-	RCommandInit(&rc2, NULL, NULL, NULL, NULL, NULL, NULL);
+	RCommandInit(&rc1, "Test Name", FALSE, NULL, NULL);
+	RCommandInit(&rc2, NULL, FALSE, NULL, NULL);
 
 
 	RListInit(&list, NULL);

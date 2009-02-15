@@ -12,6 +12,8 @@
 
 #define vcast(x)	(union _conf_value)(x)
 static struct ConfigEntry entries[] = {
+//	{"video.resolution.w", TypeInteger, vcast(1280)},
+//	{"video.resolution.h", TypeInteger, vcast(800)},
 	{"video.resolution.w", TypeInteger, vcast(800)},
 	{"video.resolution.h", TypeInteger, vcast(600)},
 	{"video.mspf.fallback", TypeInteger, vcast(100)},

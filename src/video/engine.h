@@ -46,6 +46,45 @@ VideoPhy(dtick_t delta_time);
 extern int
 VideoRender(void);
 
+/* RCommand operations */
+/* boa: before or after */
+typedef enum _BOA {
+	BEFORE,
+	AFTER,
+} BOA_t;
+
+extern int
+VideoInsertCommand(struct RenderCommand * cmd, BOA_t boa,
+	       	struct RenderCommand * pos);
+
+/* meaning of pos:
+ * lpos: null means the head of all list,
+ * rpos: null means after left command */
+extern int
+VideoInsertCommandPair(struct RenderCommand * lcmd,
+		BOA_t lboa,
+		struct RenderCommand * lpos, 
+		struct RenderCommand * rcmd,
+		BOA_t rboa,
+		struct RenderCommand * rpos);
+
+extern int
+VideoRemoveCommand(struct RenderCommand * cmd,
+		RemoveReason_t reason,
+		int flags);
+
+extern int
+VideoRemoveCommandPair(struct RenderCommand * lcmd,
+		RemoveReason_t reason,
+		int flags);
+
+#define VideoRemoveACommand(cmd, reason, flags) \
+	do {					\
+		if ((cmd)->pairflag != 0)	\
+			VideoRemoveCommandPair((cmd), (reason), (flags));\
+		else				\
+			VideoRemoveCommand((cmd), (reason), (flags));	\
+	} while(0)
 
 /* below implentmented in engine_xxx.c */
 
@@ -54,7 +93,6 @@ VideoSwapBuffers(void);
 
 extern int
 VideoReshape(int w, int h);
-
 
 extern void
 VideoSetCaption(const char * caption);
