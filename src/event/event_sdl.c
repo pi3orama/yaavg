@@ -2,6 +2,7 @@
 
 #include <common/defs.h>
 #include <common/debug.h>
+#include <econfig/econfig.h>
 #include <SDL/SDL.h>
 
 void EventInit(void)
@@ -17,6 +18,9 @@ int EventPoll(void)
 			case SDL_KEYDOWN:
 				if (event.key.keysym.sym == SDLK_q)
 					return 1;
+				if (event.key.keysym.sym == SDLK_f) {
+					return 2;
+				}
 				break;
 			case SDL_QUIT:
 				return 1;

@@ -36,28 +36,24 @@ void * GLGetProcAddress(const char * name)
 static bool_t sdl_active = FALSE;
 
 static void
-sdl_close(void)
+close_sdl(void)
 {
 	if (sdl_active) {
 		TRACE(SDL, "sdl close\n");
-		SDL_Quit();
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 		sdl_active = FALSE;
 	}
 }
 
 
 
-int
-DriverInit(void)
+static int 
+init_sdl(void)
 {
 	int err, samples, bpp;
 	const char * library_name = NULL;
 
-	TRACE(SDL, "sdl platform init\n");
-
-	memset(&SDLCtx, '\0', sizeof(SDLCtx));
-
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
 		FATAL(SDL, "Failed to init SDL video subsystem, SDL report: \"%s\", "
 				"check for your configuration.\n", SDL_GetError());
 		/* exit immediatly */
@@ -72,7 +68,7 @@ DriverInit(void)
 
 	if (SDL_GL_LoadLibrary(library_name) != 0) {
 		FATAL(SDL, "Load OpenGL library failed: %s\n", SDL_GetError());
-		sdl_close();
+		close_sdl();
 		exit(1);
 	}
 	SDLCtx.gllibrary = library_name;
@@ -118,22 +114,13 @@ DriverInit(void)
 	SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 1);
 
 	sdl_active = TRUE;
-
-	atexit(sdl_close);
 	return 0;
 }
 
 
-void
-GLClose(void)
-{
-	sdl_close();
-	return;
-}
-
-
-struct GLContext * GLOpenWindow(void)
-{
+static int
+open_window(void)
+{	
 	/* SDL_SetVideoMode's params */
 	int w, h, bpp, flags;
 	bool_t fullscreen, resizable;
@@ -142,7 +129,7 @@ struct GLContext * GLOpenWindow(void)
 	TRACE(SDL, "try SDL OpenWindow\n");
 	if (!sdl_active) {
 		ERROR(SDL, "try OpenWindow before init sdl platform.\n");
-		return NULL;
+		return -1;
 	}
 	
 	w = ConfGetInteger("video.resolution.w", 640);
@@ -168,8 +155,8 @@ struct GLContext * GLOpenWindow(void)
 		FATAL(SDL, "Failed to set video mode to %ix%i, SDL report: \"%s\", "
 				"check for your configuration!\n", w, h,
 				SDL_GetError());
-		sdl_close();
-		return NULL;
+		close_sdl();
+		return -1;
 	}
 
 	/* Set context structure */
@@ -179,8 +166,64 @@ struct GLContext * GLOpenWindow(void)
 	SDLCtx.gl_context.platform = "SDL";
 
 	SDLCtx.screen = screen;
+	return 0;
+}
 
+int
+DriverInit(void)
+{
+	int err;
+
+	TRACE(SDL, "sdl platform init\n");
+
+	memset(&SDLCtx, '\0', sizeof(SDLCtx));
+
+	if ((err = init_sdl()) != 0)
+		return err;
+
+	atexit(close_sdl);
+	return 0;
+}
+
+void
+GLClose(void)
+{
+	close_sdl();
+	return;
+}
+
+
+struct GLContext * GLOpenWindow(void)
+{
+	int err;
+	err = open_window();
+	if (err != 0)
+		return NULL;
 	return &SDLCtx.gl_context;
+}
+
+void GLReopenWindow(struct GLContext * ctx)
+{
+	struct GLContext * new_ctx;
+	int err;
+
+	if (ctx != &SDLCtx.gl_context) {
+		FATAL(SDL, "Context %p is not the original one (%p)\n",
+				ctx, &SDLCtx.gl_context);
+		exit(-1);
+	}
+	close_sdl();
+	if ((err = init_sdl()) != 0) {
+		FATAL(SDL, "Init sdl error: %d\n", err);
+		exit(-1);
+	}
+
+	if ((err = open_window()) != 0) {
+		FATAL(SDL, "Init open window error: %d\n", err);
+		exit(-1);
+	}
+
+	return;
 }
 
 void

@@ -318,7 +318,24 @@ int main(int argc, char * argv[])
 	dtick_t deltatime;
 
 	realtime = GetTicks();
-	while(!event) {
+	while((event == 0) || (event == 2)) {
+
+		if (event == 2) {
+			/* XXX econfig is not finished yet! if econfig.c
+			 * doesn't contain such entry, the set and get both do
+			 * nothing! XXX */
+#if 0
+			if (ConfGetBool("video.fullscreen", TRUE))
+				ConfSetBool("video.fullscreen", FALSE);
+			else
+				ConfSetBool("video.fullscreen", TRUE);
+#endif
+			ConfSetString("video.opengl.driver.gllibrary", NULL);
+			
+			VideoReopenWindow(vcontext);
+			VideoSetCaption("Test!");
+		}
+
 		int render_time;
 		oldrealtime = realtime;
 		realtime = GetTicks();

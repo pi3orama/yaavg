@@ -61,10 +61,24 @@ static struct ConfigEntry * ConfGet(const char * name)
 			return def;				\
 	}
 
+#define DEF_CONF_SET(TYPE, shorttype)			\
+	void						\
+	ConfSet##TYPE(const char * name, type_of_short(shorttype) v)	{	\
+		struct ConfigEntry * entry;			\
+		entry = ConfGet(name);				\
+		if (entry != NULL)				\
+			entry->value.shorttype = v;		\
+	}
+
 DEF_CONF_GET(String, s)
 DEF_CONF_GET(Integer, i)
 DEF_CONF_GET(Float, f)
 DEF_CONF_GET(Bool, b)
+
+DEF_CONF_SET(String, s)
+DEF_CONF_SET(Integer, i)
+DEF_CONF_SET(Float, f)
+DEF_CONF_SET(Bool, b)
 
 void ConfInit(int argc, char * argv[])
 {

@@ -46,6 +46,12 @@ GLGetProcAddress(const char *name);
 extern struct GLContext *
 GLOpenWindow(void);
 
+/* If the upper layer calls reset, finally a call to
+ * glGLReopenWindow will be issued. GL layer should guarantee
+ * the old ctx is useable after reopening */
+extern void
+GLReopenWindow(struct GLContext * ctx);
+
 extern void
 GLClose(void);
 

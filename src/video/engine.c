@@ -42,6 +42,13 @@ VideoOpenWindow(void)
 }
 
 void
+VideoReopenWindow(struct VideoContext * ctx)
+{
+	assert(ctx == VideoCtx);
+	DriverReopenWindow(ctx);
+}
+
+void
 VideoClose(void)
 {
 	DriverClose();

@@ -18,6 +18,9 @@ extern struct VideoContext *
 DriverOpenWindow(void);
 
 extern void
+DriverReopenWindow(struct VideoContext * ctx);
+
+extern void
 DriverClose(void);
 __END_DECLS
 #endif

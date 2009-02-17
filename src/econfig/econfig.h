@@ -40,6 +40,12 @@ extern int ConfGetInteger(const char * name, int def);
 extern float ConfGetFloat(const char * name, float def);
 extern bool_t ConfGetBool(const char * name, bool_t def);
 
+extern void ConfSetString(const char * name, const char * v);
+extern void ConfSetInteger(const char * name, int v);
+extern void ConfSetFloat(const char * name, float v);
+extern void ConfSetBool(const char * name, bool_t v);
+
+
 __END_DECLS
 
 #endif

@@ -30,6 +30,8 @@ VideoInit(void);
 extern struct VideoContext *
 VideoOpenWindow(void);
 
+extern void
+VideoReopenWindow(struct VideoContext * ctx);
 /* 
  * If only called VideoInit, then pass NULL
  */

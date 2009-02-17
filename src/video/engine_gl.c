@@ -38,17 +38,9 @@ static int init_glfunc(void)
 #endif
 }
 
-struct VideoContext *
-DriverOpenWindow(void)
+static int
+init_driver(void)
 {
-	int w, h;
-
-	GLCtx = GLOpenWindow();
-	if (GLCtx == NULL) {
-		WARNING(OPENGL, "Open Window failed\n");
-		return NULL;
-	}
-
 	GLCtx->base.driver_name = "OpenGL";
 
 	/* Init OpenGL */
@@ -71,7 +63,7 @@ DriverOpenWindow(void)
 	/* set view port and coordinator system */
 	if (VideoReshape(GLCtx->base.width, GLCtx->base.height)) {
 		ERROR(OPENGL, "Reshape failed\n");
-		return NULL;
+		return -1;
 	}
 
 	/* Set other OpenGL properties */
@@ -80,8 +72,45 @@ DriverOpenWindow(void)
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	glEnable(GL_TEXTURE_1D);
 	glEnable(GL_TEXTURE_2D);
+	return 0;
+}
+
+struct VideoContext *
+DriverOpenWindow(void)
+{
+	int w, h, err;
+
+	GLCtx = GLOpenWindow();
+	if (GLCtx == NULL) {
+		WARNING(OPENGL, "Open Window failed\n");
+		return NULL;
+	}
+
+	err = init_driver();
+	if (err != 0) {
+		WARNING(OPENGL, "Init driver failed\n");
+		return NULL;
+	}
 
 	return &GLCtx->base;
+}
+
+void
+DriverReopenWindow(struct VideoContext * ctx)
+{
+	int err;
+	if (ctx != &GLCtx->base) {
+		FATAL(OPENGL, "ctx %p is not the one previous return(%p)!",
+				ctx, &GLCtx->base);
+		exit(-1);
+	}
+	GLReopenWindow(GLCtx);
+
+	err = init_driver();
+	if (err != 0) {
+		FATAL(OPENGL, "init driver failed...\n");
+		exit(-1);
+	}
 }
 
 void

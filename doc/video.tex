@@ -255,6 +255,16 @@ framerate 最小为 10.
 	4. 删除指令对: VideoRemoveCommandPair(cmd1, cmd2);
 	
 
+5. Video Reset:
+	如果发生 reset 事件, event 必须向所有对象广播这个事件. video 自动监听这
+	个事件.
+	
+6. Video 系统和事件
+	Video 系统必须向事件系统注册以下几个事件:
+		1. 退出;
+		2. reshape;
+		3. reset
+	这些事件的 handler 可以仅仅是一条置位指令. 在 video 循环中再进行处理.
 
 \end{document}
 
