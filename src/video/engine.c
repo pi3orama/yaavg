@@ -241,7 +241,7 @@ VideoInsertCommandPair(struct RenderCommand * lcmd,
 
 pair_error:
 	WARNING(VIDEO, "Trying to insert command pair [%s](%p) and [%s](%p) but failed\n",
-			lcmd->name, rcmd->name);
+			lcmd->name, lcmd, rcmd->name, rcmd);
 	return -1;
 
 }
