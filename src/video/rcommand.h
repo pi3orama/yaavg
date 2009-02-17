@@ -49,6 +49,7 @@ typedef enum _RemoveReason {
 } RemoveReason_t;
 
 
+typedef int (*render_func_t)(struct RenderCommand * command);
 
 struct RenderCommandOperations {
 	/* phy func: compute the needed value, how to do the rendering? like the
@@ -66,7 +67,13 @@ struct RenderCommandOperations {
 	 * return value is flags:
 	 * 	whether we need to render next command or not? 
 	 * 	does this command successed? */
-	int (*render)(struct RenderCommand * command);
+	/* render is the default render function. if the command is part of
+	 * pair command, and lrender and/or rrender is not null, those func
+	 * will be called instead.
+	 *  */
+	render_func_t render;
+	render_func_t lrender;
+	render_func_t rrender;
 
 	/* the command is removed */
 	int (*remove)(struct RenderCommand * command,
@@ -134,6 +141,9 @@ extern void RCommandInit(struct RenderCommand * command,
 extern void
 RCommandSetActive(struct RenderCommand * cmd);
 
+#define RCMDIsLeft(cmd)		((cmd)->pairflag > 0)
+#define RCMDIsRight(cmd)	((cmd)->pairflag < 0)
+#define RCMDIsPair(cmd)		((cmd)->pairflag != 0)
 /* There's no "alloc_rcommand", because user always alloc rcommand's
  * subclass */
 

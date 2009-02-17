@@ -154,18 +154,40 @@ RotatePhy(struct RenderCommand * cmd, dtick_t delta_time)
 }
 
 int
-RotateRender(struct RenderCommand * cmd)
+RotateRenderL(struct RenderCommand * cmd)
 {
 	struct CommRotate * base = container_of(cmd, struct CommRotate, cmd);
 	/* we need check context first... */
 	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
 	glRotatef(base->angle, 0,0,1);
+#if 1
 	glBegin(GL_LINES);
 	glVertex2d(0, 0.5);
 	glVertex2d(1, 0.5);
 	glVertex2d(0.5, 0);
 	glVertex2d(0.5, 1);
 	glEnd();
+#endif
+	return 0;
+}
+
+int
+RotateRenderR(struct RenderCommand * cmd)
+{
+	struct CommRotate * base = container_of(cmd, struct CommRotate, cmd);
+	/* we need check context first... */
+	glMatrixMode(GL_MODELVIEW);
+//	glRotatef(base->angle, 0,0,1);
+	glPopMatrix();
+#if 1
+	glBegin(GL_LINES);
+	glVertex2d(0, 0.5);
+	glVertex2d(1, 0.5);
+	glVertex2d(0.5, 0);
+	glVertex2d(0.5, 1);
+	glEnd();
+#endif
 	return 0;
 }
 
@@ -187,7 +209,9 @@ RotateRemove(struct RenderCommand * cmd, RemoveReason_t r, int flags)
 
 struct RenderCommandOperations rotate_ops = {
 	.phy		= RotatePhy,
-	.render		= RotateRender,
+	.render		= NULL,
+	.lrender	= RotateRenderL,
+	.rrender	= RotateRenderR,
 	.sprintf	= RotateSprintf,
 	.remove		= RotateRemove,
 };

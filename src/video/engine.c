@@ -113,7 +113,11 @@ VideoRender(void)
 		if (!cmd->active)
 			continue;
 
-		if (cmd->ops->render)
+		if ((RCMDIsLeft(cmd)) && (cmd->ops->lrender))
+			flags = cmd->ops->lrender(cmd);
+		else if ((RCMDIsRight(cmd)) && (cmd->ops->rrender))
+			flags = cmd->ops->rrender(cmd);
+		else if (cmd->ops->render)
 			flags = cmd->ops->render(cmd);
 
 		if (flags & RENDER_FAIL) {
@@ -222,7 +226,8 @@ VideoInsertCommandPair(struct RenderCommand * lcmd,
 	/* mod a large enough prime number */
 	/* 115547 is much smaller than (1 << 32)(4294967296),
 	 * so don't worry about the sum revert to negitive. */
-	int pairflag_base = (uint32_t)(lcmd) % 115547;
+	/* +1 makes it not zero */
+	int pairflag_base = (uint32_t)(lcmd) % 115547 + 1;
 
 	lcmd->pairflag = pairflag_base;
 	lcmd->pair_command = rcmd;
