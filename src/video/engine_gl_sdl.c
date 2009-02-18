@@ -57,7 +57,7 @@ init_sdl(void)
 		FATAL(SDL, "Failed to init SDL video subsystem, SDL report: \"%s\", "
 				"check for your configuration.\n", SDL_GetError());
 		/* exit immediatly */
-		exit(1);
+		exit(-1);
 	}
 
 	library_name = ConfGetString("video.opengl.driver.gllibrary", NULL);
@@ -69,7 +69,7 @@ init_sdl(void)
 	if (SDL_GL_LoadLibrary(library_name) != 0) {
 		FATAL(SDL, "Load OpenGL library failed: %s\n", SDL_GetError());
 		close_sdl();
-		exit(1);
+		exit(-1);
 	}
 	SDLCtx.gllibrary = library_name;
 

@@ -21,7 +21,7 @@ VideoInit(void)
 {
 	if (DriverInit()) {
 		FATAL(VIDEO, "Driver init failed\n");
-		exit(1);
+		exit(-1);
 	}
 	VideoCtx = NULL;
 	return 0;
@@ -34,7 +34,7 @@ VideoOpenWindow(void)
 	VideoCtx = DriverOpenWindow();
 	if (VideoCtx == NULL) {
 		FATAL(VIDEO, "Driver open window failed\n");
-		exit(1);
+		exit(-1);
 	}
 	RListInit(&(VideoCtx->render_list), VideoCtx);
 	game_ticks = 0;
