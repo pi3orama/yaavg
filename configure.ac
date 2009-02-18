@@ -11,15 +11,25 @@ AC_CONFIG_HEADER([config.h])
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_LIBTOOL
+PKG_PROG_PKG_CONFIG
 
 CFLAGS="-std=gnu99"
-AC_ARG_ENABLE([link-rdynamic], [AC_HELP_STRING(--enable-link-rdynamic, [Use -rdynamic option for backtrace])],
-	[LDFLAGS="$LDFLAGS -rdynamic"],
+
+AC_ARG_ENABLE([link-rdynamic], [AC_HELP_STRING(--enable-link-rdynamic, [Use -rdynamic option for backtrace. default: no])],
+	[
+	 if test "x$enableval" = "xyes" ; then
+		 LDFLAGS="$LDFLAGS -rdynamic"
+	 fi],
 	[])
 
-AC_ARG_ENABLE([debug], [AC_HELP_STRING(--enable-debug, [set CFLAGS to "-g -O0"])],
-	[CFLAGS="$CFLAGS -g -O0"],
-	[CFLAGS="$CFLAGS -g -O2"])
+CFLAGS_save="$CFLAGS"
+CFLAGS="$CFLAGS -g -O2"
+AC_ARG_ENABLE([debug], [AC_HELP_STRING(--enable-debug, [set CFLAGS to "-g -O0". default: no])],
+	[
+	 if test "x$enableval" = "xyes" ; then
+		 CFLAGS="$CFLAGS_save -g -O0"
+	 fi],
+	[])
 
 
 # Checks for libraries.
@@ -101,6 +111,14 @@ CFLAGS=$CFLAGS_save
 LDFLAGS=$LDFLAGS_save
 LIBS=$LIBS_save
 
+# Checks for libpng
+
+libpng12_exists="no"
+PKG_CHECK_MODULES([LIBPNG], [libpng12 >= 1.2.7],
+		  [libpng12_exists="yes"], [libpng12_exists="no"])
+if test x$libpng12_exists = "xno" ; then
+	AC_MSG_WARN([*** libpng not found, some features disabled])
+fi
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -116,20 +134,46 @@ AC_CHECK_HEADER([execinfo.h],[
     ])]
 )
 
-AC_ARG_ENABLE([static-opengl], [AC_HELP_STRING(--enable-static-opengl, [use ld link opengl symbol directly])],
-	[
-	 GL_CFLAGS="$GL_CFLAGS_TEMP -DSTATIC_OPENGL"
-	 GL_LDFLAGS="$GL_LDFLAGS_TEMP"
-	 GL_LIBS="$GL_LIBS_TEMP"
-	 ],
-	[
-	 GL_CFLAGS="$GL_CFLAGS_TEMP"
-	 GL_LDFLAGS=""
-	 GL_LIBS=""
-	 ])
+GL_STATIC="no"
+GL_CFLAGS="$GL_CFLAGS_TEMP"
+GL_LDFLAGS=""
+GL_LIBS=""
 
-AC_SUBST(GL_CFLAGS)
-AC_SUBST(GL_LIBS)
+AC_ARG_ENABLE([static-opengl], [AC_HELP_STRING(--enable-static-opengl,
+	       [use ld link opengl symbol directly. default: no])],
+	[
+	 if test "x$enableval" = "xyes"; then
+		 GL_STATIC="yes"
+		 GL_CFLAGS="$GL_CFLAGS_TEMP -DSTATIC_OPENGL"
+		 GL_LDFLAGS="$GL_LDFLAGS_TEMP"
+		 GL_LIBS="$GL_LIBS_TEMP"
+	 fi
+	 ],
+	[])
+
+SCREENSHOT="yes"
+AC_ARG_ENABLE([screenshot], [AC_HELP_STRING(--disable-screenshot, [Forbid user to take screen shot. default: enable])],
+	[
+	 if test "x$enableval" = "xno" ; then
+		 SCREENSHOT="no"
+	fi], [])
+
+# Begin check features
+# if no libpng, no screenshot
+if test "x$SCREENSHOT" = "xyes" -a "x$libpng12_exists" = "xno"; then
+	AC_MSG_WARN([*** no libpng, disable screenshot])
+	SCREENSHOT="no"
+fi
+
+# output enable_screenshot into config.h
+if test "x$SCREENSHOT" = "xyes" ; then
+	AC_DEFINE(ENABLE_SCREENSHOT, 1, [Define to 1 to make screenshot enable])
+fi
+
+
+
+AC_SUBST([GL_CFLAGS])
+AC_SUBST([GL_LIBS])
 AC_SUBST([SDL_CFLAGS])
 AC_SUBST([SDL_LIBS])
 
@@ -141,4 +185,33 @@ AC_CONFIG_FILES([Makefile
 		 src/video/Makefile])
 
 AC_OUTPUT
+
+# finally, report configuration
+echo
+echo "Environments"
+echo "CFLAGS........................... $CFLAGS"
+echo "LDFLAGS.......................... $LDFLAGS"
+echo
+echo "Packages"
+echo "SDL.............................. $SDL_CFLAGS"
+echo " LDFLAGS......................... $SDL_LDFLAGS"
+echo " LIBS............................ $SDL_LIBS"
+echo "OpenGL........................... $GL_CFLAGS"
+if test "x$GL_STATIC" = "xyes"; then
+echo "OpenGL Linkage................... static"
+echo " LDFLAGS......................... $GL_LDFLAGS"
+echo " LIBS............................ $GL_LIBS"
+else
+echo "OpenGL Linkage................... dynamic"
+fi
+if test "x$libpng12_exists" = "xno"; then
+echo "libpng12......................... no"
+else
+echo "libpng12......................... found"
+echo " CFLAGS.......................... $LIBPNG_CFLAGS"
+echo " LIBS............................ $LIBPNG_LIBS"
+fi
+echo
+echo "Features"
+echo "Screen shot support.............. $SCREENSHOT"
 
