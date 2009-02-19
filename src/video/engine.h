@@ -16,6 +16,7 @@ __BEGIN_DECLS
 struct VideoContext {
 	const char * driver_name;
 	int width, height;
+	int vp_x, vp_y, vp_w, vp_h;
 	bool_t is_full_screen;
 
 	tick_t start_time;

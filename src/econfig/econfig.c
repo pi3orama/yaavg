@@ -16,6 +16,10 @@ static struct ConfigEntry entries[] = {
 //	{"video.resolution.h", TypeInteger, vcast(800)},
 	{"video.resolution.w", TypeInteger, vcast(800)},
 	{"video.resolution.h", TypeInteger, vcast(600)},
+	{"video.viewport.w", TypeInteger, vcast(1024)},
+	{"video.viewport.h", TypeInteger, vcast(768)},
+//	{"video.viewport.w", TypeInteger, vcast(1024)},
+//	{"video.viewport.h", TypeInteger, vcast(768)},
 	{"video.mspf.fallback", TypeInteger, vcast(100)},
 	{"video.mspf", TypeInteger, vcast(17)},	/* 17ms: 60fps */
 //	{"video.fullscreen", TypeBool, vcast(TRUE)},

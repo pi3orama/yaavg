@@ -125,9 +125,38 @@ DriverClose(void)
 int VideoReshape(int w, int h)
 {
 	int err;
+	int vp_w, vp_h, vp_x, vp_y;
+
 	GLCtx->base.width = w;
 	GLCtx->base.height = h;
-	glViewport(0, 0, w, h);
+
+	/* Reset gl viewport */
+	vp_w = ConfGetInteger("video.viewport.w", w);
+	vp_h = ConfGetInteger("video.viewport.h", h);
+
+	if (vp_w > w) {
+		WARNING(OPENGL, "viewport width %d larger than window width %d\n",
+				vp_w, w);
+		vp_w = w;
+	}
+	if (vp_h > h) {
+		WARNING(OPENGL, "viewport height %d larger than window height %d\n",
+				vp_h, h);
+		vp_h = h;
+	}
+
+	vp_x = (w - vp_w) / 2;
+	vp_y = (h - vp_h) / 2;
+
+	GLCtx->base.vp_x = vp_x;
+	GLCtx->base.vp_y = vp_y;
+	GLCtx->base.vp_w = vp_w;
+	GLCtx->base.vp_h = vp_h;
+
+	TRACE(OPENGL, "Set viewport to (%d, %d, %d, %d)\n",
+			vp_x, vp_y, vp_w, vp_h);
+
+	glViewport(vp_x, vp_y, vp_w, vp_h);
 //	glViewport(0, 0, w, h);
 //	glViewport(100, 100, w-200, h-200);
 

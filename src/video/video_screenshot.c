@@ -83,7 +83,7 @@ VideoScreenShot(void)
 	return;
 #else
 	uint8_t * buffer = NULL;
-	int w, h;
+	int x, y, w, h;
 	int err;
 
 	if (VideoCtx == NULL) {
@@ -91,12 +91,15 @@ VideoScreenShot(void)
 		return;
 	}
 
-	w = VideoCtx->width;
-	h = VideoCtx->height;
+	x = VideoCtx->vp_x;
+	y = VideoCtx->vp_y;
+	w = VideoCtx->vp_w;
+	h = VideoCtx->vp_h;
 
 	buffer = malloc(sizeof(uint8_t) * w * h * 4);
 	assert(buffer != NULL);
-	err = DriverReadPixels(buffer, 0, 0, w, h);
+	err = DriverReadPixels(buffer, x, y, w, h);
+//	err = DriverReadPixels(buffer, 0, 0, w, h);
 	if (err) {
 		WARNING(VIDEO, "Read pixels failed\n");
 		free(buffer);
