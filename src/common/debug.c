@@ -132,6 +132,23 @@ get_level_name(enum debug_level level)
 
 }
 
+static void
+turn_red(void)
+{
+	if (!((fdebug_out == stderr) || (fdebug_out == stdout)))
+		return;
+	fprintf(fdebug_out, "%c[1;31m", 0x1b);
+}
+
+static void
+turn_normal(void)
+{
+	
+	if (!((fdebug_out == stderr) || (fdebug_out == stdout)))
+		return;
+	fprintf(fdebug_out, "%c[m", 0x1b);
+}
+
 #ifdef debug_out
 #undef debug_out
 #endif
@@ -146,6 +163,8 @@ debug_out(int prefix, enum debug_level level, enum debug_component comp,
 		fdebug_out = stderr;
 
 	if (debug_levels[comp] <= level) {
+		if (debug_levels[comp] >= WARNING)
+			turn_red();
 		if (prefix) {
 			fprintf (fdebug_out, "[%s %s@%s:%d]\t", get_comp_name(comp),
 					get_level_name(level), func_name, line_no);
@@ -153,6 +172,8 @@ debug_out(int prefix, enum debug_level level, enum debug_component comp,
 		va_start(ap, fmt);
 		vfprintf (fdebug_out, fmt, ap);
 		va_end(ap);
+		if (debug_levels[comp] >= WARNING)
+			turn_normal();
 		fflush(fdebug_out);
 	}
 }

@@ -114,7 +114,7 @@ int ClearSprintf(struct RenderCommand * cmd, char * dest)
 int ClearRemove(struct RenderCommand * cmd, RemoveReason_t r, int flags)
 {
 	struct CommClear * base = container_of(cmd, struct CommClear, cmd);
-	VERBOSE(VIDEO, "Remove Clear cmd");
+	VERBOSE(VIDEO, "Remove Clear cmd\n");
 	free(base);
 	return 0;
 }

@@ -79,7 +79,7 @@ void
 VideoScreenShot(void)
 {
 #ifndef ENABLE_SCREENSHOT
-	WARNING("Screen shot is disabled in compiling.\n");
+	WARNING(VIDEO, "Screen shot is disabled in compiling.\n");
 	return;
 #else
 	uint8_t * buffer = NULL;
@@ -99,7 +99,6 @@ VideoScreenShot(void)
 	buffer = malloc(sizeof(uint8_t) * w * h * 4);
 	assert(buffer != NULL);
 	err = DriverReadPixels(buffer, x, y, w, h);
-//	err = DriverReadPixels(buffer, 0, 0, w, h);
 	if (err) {
 		WARNING(VIDEO, "Read pixels failed\n");
 		free(buffer);
