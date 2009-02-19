@@ -18,9 +18,10 @@ int EventPoll(void)
 			case SDL_KEYDOWN:
 				if (event.key.keysym.sym == SDLK_q)
 					return 1;
-				if (event.key.keysym.sym == SDLK_f) {
+				if (event.key.keysym.sym == SDLK_f)
 					return 2;
-				}
+				if (event.key.keysym.sym == SDLK_c)
+					return 3;
 				break;
 			case SDL_QUIT:
 				return 1;

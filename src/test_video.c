@@ -318,7 +318,7 @@ int main(int argc, char * argv[])
 	dtick_t deltatime;
 
 	realtime = GetTicks();
-	while((event == 0) || (event == 2)) {
+	while((event == 0) || (event == 2) || (event == 3)) {
 
 		if (event == 2) {
 			/* XXX econfig is not finished yet! if econfig.c
@@ -334,6 +334,10 @@ int main(int argc, char * argv[])
 			
 			VideoReopenWindow(vcontext);
 			VideoSetCaption("Test!");
+		}
+
+		if (event == 3) {
+			VideoScreenShot();
 		}
 
 		int render_time;

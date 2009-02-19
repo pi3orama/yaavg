@@ -2,7 +2,7 @@
 
 #ifndef DEFS_H
 #define DEFS_H
-
+#include <config.h>
 #include <sys/cdefs.h>
 #include <stdint.h>
 __BEGIN_DECLS

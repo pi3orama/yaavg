@@ -30,6 +30,7 @@ static struct ConfigEntry entries[] = {
 //	{"video.opengl.driver.vsync", TypeBool, vcast(TRUE)},
 //	{"video.opengl.driver.multisample", TypeInteger, vcast(0)},
 //	{"video.opengl.driver.multisample", TypeInteger, vcast(4)},
+	{"video.screenshotdir", TypeString, vcast((const char *)"/tmp")},
 	{NULL, TypeNone, vcast(0)},
 };
 

@@ -102,6 +102,9 @@ VideoSetCaption(const char * caption);
 extern void
 VideoSetIcon(const icon_t icon);
 
+extern void
+VideoScreenShot(void);
+
 /* Video engine is respond to generate game time */
 extern tick_t
 GetGameTicks(void);

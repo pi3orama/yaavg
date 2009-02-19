@@ -72,6 +72,7 @@ init_driver(void)
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	glEnable(GL_TEXTURE_1D);
 	glEnable(GL_TEXTURE_2D);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	return 0;
 }
 
@@ -147,6 +148,37 @@ int VideoReshape(int w, int h)
 	return 0;
 }
 
+int
+DriverReadPixels(uint8_t * buffer, int x, int y, int w, int h)
+{
+	int err;
+
+	if (GLCtx == NULL) {
+		ERROR(OPENGL, "OpenGL has not been inited\n");
+		return -1;
+	}
+
+	if (x + w > GLCtx->base.width) {
+		WARNING(OPENGL, "Width (%d + %d) out of range (%d)\n",
+				x, w, GLCtx->base.width);
+		return -1;
+	}
+
+	if (y + h > GLCtx->base.height) {
+		WARNING(OPENGL, "Height (%d + %d) out of range (%d)\n",
+				y, h, GLCtx->base.height);
+		return -1;
+	}
+
+	glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+	err = glGetError();
+	if (err != GL_NO_ERROR) {
+		WARNING(OPENGL, "ReadPixels failed, errno=%d\n", err);
+		return -1;
+	}
+	return 0;
+}
 
 
 /* Implentmented in engine_gl_xxx */

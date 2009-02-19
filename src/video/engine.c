@@ -12,7 +12,7 @@
 #include <video/rlist.h>
 #include <video/rcommand.h>
 
-static struct VideoContext * VideoCtx = NULL;
+struct VideoContext * VideoCtx = NULL;
 static tick_t game_ticks = 0;
 
 /* Some init funcs */

@@ -22,6 +22,11 @@ DriverReopenWindow(struct VideoContext * ctx);
 
 extern void
 DriverClose(void);
+
+extern int
+DriverReadPixels(uint8_t * buffer, int x, int y, int w, int h);
+
+
 __END_DECLS
 #endif
 
