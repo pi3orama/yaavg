@@ -12,6 +12,8 @@
 #include <stdarg.h>
 #include <memory.h>
 
+#include <unistd.h>
+
 #ifdef HAVE_EXECINFO_H
 /* backtrace */
 # include <execinfo.h>
@@ -25,7 +27,7 @@
 #include "common/debug.h"
 
 static FILE * fdebug_out = NULL;
-
+static int colorful_terminal = 0;
 static inline void print_backtrace(FILE * fp);
 
 static void
@@ -71,7 +73,7 @@ debug_close()
 void
 debug_init(const char * filename)
 {
-	int i;
+	int i, fd;
 	if (filename == NULL)
 		fdebug_out = stderr;
 	else {
@@ -79,6 +81,16 @@ debug_init(const char * filename)
 		/* We have not install SIGABRT yet */
 		assert(fdebug_out != NULL);
 		atexit(debug_close);
+	}
+
+	/* get the fileno of fdebug_out, check whether it is a
+	 * terminal */
+	fd = fileno(fdebug_out);
+	assert(fd >= 0);
+	if (isatty(fd)) {
+		colorful_terminal = 1;
+	} else {
+		colorful_terminal = 0;
 	}
 
 	/* install signal handlers */
@@ -135,7 +147,7 @@ get_level_name(enum debug_level level)
 static void
 turn_red(void)
 {
-	if (!((fdebug_out == stderr) || (fdebug_out == stdout)))
+	if (!colorful_terminal)
 		return;
 	fprintf(fdebug_out, "%c[1;31m", 0x1b);
 }
@@ -143,8 +155,7 @@ turn_red(void)
 static void
 turn_normal(void)
 {
-	
-	if (!((fdebug_out == stderr) || (fdebug_out == stdout)))
+	if (!colorful_terminal)
 		return;
 	fprintf(fdebug_out, "%c[m", 0x1b);
 }
@@ -163,7 +174,7 @@ debug_out(int prefix, enum debug_level level, enum debug_component comp,
 		fdebug_out = stderr;
 
 	if (debug_levels[comp] <= level) {
-		if (debug_levels[comp] >= WARNING)
+		if (level >= WARNING)
 			turn_red();
 		if (prefix) {
 			fprintf (fdebug_out, "[%s %s@%s:%d]\t", get_comp_name(comp),
@@ -172,7 +183,7 @@ debug_out(int prefix, enum debug_level level, enum debug_component comp,
 		va_start(ap, fmt);
 		vfprintf (fdebug_out, fmt, ap);
 		va_end(ap);
-		if (debug_levels[comp] >= WARNING)
+		if (level >= WARNING)
 			turn_normal();
 		fflush(fdebug_out);
 	}

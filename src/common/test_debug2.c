@@ -39,6 +39,7 @@ int func()
 int main()
 {
 	DEBUG_INIT(NULL);
+	FATAL(OPENGL, "Test fatal\n");
 	func();
 	return 0;
 }
