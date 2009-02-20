@@ -52,12 +52,12 @@ write_to_pngfile(char * filename, int w, int h, uint8_t * buffer)
 	info_ptr = png_create_info_struct(write_ptr);
 	png_init_io(write_ptr, pngfile);
 
-	png_set_IHDR(write_ptr, info_ptr, w, h, 8, PNG_COLOR_TYPE_RGB_ALPHA,
+	png_set_IHDR(write_ptr, info_ptr, w, h, 8, PNG_COLOR_TYPE_RGB,
 			PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 	png_set_text(write_ptr, info_ptr, texts, 1);
 	png_write_info(write_ptr, info_ptr);
 
-#define SIZE_OF_ROW (4*w)
+#define SIZE_OF_ROW (3*w)
 	int n;
 	for (n = h - 1; n >= 0; n--) {
 		uint8_t * prow = buffer + n * SIZE_OF_ROW;
@@ -65,6 +65,8 @@ write_to_pngfile(char * filename, int w, int h, uint8_t * buffer)
 	}
 
 	png_write_end(write_ptr, info_ptr);
+
+	png_destroy_write_struct(&write_ptr, &info_ptr);
 
 
 	/* close file */
@@ -96,7 +98,7 @@ VideoScreenShot(void)
 	w = VideoCtx->vp_w;
 	h = VideoCtx->vp_h;
 
-	buffer = malloc(sizeof(uint8_t) * w * h * 4);
+	buffer = malloc(sizeof(uint8_t) * w * h * 3);
 	assert(buffer != NULL);
 	err = DriverReadPixels(buffer, x, y, w, h);
 	if (err) {

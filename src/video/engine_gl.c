@@ -199,7 +199,7 @@ DriverReadPixels(uint8_t * buffer, int x, int y, int w, int h)
 		return -1;
 	}
 
-	glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	glReadPixels(x, y, w, h, GL_RGB, GL_UNSIGNED_BYTE, buffer);
 
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
