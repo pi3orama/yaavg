@@ -9,7 +9,15 @@ AC_CONFIG_SRCDIR([src/video/rcommand.h])
 AC_CONFIG_HEADER([config.h])
 
 # Checks for programs.
+AC_PROG_CXX
 AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_RANLIB
+
+
 AC_PROG_LIBTOOL
 PKG_PROG_PKG_CONFIG
 
@@ -122,10 +130,39 @@ fi
 
 # Checks for header files.
 AC_HEADER_STDC
+AC_CHECK_HEADERS([malloc.h memory.h stdint.h stdlib.h string.h unistd.h setjmp.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_INT32_T
+AC_TYPE_SIZE_T
+AC_STRUCT_TM
+AC_TYPE_UINT32_T
+AC_TYPE_UINT8_T
+AC_C_VOLATILE
 
 # Checks for library functions.
+AC_FUNC_ALLOCA
+AC_FUNC_MALLOC
+AC_FUNC_REALLOC
+AC_TYPE_SIGNAL
+AC_FUNC_STAT
+AC_FUNC_STRFTIME
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS([atexit localtime_r memset strdup strerror])
+
+
+# Check if sigsetjmp is available.  Using AC_CHECK_FUNCS won't do
+# since sigsetjmp might only be defined as a macro.
+AC_CACHE_CHECK([for sigsetjmp], yaavg_cv_func_sigsetjmp,
+[AC_TRY_COMPILE([
+#include <setjmp.h>
+], [sigjmp_buf env; while (! sigsetjmp (env, 1)) siglongjmp (env, 1);],
+yaavg_cv_func_sigsetjmp=yes, yaavg_cv_func_sigsetjmp=no)])
+if test $yaavg_cv_func_sigsetjmp = yes; then
+  AC_DEFINE(HAVE_SIGSETJMP, 1, [Define if sigsetjmp is available. ])
+fi
 
 AC_CHECK_HEADER([execinfo.h],[
     AC_CHECK_LIB(c, backtrace, [

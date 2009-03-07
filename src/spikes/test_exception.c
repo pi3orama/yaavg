@@ -181,7 +181,7 @@ exceptions_state_mc(enum catcher_action action)
 					struct exception exception =
 						*current_catcher->exception;
 
-					/* NOTICE: catcher_pop is not public sub expression,
+					/* NOTICE: catcher_pop is not a public sub expression,
 					 * after catcher_pop, current_catcher changed. therefore
 					 * we should not pop catcher before check mask! */
 					if (current_catcher->mask & (MASK(exception.level))) {
@@ -207,13 +207,13 @@ exceptions_state_mc(enum catcher_action action)
 int
 exceptions_state_mc_action_iter (void)
 {
-	return exceptions_state_mc (CATCH_ITER);
+	return exceptions_state_mc(CATCH_ITER);
 }
 
 int
 exceptions_state_mc_action_iter_1 (void)
 {
-	return exceptions_state_mc (CATCH_ITER_1);
+	return exceptions_state_mc(CATCH_ITER_1);
 }
 
 NORETURN void

@@ -1,6 +1,6 @@
 /* Wang Nan @ Jan 24, 2009 */
-#ifndef YAAVG_DEBUG
-#define YAAVG_DEBUG
+#ifndef YAAVG_DEBUG_H
+#define YAAVG_DEBUG_H
 
 #include <sys/cdefs.h>
 #include <common/defs.h>
