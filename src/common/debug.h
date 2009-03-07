@@ -3,6 +3,7 @@
 #define YAAVG_DEBUG
 
 #include <sys/cdefs.h>
+#include <common/defs.h>
 #include <memory.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -85,6 +86,18 @@ extern void WARNING(enum debug_component, char * fmt, ...);
 extern void ERROR(enum debug_component, char * fmt, ...);
 extern void FATAL(enum debug_component, char * fmt, ...);
 #endif
+
+
+/* internal_error: raise a SIGABRT. */
+extern void
+internal_error(enum debug_component comp,
+		const char * func_name,
+		int line_no, const char * fmt, ...)
+		ATTR(__noreturn__);
+
+
+#define INTERNAL_ERROR(comp, str...) \
+	do {internal_error(comp, __FUNCTION__, __LINE__, str);}while(0)
 
 
 /* Define bug functions. Reference: assert.h */

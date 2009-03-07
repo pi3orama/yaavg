@@ -1,4 +1,4 @@
-SUBDIRS = common econfig video event
+SUBDIRS = common econfig video event spikes
 
 bin_PROGRAMS = test_video
 

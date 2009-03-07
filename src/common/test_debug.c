@@ -8,7 +8,9 @@ int func2()
 	DEBUG_MSG(FATAL, SYSTEM, "Debug test system fatal: i=%d, j=%d\n", i, j);
 
 	if (i < j)
-		assert(0);
+		INTERNAL_ERROR(SYSTEM, "Try internal error %d\n", 100);
+//		internal_error(SYSTEM, "Try internal error %d\n", 100);
+//		assert(0);
 	printf("Haha\n");
 }
 

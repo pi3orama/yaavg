@@ -39,6 +39,14 @@ debug_malloc_stats(int signum)
 	set_comp_level(MEMORY, level_save);
 }
 
+static void
+debug_close()
+{
+	if (fdebug_out != NULL)
+		fclose(fdebug_out);
+	fdebug_out = NULL;
+}
+
 #define SYS_FATAL(str...) DEBUG_MSG(FATAL, SYSTEM, str)
 static void
 debug_backtrace(int signum)
@@ -56,15 +64,10 @@ debug_backtrace(int signum)
 	}
 	print_backtrace(fdebug_out);
 
+	debug_close();
+
 	signal(signum, SIG_DFL);
 	raise(signum);
-}
-
-static void
-debug_close()
-{
-	fclose(fdebug_out);
-	fdebug_out = NULL;
 }
 
 #ifdef debug_init
@@ -163,12 +166,13 @@ turn_normal(void)
 #ifdef debug_out
 #undef debug_out
 #endif
-void
-debug_out(int prefix, enum debug_level level, enum debug_component comp,
+
+static void
+vdebug_out(int prefix, enum debug_level level, enum debug_component comp,
 	       const char * func_name, int line_no,
-       	       const char * fmt, ...)
+       	       const char * fmt, va_list ap)
 {
-	va_list ap;
+	
 	/* output to stderr even if haven't init */
 	if (fdebug_out == NULL)
 		fdebug_out = stderr;
@@ -180,13 +184,26 @@ debug_out(int prefix, enum debug_level level, enum debug_component comp,
 			fprintf (fdebug_out, "[%s %s@%s:%d]\t", get_comp_name(comp),
 					get_level_name(level), func_name, line_no);
 		}
-		va_start(ap, fmt);
+
 		vfprintf (fdebug_out, fmt, ap);
-		va_end(ap);
+
 		if (level >= WARNING)
 			turn_normal();
 		fflush(fdebug_out);
 	}
+}
+
+void
+debug_out(int prefix, enum debug_level level, enum debug_component comp,
+	       const char * func_name, int line_no,
+       	       const char * fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vdebug_out(prefix, level, comp, func_name, line_no,
+			fmt, ap);
+	va_end(ap);
 }
 
 /* Define backtrace facilities */
@@ -203,6 +220,21 @@ static inline void print_backtrace(FILE * fp)
 #endif
 	return;
 }
+
+void
+internal_error(enum debug_component comp,
+		const char * func_name,
+		int line_no, const char * fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	vdebug_out(1, FATAL, comp, func_name, line_no, fmt, ap);
+	va_end(ap);
+	raise(SIGABRT);
+	/* We shouldn't be here! */
+	exit(-1);
+}
+
 
 
 /* Memory leak detection */
