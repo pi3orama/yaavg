@@ -31,7 +31,7 @@ extern struct video_context *
 video_init(void);
 
 extern void
-video_reinit(struct video_context * ctx);
+video_reinit(void);
 
 extern void
 video_close(void);
@@ -111,4 +111,6 @@ video_remove_command_pair(struct render_command * lcmd,
 __END_DECLS
 
 #endif
+
+// vim:tabstop=4:shiftwidth=4
 

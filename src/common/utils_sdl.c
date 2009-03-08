@@ -11,7 +11,8 @@
  * Use SDL implentment utils.h
  */
 
-void Delay(tick_t ms)
+void
+delay(tick_t ms)
 {
 	/* SDL_Delay can be used even before SDL_Init */
 	/* In some system, SDL_Delay can be interrupted by signal,
@@ -19,7 +20,8 @@ void Delay(tick_t ms)
 	SDL_Delay(ms);
 }
 
-tick_t GetTicks(void)
+tick_t
+get_ticks(void)
 {
 	return (tick_t)SDL_GetTicks();
 }

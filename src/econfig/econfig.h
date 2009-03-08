@@ -8,18 +8,18 @@
 
 __BEGIN_DECLS
 
-typedef enum _ConfType {
+typedef enum _conf_type {
 	TypeNone = 0,
 	TypeInteger,
 	TypeString,
 	TypeFloat,
 	TypeBool,
-} ConfType;
+} conf_type;
 
-struct ConfigEntry {
+struct conf_entry {
 	const char * name;
-	ConfType type;
-	union _conf_value{
+	conf_type type;
+	union _conf_value {
 		const char * s;
 		int i;
 		float f;
@@ -33,17 +33,17 @@ struct ConfigEntry {
  * priorities:
  * 	command line > env > config file > default
  */
-extern void ConfInit(int argc, char * argv[]);
+extern void conf_init(int argc, char * argv[]);
 
-extern const char * ConfGetString(const char * name, const char * def);
-extern int ConfGetInteger(const char * name, int def);
-extern float ConfGetFloat(const char * name, float def);
-extern bool_t ConfGetBool(const char * name, bool_t def);
+extern const char * conf_get_string(const char * name, const char * def);
+extern int conf_get_integer(const char * name, int def);
+extern float conf_get_float(const char * name, float def);
+extern bool_t conf_get_bool(const char * name, bool_t def);
 
-extern void ConfSetString(const char * name, const char * v);
-extern void ConfSetInteger(const char * name, int v);
-extern void ConfSetFloat(const char * name, float v);
-extern void ConfSetBool(const char * name, bool_t v);
+extern void conf_set_string(const char * name, const char * v);
+extern void conf_set_integer(const char * name, int v);
+extern void conf_set_float(const char * name, float v);
+extern void conf_set_bool(const char * name, bool_t v);
 
 
 __END_DECLS

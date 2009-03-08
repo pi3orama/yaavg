@@ -24,7 +24,7 @@ video_get_current_context(void)
 	return video_ctx;
 }
 
-extern void
+void
 video_close(void)
 {
 	if (video_ctx != NULL) {
@@ -41,28 +41,30 @@ struct cleanup video_cleanup_str = {
 	.function 	= video_close,
 };
 
-extern struct video_context *
+struct video_context *
 video_init(void)
 {
-	make_cleanup(&video_cleanup_str);
+	if (video_ctx != NULL) {
+		WARNING("multi video_init\n");
+		return video_ctx;
+	}
+
 	video_ctx = driver_init();
 	if (video_ctx == NULL) {
 		/* We shouldn't be here, driver should have
 		 * throw an exception */
 		throw_exception(EXCEPTION_FATAL, "Driver init failed");
 	}
+	make_cleanup(&video_cleanup_str);
 	rlist_init(&(video_ctx->render_list));
 	game_ticks = 0;
 	return video_ctx;
 }
 
-extern void
-video_reinit(struct video_context * ctx)
+void
+video_reinit(void)
 {
-	if (ctx != video_ctx)
-		throw_exception(EXCEPTION_FATAL,
-				"video_reinit receive a invalid ctx");
-	driver_reinit(ctx);
+	driver_reinit();
 }
 
 extern int
@@ -285,4 +287,6 @@ get_game_ticke(void)
 {
 	return game_ticks;
 }
+
+// vim:tabstop=4:shiftwidth=4
 

@@ -17,12 +17,12 @@ extern struct video_context *
 driver_init(void);
 
 extern void
-driver_reinit(struct video_context * ctx);
+driver_reinit(void);
 
 extern void
 driver_close(void);
 
-extern int
+extern void
 driver_read_pixels(uint8_t * buffer, int x, int y, int w, int h);
 
 __END_DECLS

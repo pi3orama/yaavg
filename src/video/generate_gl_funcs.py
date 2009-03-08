@@ -69,7 +69,7 @@ print "#define __GL_GLFUNCS_H"
 print "#include <GL/gl.h>"
 print "#include <GL/glext.h>"
 print ""
-print "struct GLFuncs {"
+print "struct gl_funcs {"
 print "#ifndef STATIC_OPENGL"
 for o in objects:
 	o.output_prototype()
@@ -90,9 +90,10 @@ print "#endif"
 
 print "#else"
 print "struct glfunc_init_item {const char * name; void ** func;};"
-print "struct glfunc_init_item GLFuncInitList[] = {"
+print "struct glfunc_init_item gl_func_init_list[] = {"
 for o in objects:
 	o.output_init_list()
 print "\t{NULL, NULL}"
 print "};"
 print "#endif"
+

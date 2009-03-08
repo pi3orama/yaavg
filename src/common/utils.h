@@ -12,8 +12,8 @@
 /* 
  * delay for some milseconds
  */
-void Delay(tick_t ms);
-tick_t GetTicks(void);
+void delay(tick_t ms);
+tick_t get_ticks(void);
 
 #endif
 

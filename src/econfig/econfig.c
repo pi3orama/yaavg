@@ -11,7 +11,7 @@
 
 
 #define vcast(x)	(union _conf_value)(x)
-static struct ConfigEntry entries[] = {
+static struct conf_entry entries[] = {
 //	{"video.resolution.w", TypeInteger, vcast(1280)},
 //	{"video.resolution.h", TypeInteger, vcast(800)},
 	{"video.resolution.w", TypeInteger, vcast(800)},
@@ -38,9 +38,10 @@ static struct ConfigEntry entries[] = {
 	{NULL, TypeNone, vcast(0)},
 };
 
-static struct ConfigEntry * ConfGet(const char * name)
+static struct conf_entry *
+conf_get(const char * name)
 {
-	struct ConfigEntry * pos = &entries[0];
+	struct conf_entry * pos = &entries[0];
 	assert(name != NULL);
 	assert(name[0] != '\0');
 	while (pos->name != NULL) {
@@ -51,15 +52,15 @@ static struct ConfigEntry * ConfGet(const char * name)
 	return NULL;
 }
 
-#define confvalue(x) (((struct ConfigEntry *)(x))->value)
+#define confvalue(x) (((struct conf_entry *)(x))->value)
 #define type_of_short(shorttype) \
 	typeof(confvalue(0).shorttype)
 
 #define DEF_CONF_GET(TYPE, shorttype)			\
 	type_of_short(shorttype)				\
-	ConfGet##TYPE(const char * name, type_of_short(shorttype) def)	{		\
-		struct ConfigEntry * entry;			\
-		entry = ConfGet(name);				\
+	conf_get_##TYPE(const char * name, type_of_short(shorttype) def) { \
+		struct conf_entry * entry;			\
+		entry = conf_get(name);				\
 		if (entry != NULL)				\
 			return entry->value.shorttype;		\
 		else						\
@@ -68,24 +69,24 @@ static struct ConfigEntry * ConfGet(const char * name)
 
 #define DEF_CONF_SET(TYPE, shorttype)			\
 	void						\
-	ConfSet##TYPE(const char * name, type_of_short(shorttype) v)	{	\
-		struct ConfigEntry * entry;			\
-		entry = ConfGet(name);				\
+	conf_set##TYPE(const char * name, type_of_short(shorttype) v)	{	\
+		struct conf_entry * entry;			\
+		entry = conf_get(name);				\
 		if (entry != NULL)				\
 			entry->value.shorttype = v;		\
 	}
 
-DEF_CONF_GET(String, s)
-DEF_CONF_GET(Integer, i)
-DEF_CONF_GET(Float, f)
-DEF_CONF_GET(Bool, b)
+DEF_CONF_GET(string, s)
+DEF_CONF_GET(integer, i)
+DEF_CONF_GET(float, f)
+DEF_CONF_GET(bool, b)
 
-DEF_CONF_SET(String, s)
-DEF_CONF_SET(Integer, i)
-DEF_CONF_SET(Float, f)
-DEF_CONF_SET(Bool, b)
+DEF_CONF_SET(string, s)
+DEF_CONF_SET(integer, i)
+DEF_CONF_SET(float, f)
+DEF_CONF_SET(bool, b)
 
-void ConfInit(int argc, char * argv[])
+void conf_init(int argc, char * argv[])
 {
 	return;
 }
