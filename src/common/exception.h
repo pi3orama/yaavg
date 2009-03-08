@@ -36,6 +36,7 @@ enum exception_level {
 	EXCEPTION_SYS_SKIPFRAME		= 6,
 	EXCEPTION_SYS_REINIT		= 7,
 	EXCEPTION_FATAL				= 8,
+	EXCEPTION_RESET				= 9,
 };
 
 #define MASK(level)				(1 << (int)(level))
@@ -47,8 +48,9 @@ enum exception_level {
 #define MASK_SYS_SKIPFRAME		MASK(EXCEPTION_SYS_SKIPFRAME)
 #define MASK_SYS_REINIT			MASK(EXCEPTION_SYS_REINIT)
 #define MASK_FATAL				MASK(EXCEPTION_FATAL)
+#define MASK_RESET				MASK(EXCEPTION_RESET)
 #define MASK_ALL				(0xffffffff)
-#define MASK_NONFATAL			((MASK_ALL) & (~(MASK_FATAL)) & (~(MASK_QUIT)))
+#define MASK_NONFATAL			((MASK_ALL) & (~(MASK_FATAL)) &(~(MASK_RESET)) & (~(MASK_QUIT)))
 #define MASK_SYS_ALL			(MASK_SYS_RERUN | MASK_SYS_SKIPFRAME | MASK_SYS_REINIT)
 #define MASK_SUBSYS_ALL			(MASK_SUBSYS_RERUN | MASK_SUBSYS_SKIPFRAME | MASK_SUBSYS_REINIT)
 
@@ -83,8 +85,7 @@ enum catcher_action {
 
 struct cleanup {
 	struct cleanup * next;
-	void (*function)(void*);
-	void * arg;
+	void (*function)(void);
 };
 
 struct catcher {

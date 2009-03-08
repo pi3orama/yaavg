@@ -3,13 +3,13 @@
 #include <stdio.h>
 #include <common/exception.h>
 
-static void video_subsys1_cleanup(void * arg)
+static void video_subsys1_cleanup(void)
 {
 	printf("video subsys1 cleanup\n");
 	return;
 }
 
-static void video_subsys2_cleanup(void * arg)
+static void video_subsys2_cleanup(void)
 {
 	printf("video subsys2 cleanup\n");
 	return;
@@ -17,12 +17,10 @@ static void video_subsys2_cleanup(void * arg)
 
 static struct cleanup video_subsys1_cleanup_str = {
 	.function	= video_subsys1_cleanup,
-	.arg		= NULL,
 };
 
 static struct cleanup video_subsys2_cleanup_str = {
 	.function	= video_subsys2_cleanup,
-	.arg		= NULL,
 };
 
 static void
@@ -56,20 +54,20 @@ static void
 video_reinit()
 {
 	printf("Video reinit\n");
-	video_subsys2_cleanup(NULL);
-	video_subsys1_cleanup(NULL);
+	video_subsys2_cleanup();
+	video_subsys1_cleanup();
 	video_init(FALSE);
 }
 
 static void
-snd_subsys1_cleanup(void* arg)
+snd_subsys1_cleanup(void)
 {
 	printf("snd subsys1 cleanup\n");
 	return;
 }
 
 static void
-snd_subsys2_cleanup(void* arg)
+snd_subsys2_cleanup(void)
 {
 	printf("snd subsys2 cleanup\n");
 	return;
@@ -77,12 +75,10 @@ snd_subsys2_cleanup(void* arg)
 
 static struct cleanup snd_subsys1_cleanup_str = {
 	.function	= snd_subsys1_cleanup,
-	.arg		= NULL,
 };
 
 static struct cleanup snd_subsys2_cleanup_str = {
 	.function	= snd_subsys2_cleanup,
-	.arg		= NULL,
 };
 
 
@@ -114,20 +110,19 @@ static void
 snd_reinit()
 {
 	printf("snd reinit\n");
-	snd_subsys2_cleanup(NULL);
-	snd_subsys1_cleanup(NULL);
+	snd_subsys2_cleanup();
+	snd_subsys1_cleanup();
 	snd_init(FALSE);
 }
 
 static void
-video_frame_cleanup(void * n)
+video_frame_cleanup(void)
 {
-	printf("video frame %d cleanup\n", *(int*)n);
+	printf("video frame cleanup\n");
 }
 
 static struct cleanup video_frame_cleanup_str = {
 	.function	= video_frame_cleanup,
-	.arg		= NULL,
 };
 
 
@@ -142,7 +137,6 @@ video_frame(int i)
 	static int sysreruned = 0;
 entry:
 	TRY_CATCH(exp, MASK_SUBSYS_ALL) {
-		video_frame_cleanup_str.arg = (void*)&i;
 		make_cleanup(&video_frame_cleanup_str);
 		printf("video frame %d called\n", i);
 		if ((i == 1) && (reruned == 0)) {

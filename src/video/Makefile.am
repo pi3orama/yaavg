@@ -8,8 +8,8 @@ CLEANFILES = gl_funcs.h
 EXTRA_DIST=generate_gl_funcs.py gl_funcs_list
 libvideo_la_SOURCES=rlist.c rcommand.c \
 		    rlist.h rcommand.h \
-		    engine.h engine_gl.c engine.c \
-		    engine_gl.h engine_gl_sdl.c \
+		    video.h video_gl.c video.c \
+		    video_gl.h video_gl_sdl.c \
 		    video.h texture.h texture_gl.c \
 		    video_screenshot.c
 libvideo_la_LIBADD=$(SDL_LIBS) $(GL_LIBS) $(LIBPNG_LIBS)

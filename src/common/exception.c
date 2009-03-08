@@ -37,7 +37,7 @@ do_cleanup(void)
 		struct cleanup * new_cleanup = cleanup->next;
 		/* Notice: func may release the cleanup structure,
 		 * therefore we first save the next cleanup data */
-		cleanup->function(cleanup->arg);
+		cleanup->function();
 		cleanup = new_cleanup;
 	}
 }
@@ -87,6 +87,7 @@ throw_exception (enum exception_level level, const char * message)
 		/* We are not in a catch block. do all cleanup then
 		 * quit */
 		WARNING(SYSTEM, "throw exception out of a catcher block\n");
+		WARNING(SYSTEM, "exception message: %s\n", message);
 		do_cleanup();
 		exit(-1);
 	}
