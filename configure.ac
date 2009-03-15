@@ -42,6 +42,10 @@ AC_ARG_ENABLE([debug], [AC_HELP_STRING(--enable-debug, [set CFLAGS to "-g -O0". 
 
 # Checks for libraries.
 
+
+AC_CHECK_FUNCS(sigaction)
+
+
 dnl Check if we have malloc_stats. see debug.c/h
 AC_CHECK_FUNC([malloc_stats], [have_malloc_stats=yes])
 if test "x${have_malloc_stats}" = "xyes"; then
@@ -130,6 +134,7 @@ fi
 
 # Checks for header files.
 AC_HEADER_STDC
+AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([malloc.h memory.h stdint.h stdlib.h string.h unistd.h setjmp.h])
 
 # Checks for typedefs, structures, and compiler characteristics.

@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <common/debug.h>
 #include <common/exception.h>
+#include <common/utils.h>
 
 
 struct png_write_cleanup {

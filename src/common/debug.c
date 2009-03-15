@@ -76,7 +76,7 @@ debug_backtrace(int signum)
 void
 debug_init(const char * filename)
 {
-	int i, fd;
+	int fd;
 	if (filename == NULL)
 		fdebug_out = stderr;
 	else {
@@ -97,9 +97,29 @@ debug_init(const char * filename)
 	}
 
 	/* install signal handlers */
-	signal(SIGUSR1, debug_malloc_stats);
-	signal(SIGSEGV, debug_backtrace);
-	signal(SIGABRT, debug_backtrace);
+	struct signals_handler {
+		int signum;
+		void (*handler)(int);
+	};
+	struct signals_handler handler[4] = {
+		{SIGUSR1, debug_malloc_stats},
+		{SIGSEGV, debug_backtrace},
+		{SIGABRT, debug_backtrace},
+		{0, NULL},
+	};
+
+	int i;
+	for (i = 0; handler[i].signum; i++) {
+#ifdef HAVE_SIGACTION
+		struct sigaction action;
+		sigaction(handler[i].signum, NULL, &action);
+		action.sa_handler = handler[i].handler;
+		sigaction(handler[i].signum, &action, NULL);
+#else
+		signal(handler[i].signum,
+			       handler[i].handler);
+#endif
+	}
 }
 
 

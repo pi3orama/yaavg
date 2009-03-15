@@ -22,6 +22,20 @@ int event_poll(void)
 					return 2;
 				if (event.key.keysym.sym == SDLK_c)
 					return 3;
+				if (event.key.keysym.sym == SDLK_z)
+					return 4;
+				if (event.key.keysym.sym == SDLK_x)
+					return 5;
+				if (event.key.keysym.sym == SDLK_c)
+					return 6;
+				if (event.key.keysym.sym == SDLK_v)
+					return 7;
+				if (event.key.keysym.sym == SDLK_b)
+					return 8;
+				if (event.key.keysym.sym == SDLK_n)
+					return 9;
+				if (event.key.keysym.sym == SDLK_m)
+					return 10;
 				break;
 			case SDL_QUIT:
 				return 1;

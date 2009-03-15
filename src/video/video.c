@@ -69,6 +69,7 @@ video_init(void)
 	rlist_init(&(video_ctx->render_list));
 	make_cleanup(&video_cleanup_str);
 	game_ticks = 0;
+	video_set_caption("");
 	return video_ctx;
 }
 

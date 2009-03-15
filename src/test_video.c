@@ -42,19 +42,29 @@ draw_line_render(struct render_command * __rcmd, dtick_t delta_ticks)
 
 	glColor3f(rcmd->r_color, 0.0f, 0.0f);
 	glBegin(GL_LINES);
-	glVertex2d(0, 0);
-	glVertex2d(rcmd->x, rcmd->y);
+	glVertex2d(-rcmd->x / 3.0f, -rcmd->y / 3.0f);
+	glVertex2d(rcmd->x / 3.0f, rcmd->y / 3.0f);
+
+	glEnd();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glBegin(GL_POLYGON);
+	glVertex2d(0.3, 0.3);
+	glVertex2d(0.5, 0.3);
+	glVertex2d(0.5, 0.5);
+#if 0
 	glVertex2d(-1, 0);
 	glVertex2d( 1, 0);
 	glVertex2d(0, -1);
 	glVertex2d(0, 1);
+#endif
 	glEnd();
 }
 
 static int
 draw_line_snprintf(struct render_command * __rcmd, char * dest, int length)
 {
-	struct rcmd_draw_line * rcmd = container_of(__rcmd, struct rcmd_draw_line, base);
+	struct rcmd_draw_line * rcmd =
+		container_of(__rcmd, struct rcmd_draw_line, base);
 	return snprintf(dest, length, "draw line from (0,0) to (%f, %f)\n",
 			rcmd->x, rcmd->y);
 }
@@ -64,13 +74,14 @@ draw_line_remove(struct render_command * __rcmd,
 		rcmd_remove_reason_t reason, int flags)
 {
 	
-	struct rcmd_draw_line * rcmd = container_of(__rcmd, struct rcmd_draw_line, base);
+	struct rcmd_draw_line * rcmd =
+		container_of(__rcmd, struct rcmd_draw_line, base);
 	VERBOSE(VIDEO, "Remove drawline cmd\n");
 	free(rcmd);
 	return 0;
 }
 
-struct rcmd_operations draw_line_ops = {
+static struct rcmd_operations draw_line_ops = {
 	.render		= draw_line_render,
 	.snprintf	= draw_line_snprintf,
 	.remove		= draw_line_remove,
@@ -90,6 +101,310 @@ struct render_command * alloc_draw_line(struct video_context * ctx,
 	cmd->y = y;
 	cmd->total_time = 0;
 	return &(cmd->base);
+}
+
+struct rcmd_clear {
+	struct render_command base;
+};
+
+static int
+clear_snprintf(struct render_command * __rcmd, char * dest, int length)
+{
+	return snprintf(dest, length, "Clear cmd\n");
+}
+
+static int
+clear_render(struct render_command * __rcmd, dtick_t delta_ticks)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	return 0;
+}
+
+static int
+clear_remove(struct render_command * __rcmd,
+		rcmd_remove_reason_t reason, int flags)
+{
+	struct rcmd_clear * rcmd =
+		container_of(__rcmd, struct rcmd_clear, base);
+	VERBOSE(VIDEO, "Remove clear cmd\n");
+	free(rcmd);
+}
+
+static struct rcmd_operations clear_ops = {
+	.render		= clear_render,
+	.snprintf	= clear_snprintf,
+	.remove		= clear_remove,
+};
+
+struct render_command * alloc_clear(struct video_context * ctx)
+{
+	struct rcmd_clear * cmd = calloc(1, sizeof(*cmd));
+	rcmd_init(&(cmd->base),
+			"Clear",
+			FALSE,
+			ctx,
+			&clear_ops);
+	cmd->base.pprivate = cmd;
+}
+
+struct rcmd_rotate {
+	struct render_command base;
+	float angle;
+};
+
+static int
+rotate_render(struct render_command * __rcmd, dtick_t delta_ticks)
+{
+	struct rcmd_rotate * base = container_of(__rcmd, struct rcmd_rotate, base);
+	base->angle += (float)delta_ticks / 10000.0f * 360.0f;
+	if (base->angle >= 360.0f)
+		base->angle = 0.0f;
+	if (base->angle <= -360.0f)
+		base->angle = 0.0f;
+
+	return 0;
+}
+
+static int
+rotate_render_l(struct render_command * __rcmd, dtick_t delta_ticks)
+{
+	rotate_render(__rcmd, delta_ticks);
+	struct rcmd_rotate * rcmd = container_of(__rcmd, struct rcmd_rotate, base);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glTranslatef(0.5, 0.5, 0.0);
+	glRotatef(rcmd->angle, 0,0,1);
+#if 1
+	glColor3f(0.0, 1.0, 0.0);
+	glBegin(GL_LINES);
+	glVertex2d(-0.1, 0);
+	glVertex2d(0.1, 0);
+	glVertex2d(0, -0.1);
+	glVertex2d(0, 0.1);
+	glEnd();
+#endif
+	return 0;
+}
+
+static int
+rotate_render_r(struct render_command * __rcmd, dtick_t delta_ticks)
+{
+	rotate_render(__rcmd, delta_ticks);
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+
+#if 1
+	glColor3f(0.3, 0.4, 0.5);
+	glBegin(GL_LINES);
+	glVertex2d(0.4, 0.5);
+	glVertex2d(0.6, 0.5);
+	glVertex2d(0.5, 0.4);
+	glVertex2d(0.5, 0.6);
+	glEnd();
+#endif
+	return 0;
+}
+
+static
+int rotate_snprintf(struct render_command * __rcmd, char * dest, int length)
+{
+	if (rcmd_is_left(__rcmd))
+		return snprintf(dest, length, "rotate (left)\n");
+	else
+		return snprintf(dest, length, "rotate (right)\n");
+}
+
+static int
+rotate_remove(struct render_command * __rcmd,
+		rcmd_remove_reason_t reason, int flags)
+{
+	struct rcmd_rotate * rcmd = container_of(__rcmd, struct rcmd_rotate, base);
+	VERBOSE(VIDEO, "Remove rotate cmd\n");
+	free(rcmd);
+}
+
+static struct rcmd_operations rotate_ops = {
+	.render		= NULL,
+	.lrender	= rotate_render_l,
+	.rrender	= rotate_render_r,
+	.snprintf	= rotate_snprintf,
+	.remove		= rotate_remove,
+};
+
+static void
+alloc_rotates(struct video_context * ctx,
+		struct render_command ** left,
+		struct render_command ** right)
+{
+	struct rcmd_rotate * lcmd, *rcmd;
+	lcmd = calloc(1, sizeof(*lcmd));
+	rcmd = calloc(1, sizeof(*rcmd));
+	rcmd_init(&lcmd->base,
+			"Rotate (left)",
+			FALSE,
+			ctx,
+			&rotate_ops);
+
+	rcmd_init(&rcmd->base,
+			"Rotate (right)",
+			FALSE,
+			ctx,
+			&rotate_ops);
+	rcmd->angle = lcmd->angle = 0.0f;
+	*left = &lcmd->base;
+	*right = &rcmd->base;
+}
+
+/* ********************************************* */
+
+static struct time_controller {
+	tick_t realtime, oldrealtime;
+	dtick_t deltatime;
+	int mspf_fallback;
+	int mspf;
+} time_controller;
+
+static void
+frame(struct video_context * video_ctx, dtick_t deltatime,
+		int event)
+{
+	volatile struct exception exp;
+entry:
+	TRY_CATCH(exp, MASK_SUBSYS_ALL) {
+		video_render(deltatime);
+		video_swap_buffers();
+	}
+	switch (exp.level) 
+	{
+		case EXCEPTION_NO_ERROR:
+			break;
+		case EXCEPTION_SUBSYS_RERUN:
+			WARNING(VIDEO, "video frame rerender\n");
+			break;
+		case EXCEPTION_SUBSYS_SKIPFRAME:
+			WARNING(VIDEO, "video frame skipped\n");
+			break;
+		case EXCEPTION_SUBSYS_REINIT:
+			VERBOSE(VIDEO, "video reinit\n");
+			video_reinit();
+			throw_exception(EXCEPTION_SYS_SKIPFRAME, "video reinit, skip this frame");
+			break;
+		default:
+			INTERNAL_ERROR(SYSTEM, "!@#$%^&\n");
+			break;
+	}
+}
+
+static void
+render(struct video_context * video_ctx)
+{
+
+	/* start render */
+	int event = event_poll();
+	int frames = 0;
+
+	tick_t realtime, oldrealtime;
+	dtick_t deltatime;
+	tick_t start_time;
+
+
+	start_time = realtime = get_ticks();
+
+	while((event != 1)) {
+		oldrealtime = realtime;
+		realtime = get_ticks();
+		deltatime = realtime - oldrealtime;
+		
+		if (frames >= 300) {
+			VERBOSE(VIDEO, "300 frames in %d ticks\n", realtime - start_time);
+			VERBOSE(VIDEO, "fps=%f\n", 300.0f / ((realtime - start_time) / 1000.0f));
+			frames = 0;
+			start_time = realtime;
+		}
+
+		int render_time;
+
+		if (deltatime > time_controller.mspf_fallback)
+			deltatime = time_controller.mspf_fallback;
+		if (deltatime < 0) {
+			WARNING(VIDEO, "Time stepped backwards, from %u to %u\n",
+					oldrealtime, realtime);
+			deltatime = 0;
+		}
+
+		time_controller.realtime = realtime;
+		time_controller.oldrealtime = oldrealtime;
+		time_controller.deltatime = deltatime;
+
+		struct exception exp;
+
+entry:
+		TRY_CATCH(exp, MASK_SYS_ALL) {
+			if (event == 2) {
+				/* XXX econfig is not finished yet! if econfig.c
+				 * doesn't contain such entry, the set and get both do
+				 * nothing! XXX */
+
+				if (conf_get_bool("video.fullscreen", TRUE)) {
+					conf_set_integer("video.resolution.w", 800);
+					conf_set_integer("video.resolution.h", 600);
+					conf_set_bool("video.fullscreen", FALSE);
+				}
+				else {
+					conf_set_integer("video.resolution.w", 1280);
+					conf_set_integer("video.resolution.h", 800);
+					conf_set_bool("video.fullscreen", TRUE);
+				}
+				conf_set_string("video.opengl.driver.gllibrary", NULL);
+				throw_exception(EXCEPTION_SYS_REINIT, "normal reinit");
+			}
+			if (event == 3)
+				video_screen_shot();
+
+			if (event == 4) {
+				throw_exception(EXCEPTION_SYS_RERUN, "normal rerun");
+			}
+
+			if (event == 5) {
+				throw_exception(EXCEPTION_SYS_SKIPFRAME, "normal skip");
+			}
+
+			frame(video_ctx, deltatime, event);
+			frames ++;
+		}
+		switch(exp.level) {
+			case EXCEPTION_NO_ERROR:
+				break;
+			case EXCEPTION_SYS_RERUN:
+				WARNING(SYSTEM, "rerun this frame\n");
+				event = 0;
+				goto entry;
+				break;
+			case EXCEPTION_SYS_SKIPFRAME:
+				WARNING(SYSTEM, "skip this frame\n");
+				delay(time_controller.mspf * 10);
+				event = 0;
+				break;
+			case EXCEPTION_SYS_REINIT:
+				VERBOSE(SYSTEM, "System reinit\n");
+				video_reinit();
+				break;
+			default:
+				INTERNAL_ERROR(SYSTEM, "@!#!@$%\n");
+				break;
+		}
+
+		if (time_controller.mspf > 0) {
+			render_time = get_ticks() - realtime;
+			if (render_time < time_controller.mspf)
+				delay(time_controller.mspf - render_time);
+		}
+
+		/* ???? */
+		event = event_poll();
+	}
+
+
 }
 
 int main(int argc, char * argv[])
@@ -114,11 +429,34 @@ int main(int argc, char * argv[])
 		VERBOSE(VIDEO, "Desired fps is %f\n", 1000.0 / mspf);
 		VERBOSE(VIDEO, "Fps fallback is %f\n", 1000.0 / mspf_fallback);
 
+		time_controller.mspf = mspf;
+		time_controller.mspf_fallback = mspf_fallback;
+
 		/* Link commands */
 		struct render_command * draw_line = alloc_draw_line(video_ctx,
 				0.5, 0.6);
+		struct render_command * clear = alloc_clear(video_ctx);
+		struct render_command * lrotate, * rrotate;
+
+		alloc_rotates(video_ctx, &lrotate, &rrotate);
 
 		video_insert_command(draw_line, AFTER, NULL);
+		video_insert_command(clear, BEFORE, draw_line);
+		video_insert_command_pair(
+				lrotate, BEFORE, draw_line,
+				rrotate, AFTER, draw_line);
+
+		rcmd_set_active(draw_line);
+		rcmd_set_active(clear);
+		rcmd_set_active(lrotate);
+
+		/* print commands */
+		char * buffer = malloc(4096);
+		rlist_snprintf(buffer, 4096, &(video_ctx->render_list));
+		printf("%s\n", buffer);
+		free(buffer);
+
+		render(video_ctx);
 	}
 	switch (exp.level) {
 		case (EXCEPTION_NO_ERROR):
@@ -135,4 +473,5 @@ int main(int argc, char * argv[])
 
 	return 0;
 }
+// vim:tabstop=4:shiftwidth=4
 

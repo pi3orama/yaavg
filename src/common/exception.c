@@ -27,7 +27,7 @@ exceptions_state_mc(enum catcher_action action);
 void
 make_cleanup(struct cleanup * cleanup)
 {
-	if (!cleanup_actived(cleanup))
+	if (!is_cleanup_actived(cleanup))
 		list_add(&cleanup->list, current_cleanup_chain);
 }
 
@@ -35,7 +35,7 @@ void
 remove_cleanup(struct cleanup * cleanup)
 {
 	assert(cleanup != NULL);
-	if (cleanup_actived(cleanup))
+	if (is_cleanup_actived(cleanup))
 		list_del(&cleanup->list);
 }
 
@@ -207,6 +207,14 @@ exceptions_state_mc(enum catcher_action action)
 		default:
 			INTERNAL_ERROR(SYSTEM, "bad switch");
 	}
+}
+
+void
+fatal_cleanup(void)
+{
+	while (current_catcher != NULL)
+		catcher_pop();
+	exit(0);
 }
 
 // vim:tabstop=4:shiftwidth=4

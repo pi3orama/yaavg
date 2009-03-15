@@ -5,6 +5,7 @@
 
 #include <common/debug.h>
 #include <common/exception.h>
+#include <common/utils.h>
 #include <econfig/econfig.h>
 
 #include <SDL/SDL.h>
@@ -12,6 +13,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <video/video_driver.h>
 #include <video/video_gl.h>
 
@@ -82,6 +84,7 @@ void
 gl_reinit(void)
 {
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	sdl_ctx = NULL;
 	init_sdl();
 	open_window();
 }
@@ -110,6 +113,11 @@ init_sdl(void)
 		/* exit immediatly */
 		throw_exception(EXCEPTION_FATAL, "init_sdl failed");
 	}
+
+	if (!conf_get_bool("video.sdl.blocksigint", TRUE)) {
+		unblock_sigint();
+	}
+
 	/* ... */
 	sdl_ctx = &_sdl_ctx;
 

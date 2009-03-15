@@ -128,7 +128,7 @@ void
 remove_cleanup(struct cleanup * cleanup);
 
 static inline int
-cleanup_actived(struct cleanup * cleanup)
+is_cleanup_actived(struct cleanup * cleanup)
 {
 	if (list_head_deleted(&cleanup->list))
 		return FALSE;
@@ -158,6 +158,10 @@ NORETURN void
 throw_exception(enum exception_level, const char * message) ATTR_NORETURN;
 
 #define THROWS(...)
+
+/* pop all catcher, cleanup all then exit */
+NORETURN void
+fatal_cleanup(void) ATTR_NORETURN;
 
 __END_DECLS
 

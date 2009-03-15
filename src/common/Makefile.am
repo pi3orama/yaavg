@@ -4,6 +4,7 @@ libcommon_la_SOURCES=debug.c \
 		     exception.c \
 		     utils_sdl.c \
 		     utils_png.c \
+		     utils_linux.c \
 		     utils.h \
 		     debug.h \
 		     exception.h \

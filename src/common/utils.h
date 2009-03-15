@@ -16,6 +16,9 @@
 void delay(tick_t ms);
 tick_t get_ticks(void);
 
+/* for posix system, unlock SIGINT with this func */
+void unblock_sigint(void);
+
 /* 
  * write `buffer' to `filename'. w/h is the size of buffer. 
  */
@@ -29,7 +32,6 @@ write_to_pngfile_rgb(char * filename, uint8_t * buffer, int w, int h)
 void
 write_to_pngfile_rgba(char * filename, uint8_t * buffer, int w, int h)
 	THROWS(CONTINUE, FATAL);
-
 
 #endif
 

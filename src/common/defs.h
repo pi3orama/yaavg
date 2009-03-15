@@ -5,11 +5,22 @@
 #include <config.h>
 #include <sys/cdefs.h>
 #include <stdint.h>
-__BEGIN_DECLS
 
+#ifdef HAVE_STDBOOL_H
+#include <stdbool.h>
+#endif
+
+
+__BEGIN_DECLS
+#ifdef HAVE_STDBOOL_H
+typedef	bool bool_t;
+# define TRUE true
+# define FALSE false
+#else
 typedef int bool_t;
-#define TRUE	(1)
-#define FALSE	(!TRUE)
+# define TRUE	(1)
+# define FALSE	(!TRUE)
+#endif
 
 typedef uint32_t tick_t;
 /* dtick is difference between ticks */

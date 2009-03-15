@@ -46,13 +46,9 @@ alloc_screenshot_cleanup(void)
 	return pcleanup;
 }
 
-void
-video_screen_shot(void)
+static void
+__video_screen_shot(void)
 {
-#ifndef ENABLE_SCREENSHOT
-	WARNING(VIDEO, "Screen shot is disabled in compiling.\n");
-	return;
-#else
 	
 	int err;
 	struct view_port vp;
@@ -64,17 +60,6 @@ video_screen_shot(void)
 		WARNING(VIDEO, "Video system has not beed inited\n");
 		return;
 	}
-
-	pcleanup = alloc_screenshot_cleanup();
-
-	make_cleanup(&pcleanup->base);
-	vp = video_ctx->view_port;
-
-	buffer = malloc(sizeof(uint8_t) * vp.w * vp.h * 3);
-	assert(buffer != NULL);
-	pcleanup->buffer = buffer;
-
-	driver_read_pixels_rgb(buffer, vp);
 
 	/* Generate filename */
 	struct tm tm, *ptm;
@@ -88,19 +73,66 @@ video_screen_shot(void)
 	ptm = localtime_r(&stime, &tm);
 	if (ptm != &tm) {
 		ERROR(VIDEO, "Cover to struct tm failed\n");
-		throw_exception(EXCEPTION_CONTINUE, "Cover to struct tm failed");
+		return;
 	}
 
 	char * filename;
+
 	filename = alloca(64);
 	memset(filename, '\0', 64);
 	strftime(filename, 64, "YAAVG-%Y%m%d%H%M%s.png", ptm);
-	VERBOSE(VIDEO, "Taking screen shot to file %s\n", filename);
 
-	write_to_pngfile_rgb(filename, buffer, vp.w, vp.h);
-#endif
+	const char * prefix = conf_get_string("video.screenshotdir", "/tmp");
+
+	/* Test the path */
+	struct stat statb;
+	if ((stat(prefix, &statb)) || (!S_ISDIR(statb.st_mode))) {
+		ERROR(SYSTEM, "screenshotdir %s is not a valid directory\n",
+				prefix);
+		return;
+	}
+
+	char * fullname = alloca(strlen(prefix) + strlen(filename) + 1);
+	sprintf(fullname, "%s/%s", prefix, filename);
+	VERBOSE(VIDEO, "Taking screen shot: %s\n", fullname);
+
+	pcleanup = alloc_screenshot_cleanup();
+
+	make_cleanup(&pcleanup->base);
+	vp = video_ctx->view_port;
+
+	buffer = malloc(sizeof(uint8_t) * vp.w * vp.h * 3);
+	assert(buffer != NULL);
+	pcleanup->buffer = buffer;
+
+	driver_read_pixels_rgb(buffer, vp);
+
+	write_to_pngfile_rgb(fullname, buffer, vp.w, vp.h);
 }
 
+void
+video_screen_shot(void)
+{
+	
+#ifndef ENABLE_SCREENSHOT
+	WARNING(VIDEO, "Screen shot is disabled in compiling.\n");
+	return;
+#else
+	volatile struct exception exp;
+	TRY_CATCH(exp, MASK_CONTINUE) {
+		__video_screen_shot();
+	}
+	switch (exp.level) {
+		case (EXCEPTION_CONTINUE):
+			ERROR(SYSTEM, "error when taking exceptions: %s\n",
+					exp.message);
+		case (EXCEPTION_NO_ERROR):
+			break;
+		default:
+			INTERNAL_ERROR(SYSTEM, "exp.level %d shouldn't be catched here\n", exp.level);
+	}
+#endif
+}
 
 // vim:tabstop=4:shiftwidth=4
 

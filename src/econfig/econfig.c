@@ -21,6 +21,7 @@ static struct conf_entry entries[] = {
 //	{"video.viewport.w", TypeInteger, vcast(1024)},
 //	{"video.viewport.h", TypeInteger, vcast(768)},
 	{"video.mspf.fallback", TypeInteger, vcast(100)},
+//	{"video.mspf", TypeInteger, vcast(0)},
 	{"video.mspf", TypeInteger, vcast(17)},	/* 17ms: 60fps */
 //	{"video.fullscreen", TypeBool, vcast(TRUE)},
 	{"video.fullscreen", TypeBool, vcast(FALSE)},
@@ -35,6 +36,8 @@ static struct conf_entry entries[] = {
 //	{"video.opengl.driver.multisample", TypeInteger, vcast(0)},
 //	{"video.opengl.driver.multisample", TypeInteger, vcast(4)},
 	{"video.screenshotdir", TypeString, vcast((const char *)"/tmp")},
+	{"video.caption", TypeString, vcast((const char *)"test")},
+	{"video.sdl.blocksigint", TypeBool, vcast(FALSE)},
 	{NULL, TypeNone, vcast(0)},
 };
 
@@ -69,7 +72,7 @@ conf_get(const char * name)
 
 #define DEF_CONF_SET(TYPE, shorttype)			\
 	void						\
-	conf_set##TYPE(const char * name, type_of_short(shorttype) v)	{	\
+	conf_set_##TYPE(const char * name, type_of_short(shorttype) v)	{	\
 		struct conf_entry * entry;			\
 		entry = conf_get(name);				\
 		if (entry != NULL)				\
