@@ -279,13 +279,13 @@ entry:
 		case EXCEPTION_NO_ERROR:
 			break;
 		case EXCEPTION_SUBSYS_RERUN:
-			WARNING(VIDEO, "video frame rerender\n");
+			WARNING(VIDEO, "video frame rerender: %s\n", exp.message);
 			break;
 		case EXCEPTION_SUBSYS_SKIPFRAME:
-			WARNING(VIDEO, "video frame skipped\n");
+			WARNING(VIDEO, "video frame skipped: %s\n", exp.message);
 			break;
 		case EXCEPTION_SUBSYS_REINIT:
-			VERBOSE(VIDEO, "video reinit\n");
+			WARNING(VIDEO, "video reinit: %s\n", exp.message);
 			video_reinit();
 			throw_exception(EXCEPTION_SYS_SKIPFRAME, "video reinit, skip this frame");
 			break;
@@ -376,17 +376,17 @@ entry:
 			case EXCEPTION_NO_ERROR:
 				break;
 			case EXCEPTION_SYS_RERUN:
-				WARNING(SYSTEM, "rerun this frame\n");
+				WARNING(SYSTEM, "rerun this frame: %s\n", exp.message);
 				event = 0;
 				goto entry;
 				break;
 			case EXCEPTION_SYS_SKIPFRAME:
-				WARNING(SYSTEM, "skip this frame\n");
+				WARNING(SYSTEM, "skip this frame: %s\n", exp.message);
 				delay(time_controller.mspf * 10);
 				event = 0;
 				break;
 			case EXCEPTION_SYS_REINIT:
-				VERBOSE(SYSTEM, "System reinit\n");
+				VERBOSE(SYSTEM, "System reinit: %s\n", exp.message);
 				video_reinit();
 				break;
 			default:
@@ -463,10 +463,10 @@ int main(int argc, char * argv[])
 			VERBOSE(SYSTEM, "No error!\n");
 			break;
 		case (EXCEPTION_USER_QUIT):
-			VERBOSE(SYSTEM, "User quit\n");
+			VERBOSE(SYSTEM, "User quit: %s\n", exp.message);
 			break;
 		default:
-			ERROR(SYSTEM, "Error out\n");
+			ERROR(SYSTEM, "Error out: %s\n", exp.message);
 	}
 
 	show_mem_info();
