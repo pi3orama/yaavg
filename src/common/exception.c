@@ -9,9 +9,11 @@
 
 #include <common/exception.h>
 #include <common/debug.h>
+#include <common/list.h>
 
+static LIST_HEAD(default_cleanup_chain);
+static struct list_head * current_cleanup_chain = &default_cleanup_chain;
 
-static struct cleanup * current_cleanup_chain = NULL;
 static struct catcher * current_catcher = NULL;
 
 
@@ -25,20 +27,27 @@ exceptions_state_mc(enum catcher_action action);
 void
 make_cleanup(struct cleanup * cleanup)
 {
-	cleanup->next = current_cleanup_chain;
-	current_cleanup_chain = cleanup;
+	list_add(&cleanup->list, current_cleanup_chain);
 }
+
+void
+remove_cleanup(struct cleanup * cleanup)
+{
+	assert(cleanup != NULL);
+	list_del(&cleanup->list);
+}
+
 
 void
 do_cleanup(void)
 {
-	struct cleanup * cleanup = current_cleanup_chain;
-	while (cleanup != NULL) {
-		struct cleanup * new_cleanup = cleanup->next;
+	struct cleanup * pos, *n;
+	assert(current_cleanup_chain != NULL);
+	list_for_each_entry_safe(pos, n, current_cleanup_chain, list) {
 		/* Notice: func may release the cleanup structure,
 		 * therefore we first save the next cleanup data */
-		cleanup->function(cleanup);
-		cleanup = new_cleanup;
+		list_del(&pos->list);
+		pos->function(pos);
 	}
 }
 
@@ -55,10 +64,12 @@ exceptions_state_mc_init(
 	catcher->mask = mask;
 	catcher->state = CATCHER_CREATED;
 
-	catcher->saved_cleanup_chain = current_cleanup_chain;
-	current_cleanup_chain = NULL;
-
 	catcher->prev = current_catcher;
+
+	INIT_LIST_HEAD(&catcher->cleanup_chain);
+	catcher->saved_cleanup_chain = current_cleanup_chain;
+	current_cleanup_chain = &catcher->cleanup_chain;
+
 	current_catcher = catcher;
 	return &(catcher->buf);
 }
@@ -113,6 +124,10 @@ catcher_pop(void)
 	do_cleanup();
 	/* restore cleanup chain */
 	current_cleanup_chain = old_catcher->saved_cleanup_chain;
+	if (current_catcher != NULL)
+		assert(current_cleanup_chain == (&current_catcher->cleanup_chain));
+	else
+		assert(current_cleanup_chain == &default_cleanup_chain);
 }
 
 static int

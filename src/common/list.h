@@ -4,6 +4,8 @@
 
 #include <stdlib.h> /* NULL */
 
+__BEGIN_DECLS
+
 #define LIST_POISON1  ((void *) 0x00100100)
 #define LIST_POISON2  ((void *) 0x00200200)
 
@@ -613,5 +615,7 @@ static inline void hlist_add_after(struct hlist_node *n,
 	     pos && ({ n = pos->next; 1; }) && 				 \
 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
 	     pos = n)
+
+__END_DECLS
 
 #endif

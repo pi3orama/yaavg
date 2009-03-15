@@ -16,6 +16,7 @@
 #include <sys/cdefs.h>
 #include <common/defs.h>
 #include <common/debug.h>
+#include <common/list.h>
 #include <memory.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -85,7 +86,7 @@ enum catcher_action {
 };
 
 struct cleanup {
-	struct cleanup * next;
+	struct list_head list;
 	/* Cleanup func need a param, because sometime the struct cleanup
 	 * is dynamically alloced, and need to be free, sometime it is static alloced. */
 	void (*function)(struct cleanup * cleanup);
@@ -97,7 +98,8 @@ struct catcher {
 	enum catcher_state state;
 	volatile struct exception * exception;
 	uint32_t mask;
-	struct cleanup * saved_cleanup_chain;
+	struct list_head cleanup_chain;
+	struct list_head * saved_cleanup_chain;
 	struct catcher * prev;
 };
 
@@ -118,6 +120,9 @@ typedef uint32_t return_mask;
 
 void
 make_cleanup(struct cleanup * cleanup);
+
+void
+remove_cleanup(struct cleanup * cleanup);
 
 void
 do_cleanup(void);

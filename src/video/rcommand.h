@@ -8,6 +8,7 @@
 #define VIDEO_RCOMMAND_H
 
 #include <common/defs.h>
+#include <common/exception.h>
 #include <common/list.h>
 
 #include <video/texture.h>
@@ -36,6 +37,7 @@ typedef enum _rcmd_remove_reason {
 	REMOVE_FINISH,		/* render func return REMOVE */
 	REMOVE_REQUIRE,		/* Upper level remove this command */
 	REMOVE_ERROR,		/* Error happend */
+	REMOVE_EXCEPTION,	/* rcmd is removed before it linked */
 	REMOVE_OTHER,		/*  */
 } rcmd_remove_reason_t;
 
@@ -60,8 +62,8 @@ struct rcmd_operations {
 
 	/* remove is a callback, notice the upper level the command has been
 	 * removed */
-	int (*remove)(struct render_command * command, rcmd_remove_reason_t
-			reason, int flags);
+	int (*remove)(struct render_command * command,
+			rcmd_remove_reason_t reason, int flags);
 
 	/* destroy is called by upper level, release all resources this command
 	 * alloced */
@@ -122,6 +124,9 @@ struct render_command {
 
 	struct list_head list;
 
+	/* after rcmd inited, before it is linked onto rlist, if
+	 * exception happen, make sure the command is removed. */
+	struct cleanup cleanup;
 	void * pprivate;
 };
 

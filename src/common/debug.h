@@ -49,9 +49,9 @@ static enum debug_level debug_levels[NR_COMPONENTS] = {
 	[RLIST] = TRACE,
 	[MEMORY] = VERBOSE,
 	[SYSTEM] = TRACE,
-	[OPENGL] = WARNING,
-	[SDL] = WARNING,
-	[VIDEO] = VERBOSE,
+	[OPENGL] = TRACE,
+	[SDL] = TRACE,
+	[VIDEO] = TRACE,
 };
 #endif
 

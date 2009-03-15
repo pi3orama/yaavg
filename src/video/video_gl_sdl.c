@@ -98,12 +98,19 @@ init_sdl(void)
 	int err, samples, bpp;
 	const char * library_name = NULL;
 
+	if (sdl_ctx != NULL) {
+		ERROR(SDL, "sdl has already inited\n");
+		throw_exception(EXCEPTION_FATAL, "sdl has already inited");
+	}
+
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
 		FATAL(SDL, "Failed to init SDL video subsystem, SDL report: \"%s\", "
 				"check for your configuration.\n", SDL_GetError());
 		/* exit immediatly */
 		throw_exception(EXCEPTION_FATAL, "init_sdl failed");
 	}
+	/* ... */
+	sdl_ctx = &_sdl_ctx;
 
 	library_name = conf_get_string("video.opengl.driver.gllibrary", NULL);
 	if (library_name != NULL)

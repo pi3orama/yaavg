@@ -6,9 +6,9 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-void EventInit(void);
+void event_init(void);
 /* return value == 1: exit */
-int EventPoll(void);
+int event_poll(void);
 
 #endif
 

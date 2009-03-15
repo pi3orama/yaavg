@@ -5,12 +5,12 @@
 #include <econfig/econfig.h>
 #include <SDL/SDL.h>
 
-void EventInit(void)
+void event_init(void)
 {
 	/* SDL_VIDEO MUST inited! */
 }
 
-int EventPoll(void)
+int event_poll(void)
 {
 	SDL_Event event;
 	 while (SDL_PollEvent (&event)) {

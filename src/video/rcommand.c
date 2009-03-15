@@ -20,6 +20,17 @@ static struct rcmd_operations null_ops = {
 	.snprintf	= NULL,
 };
 
+/* before the cmd inserted onto rlist and after it is inited,
+ * if exception happend, use this remove func to make sure all
+ * resource is freed */
+static void
+rcmd_simple_remove(struct cleanup * cleanup)
+{
+	struct render_command * rcmd = (struct render_command *)cleanup->args;
+	if ((rcmd->ops) && (rcmd->ops->remove))
+		rcmd->ops->remove(rcmd, REMOVE_EXCEPTION, 0);
+}
+
 void
 rcmd_init(struct render_command * command,
 		const char * name,
@@ -42,6 +53,11 @@ rcmd_init(struct render_command * command,
 		command->ops = &null_ops;
 	else
 		command->ops = ops;
+
+	/* init the cleanup func */
+	command->cleanup.function = rcmd_simple_remove;
+	command->cleanup.args = command;
+	make_cleanup(&command->cleanup);
 }
 
 extern void
