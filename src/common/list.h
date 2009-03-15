@@ -116,6 +116,15 @@ static inline void list_del(struct list_head *entry)
 	entry->prev = LIST_POISON2;
 }
 
+static inline int list_head_deleted(const struct list_head * head)
+{
+	if ((head->next == LIST_POISON1) || (head->prev == LIST_POISON2))
+		return TRUE;
+	if ((head->next == NULL) || (head->prev == NULL))
+		return TRUE;
+	return FALSE;
+}
+
 /**
  * list_del_rcu - deletes entry from list without re-initialization
  * @entry: the element to delete from the list.

@@ -28,6 +28,7 @@ static void __video_close(struct cleanup * str);
 
 static struct cleanup video_cleanup_str = {
 	.function 	= __video_close,
+	.list = {NULL, NULL},
 };
 
 static void
@@ -141,8 +142,6 @@ video_insert_command(struct render_command * cmd, BOA_t boa,
 	cmd->pairflag = 0;
 	cmd->pair_rcmd = NULL;
 
-	/* remove cleanup */
-	remove_cleanup(&cmd->cleanup);
 
 	/* even if pos is NULL, RListLinkXXX can do
 	 * the right thing */

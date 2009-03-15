@@ -76,7 +76,7 @@ struct rcmd_operations draw_line_ops = {
 	.remove		= draw_line_remove,
 };
 
-struct render_command * alloc_drawline(struct video_context * ctx,
+struct render_command * alloc_draw_line(struct video_context * ctx,
 		float x, float y)
 {
 	struct rcmd_draw_line * cmd = calloc(1, sizeof(*cmd));
@@ -115,8 +115,10 @@ int main(int argc, char * argv[])
 		VERBOSE(VIDEO, "Fps fallback is %f\n", 1000.0 / mspf_fallback);
 
 		/* Link commands */
-		struct render_command * draw_line = alloc_drawline(video_ctx,
+		struct render_command * draw_line = alloc_draw_line(video_ctx,
 				0.5, 0.6);
+
+		video_insert_command(draw_line, AFTER, NULL);
 	}
 	switch (exp.level) {
 		case (EXCEPTION_NO_ERROR):

@@ -34,6 +34,7 @@ init_glfunc(void);
 static void __driver_close(struct cleanup * str);
 static struct cleanup driver_cleanup_str = {
 	.function = __driver_close,
+	.list = {NULL, NULL},
 };
 static void
 __driver_close(struct cleanup * str)

@@ -42,6 +42,7 @@ static void
 __gl_close(struct cleanup * str);
 static struct cleanup gl_cleanup_str = {
 	.function	= __gl_close,
+	.list		= {NULL, NULL},
 };
 static void
 __gl_close(struct cleanup * str)

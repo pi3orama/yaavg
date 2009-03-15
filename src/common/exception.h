@@ -118,11 +118,25 @@ typedef uint32_t return_mask;
        while (exceptions_state_mc_action_iter_1 ())
 
 
+/* 
+ * NOTICE: cleanup MUST inactived. see cleanup_actived
+ */
 void
 make_cleanup(struct cleanup * cleanup);
 
 void
 remove_cleanup(struct cleanup * cleanup);
+
+static inline int
+cleanup_actived(struct cleanup * cleanup)
+{
+	if (list_head_deleted(&cleanup->list))
+		return FALSE;
+	if (list_empty(&cleanup->list))
+		return FALSE;
+	return TRUE;
+}
+
 
 void
 do_cleanup(void);

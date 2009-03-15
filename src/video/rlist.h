@@ -124,20 +124,11 @@ rlist_link_after(struct render_list * rlist,
 	do {					\
 		list_del(&(rcmd)->list);	\
 		rcmd_unset_inserted(rcmd);	\
-		if ((rcmd)->ops->remove != NULL)	\
-			(rcmd)->ops->remove((rcmd), (reason), (flags));	\
+		rcmd_remove((rcmd), (reason), (flags));\
 	} while(0)
 
 #define rlist_for_each_rcmd(pos, rlist) \
 	list_for_each_entry(pos, &((rlist)->command_list_head), list)
-
-#define rlist_remove_all_rcmd(rcmd, reason, flags) \
-	do { \
-		list_del(&(rcmd)->list);	\
-		rcmd_unset_inserted(rcmd);	\
-		if ((rcmd)->ops->remove != NULL)	\
-			(rcmd)->ops->remove((cmd), (reason), (flags));	\
-	} while(0)
 
 #define rlist_for_each_rcmd_safe(pos, n, rlist) \
 	list_for_each_entry_safe(pos, n, &((rlist)->command_list_head), list)

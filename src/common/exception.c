@@ -27,14 +27,16 @@ exceptions_state_mc(enum catcher_action action);
 void
 make_cleanup(struct cleanup * cleanup)
 {
-	list_add(&cleanup->list, current_cleanup_chain);
+	if (!cleanup_actived(cleanup))
+		list_add(&cleanup->list, current_cleanup_chain);
 }
 
 void
 remove_cleanup(struct cleanup * cleanup)
 {
 	assert(cleanup != NULL);
-	list_del(&cleanup->list);
+	if (cleanup_actived(cleanup))
+		list_del(&cleanup->list);
 }
 
 

@@ -57,7 +57,22 @@ rcmd_init(struct render_command * command,
 	/* init the cleanup func */
 	command->cleanup.function = rcmd_simple_remove;
 	command->cleanup.args = command;
+	/* we have inited cleanup's list to NULL in memset */
 	make_cleanup(&command->cleanup);
+}
+
+void
+rcmd_remove(struct render_command * rcmd,
+		rcmd_remove_reason_t reason,
+		int flags)
+{
+
+	/* NOTICE: remove_cleanup will detect whether
+	 * the cleanup is active. */
+	remove_cleanup(&rcmd->cleanup);
+
+	if ((rcmd->ops) && (rcmd->ops->remove))
+		rcmd->ops->remove(rcmd, reason, flags);
 }
 
 extern void
@@ -69,5 +84,22 @@ rcmd_set_active(struct render_command * cmd)
 		struct render_command * pair = cmd->pair_rcmd;
 		pair->active = TRUE;
 	}
+}
+
+extern void
+rcmd_set_inserted(struct render_command * cmd)
+{
+	(cmd)->inserted = TRUE;
+	/* remove cleanup */
+	remove_cleanup(&cmd->cleanup);
+}
+
+extern void
+rcmd_unset_inserted(struct render_command * cmd)
+{
+	(cmd)->inserted = FALSE;
+	/* make cleanup */
+	/* make_cleanup will check whether cleanup has already beed inserted */
+	make_cleanup(&cmd->cleanup);
 }
 

@@ -142,9 +142,20 @@ rcmd_init(struct render_command * command,
 		bool_t revert_time,
 		struct video_context * vctx,
 		struct rcmd_operations * ops);
+extern void
+rcmd_remove(struct render_command * rcmd,
+		rcmd_remove_reason_t reason,
+		int flags);
+
 
 extern void
 rcmd_set_active(struct render_command * cmd);
+
+extern void
+rcmd_set_inserted(struct render_command * cmd);
+
+extern void
+rcmd_unset_inserted(struct render_command * cmd);
 
 #define rcmd_is_left(cmd)	((cmd)->pairflag > 0)
 #define rcmd_is_right(cmd)	((cmd)->pairflag < 0)
@@ -157,8 +168,6 @@ rcmd_set_active(struct render_command * cmd);
 
 #define rcmd_set_first(cmd)	((cmd)->first = TRUE)
 #define rcmd_unset_first(cmd)	((cmd)->first = FALSE)
-#define rcmd_set_inserted(cmd)	((cmd)->inserted = TRUE)
-#define rcmd_unset_inserted(cmd)	((cmd)->inserted = FALSE)
 
 /* There's no "alloc_rcommand", because user always alloc rcommand's
  * subclass */
