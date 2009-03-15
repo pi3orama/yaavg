@@ -42,7 +42,7 @@ rlist_clear(struct render_list * rlist)
  * This is a debug facility.
  */
 int
-rlist_printf(char * str, int length, struct render_list * rlist)
+rlist_snprintf(char * str, int length, struct render_list * rlist)
 {
 	/* the length of desired string */
 	int x;
@@ -74,7 +74,7 @@ rlist_printf(char * str, int length, struct render_list * rlist)
 		else
 			xsnprintf("%s render command %p: ", ifactive, rcmd);
 
-		if (rcmd->ops->snprintf != NULL) {
+		if ((rcmd->ops) && (rcmd->ops->snprintf != NULL)) {
 			x = rcmd->ops->snprintf(rcmd, p, length);
 			p += x;
 			if (length >= x)
@@ -88,4 +88,6 @@ rlist_printf(char * str, int length, struct render_list * rlist)
 
 	xsnprintf("End");
 	return (p - str) / sizeof(char);
+#undef xsnprintf
 }
+

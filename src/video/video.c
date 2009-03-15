@@ -24,9 +24,16 @@ video_get_current_context(void)
 	return video_ctx;
 }
 
-void
-video_close(void)
+static void __video_close(struct cleanup * str);
+
+static struct cleanup video_cleanup_str = {
+	.function 	= __video_close,
+};
+
+static void
+__video_close(struct cleanup * str)
 {
+	assert(str == &video_cleanup_str);
 	if (video_ctx != NULL) {
 		rlist_clear(&video_ctx->render_list);
 		/* NOTICE: driver_close should be made idempotent.
@@ -37,15 +44,18 @@ video_close(void)
 	}
 }
 
-struct cleanup video_cleanup_str = {
-	.function 	= video_close,
-};
+/* NOTICE: We shoud never call video_close directly */
+void video_close()
+{
+	__video_close(&video_cleanup_str);
+}
+
 
 struct video_context *
 video_init(void)
 {
 	if (video_ctx != NULL) {
-		WARNING("multi video_init\n");
+		WARNING(VIDEO, "multi video_init\n");
 		return video_ctx;
 	}
 
@@ -55,12 +65,14 @@ video_init(void)
 		 * throw an exception */
 		throw_exception(EXCEPTION_FATAL, "Driver init failed");
 	}
-	make_cleanup(&video_cleanup_str);
 	rlist_init(&(video_ctx->render_list));
+	make_cleanup(&video_cleanup_str);
 	game_ticks = 0;
 	return video_ctx;
 }
 
+/* video_reinit doesn't touch the rlist, keep the
+ * commands there, to for render next frame. */
 void
 video_reinit(void)
 {
@@ -91,11 +103,11 @@ video_render(dtick_t delta_time)
 		if (rcmd_is_revert(cmd))
 			t = -t;
 		
-		if ((rcmd_is_left(cmd)) && (cmd->ops->lrender))
+		if ((rcmd_is_left(cmd)) && (cmd->ops) && (cmd->ops->lrender))
 			flags = cmd->ops->lrender(cmd, t);
-		else if ((rcmd_is_right(cmd)) && (cmd->ops->rrender))
+		else if ((rcmd_is_right(cmd)) && (cmd->ops) && (cmd->ops->rrender))
 			flags = cmd->ops->rrender(cmd, t);
-		else if (cmd->ops->render)
+		else if ((cmd->ops) && (cmd->ops->render))
 			cmd->ops->render(cmd, t);
 
 		if (flags & RENDER_FAIL) {

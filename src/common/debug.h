@@ -141,7 +141,7 @@ extern void show_mem_info();
 # ifdef calloc
 #  undef calloc
 # endif
-# define calloc(S)	yyavg_calloc(S)
+# define calloc(C, S)	yaavg_calloc(C, S)
 #endif
 #endif
 

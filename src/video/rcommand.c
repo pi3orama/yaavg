@@ -17,7 +17,7 @@ static struct rcmd_operations null_ops = {
 	.destroy	= NULL,	
 	.finish		= NULL,
 	.speedup	= NULL,
-	.sprintf	= NULL,
+	.snprintf	= NULL,
 };
 
 void

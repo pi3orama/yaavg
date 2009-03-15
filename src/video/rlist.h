@@ -144,7 +144,7 @@ rlist_link_after(struct render_list * rlist,
 
 /* This is a debug facility,  */
 extern int
-rlist_sprint(char * dest, int length, struct render_list * list);
+rlist_snprintf(char * dest, int length, struct render_list * list);
 
 __END_DECLS
 

@@ -7,6 +7,7 @@
 #define VIDEO_H
 
 #include <common/defs.h>
+#include <common/exception.h>
 #include <video/rlist.h>
 #include <video/rcommand.h>
 
@@ -33,6 +34,8 @@ video_init(void);
 extern void
 video_reinit(void);
 
+/* We don't really need a video_close, because the try-catch structure
+ * can do the job. However, we keep this func for consistency. */
 extern void
 video_close(void);
 
@@ -57,7 +60,7 @@ extern void
 video_set_icon(const icon_t icon);
 
 extern void
-video_screen_shot(void);
+video_screen_shot(void) THROWS(CONTINUE);
 
 /* Video engine is respond to generate game time */
 extern tick_t

@@ -30,9 +30,15 @@ init_gl_driver(void);
 static void
 init_glfunc(void);
 
-void
-driver_close(void)
+
+static void __driver_close(struct cleanup * str);
+static struct cleanup driver_cleanup_str = {
+	.function = __driver_close,
+};
+static void
+__driver_close(struct cleanup * str)
 {
+	assert(str == &driver_cleanup_str);
 	if (gl_ctx != NULL) {
 		gl_close();
 		gl_ctx = NULL;
@@ -40,16 +46,19 @@ driver_close(void)
 	return;
 }
 
-struct cleanup driver_cleanup_str = {
-	.function = driver_close,
-};
+
+void
+driver_close(void)
+{
+	__driver_close(&driver_cleanup_str);
+}
 
 
 struct video_context *
 driver_init(void)
 {
 	if (gl_ctx != NULL) {
-		WARNING("multi driver_init\n");
+		WARNING(OPENGL, "multi driver_init\n");
 		return &gl_ctx->base;
 	}
 	gl_ctx = gl_init();
@@ -81,7 +90,7 @@ init_glfunc(void)
 #undef INIT_GL_FUNC_LIST
 	struct glfunc_init_item * item = &gl_func_init_list[0];
 	while (item->name != NULL) {
-		*(item->func) = (void*)gl_get_proc_addredd(item->name);
+		*(item->func) = (void*)gl_get_proc_address(item->name);
 		if (*item->func == NULL)
 			WARNING(OPENGL, "gl function %s not found\n", item->name);
 		item ++;
@@ -181,13 +190,13 @@ video_reshape(int w, int h)
 	}
 }
 
-void
-driver_read_pixels(uint8_t * buffer, int x, int y, int w, int h)
+static void
+read_pixels(uint8_t * buffer, int x, int y, int w, int h, GLenum format)
 {
 	GLenum err;
 	if (gl_ctx == NULL) {
 		ERROR(OPENGL, "OpenGL has not been inited\n");
-		throw_exception(EXCEPTION_CONTINUE, "OpenGL has not been inited");
+		throw_exception(EXCEPTION_FATAL, "OpenGL has not been inited");
 	}
 
 	if (x + w > gl_ctx->base.width) {
@@ -202,14 +211,27 @@ driver_read_pixels(uint8_t * buffer, int x, int y, int w, int h)
 		throw_exception(EXCEPTION_CONTINUE, "Height out of range");
 	}
 
-	glReadPixels(x, y, w, h, GL_RGB, GL_UNSIGNED_BYTE, buffer);
+	glReadPixels(x, y, w, h, format, GL_UNSIGNED_BYTE, buffer);
 
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
 		WARNING(OPENGL, "ReadPixels failed, errno=%d\n", err);
-		throw_exception(EXCEPTION_CONTINUE, "Height out of range");
+		throw_exception(EXCEPTION_CONTINUE, "Read pixels failed\n");
 	}
 }
+
+void
+driver_read_pixels_rgb(uint8_t * buffer, struct view_port vp)
+{
+	read_pixels(buffer, vp.x, vp.y, vp.w, vp.h, GL_RGB);
+}
+
+void
+driver_read_pixels_rgba(uint8_t * buffer, struct view_port vp)
+{
+	read_pixels(buffer, vp.x, vp.y, vp.w, vp.h, GL_RGBA);
+}
+
 
 /* Implentmented in engine_gl_xxx */
 #if 0

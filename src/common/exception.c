@@ -37,7 +37,7 @@ do_cleanup(void)
 		struct cleanup * new_cleanup = cleanup->next;
 		/* Notice: func may release the cleanup structure,
 		 * therefore we first save the next cleanup data */
-		cleanup->function();
+		cleanup->function(cleanup);
 		cleanup = new_cleanup;
 	}
 }
@@ -78,11 +78,6 @@ exceptions_state_mc_action_iter_1 (void)
 NORETURN void
 throw_exception (enum exception_level level, const char * message)
 {
-	/* set exception and longjump */
-	/* We needn't to do cleanup here. If the state machine is correct,
-	 * the catcher_pop should be called, then do_cleanup() will be called,
-	 * the cleanup_chain will be restored.*/
-
 	if (current_catcher == NULL) {
 		/* We are not in a catch block. do all cleanup then
 		 * quit */
@@ -91,6 +86,11 @@ throw_exception (enum exception_level level, const char * message)
 		do_cleanup();
 		exit(-1);
 	}
+
+	/* set exception and longjump */
+	/* We needn't to do cleanup here. If the state machine is correct,
+	 * the catcher_pop should be called, then do_cleanup() will be called,
+	 * the cleanup_chain will be restored.*/
 
 	current_catcher->exception->level = level;
 	current_catcher->exception->message = message;
@@ -111,6 +111,7 @@ catcher_pop(void)
 	current_catcher = old_catcher->prev;
 	/* do the cleanup */
 	do_cleanup();
+	/* restore cleanup chain */
 	current_cleanup_chain = old_catcher->saved_cleanup_chain;
 }
 

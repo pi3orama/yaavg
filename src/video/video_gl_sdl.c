@@ -37,9 +37,16 @@ init_sdl(void);
 static void
 open_window(void);
 
-void
-gl_close(void)
+
+static void
+__gl_close(struct cleanup * str);
+static struct cleanup gl_cleanup_str = {
+	.function	= __gl_close,
+};
+static void
+__gl_close(struct cleanup * str)
 {
+	assert(str == &gl_cleanup_str);
 	if (sdl_ctx != NULL) {
 		TRACE(SDL, "sdl close\n");
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -47,9 +54,11 @@ gl_close(void)
 	}
 }
 
-struct cleanup gl_cleanup_str = {
-	.function	= gl_close,
-};
+void
+gl_close(void)
+{
+	__gl_close(&gl_cleanup_str);
+}
 
 struct gl_context *
 gl_init(void)

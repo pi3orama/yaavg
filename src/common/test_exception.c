@@ -3,13 +3,13 @@
 #include <stdio.h>
 #include <common/exception.h>
 
-static void video_subsys1_cleanup(void)
+static void video_subsys1_cleanup(struct cleanup * str)
 {
 	printf("video subsys1 cleanup\n");
 	return;
 }
 
-static void video_subsys2_cleanup(void)
+static void video_subsys2_cleanup(struct cleanup * str)
 {
 	printf("video subsys2 cleanup\n");
 	return;
@@ -54,20 +54,20 @@ static void
 video_reinit()
 {
 	printf("Video reinit\n");
-	video_subsys2_cleanup();
-	video_subsys1_cleanup();
+	video_subsys2_cleanup(NULL);
+	video_subsys1_cleanup(NULL);
 	video_init(FALSE);
 }
 
 static void
-snd_subsys1_cleanup(void)
+snd_subsys1_cleanup(struct cleanup * str)
 {
 	printf("snd subsys1 cleanup\n");
 	return;
 }
 
 static void
-snd_subsys2_cleanup(void)
+snd_subsys2_cleanup(struct cleanup * str)
 {
 	printf("snd subsys2 cleanup\n");
 	return;
@@ -110,13 +110,13 @@ static void
 snd_reinit()
 {
 	printf("snd reinit\n");
-	snd_subsys2_cleanup();
-	snd_subsys1_cleanup();
+	snd_subsys2_cleanup(NULL);
+	snd_subsys1_cleanup(NULL);
 	snd_init(FALSE);
 }
 
 static void
-video_frame_cleanup(void)
+video_frame_cleanup(struct cleanup * str)
 {
 	printf("video frame cleanup\n");
 }

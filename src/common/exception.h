@@ -19,7 +19,6 @@
 #include <memory.h>
 #include <stdlib.h>
 #include <assert.h>
-
 #include <setjmp.h>
 
 
@@ -87,7 +86,10 @@ enum catcher_action {
 
 struct cleanup {
 	struct cleanup * next;
-	void (*function)(void);
+	/* Cleanup func need a param, because sometime the struct cleanup
+	 * is dynamically alloced, and need to be free, sometime it is static alloced. */
+	void (*function)(struct cleanup * cleanup);
+	void * args;
 };
 
 struct catcher {
@@ -136,7 +138,7 @@ exceptions_state_mc_action_iter_1(void);
 NORETURN void
 throw_exception(enum exception_level, const char * message) ATTR_NORETURN;
 
-
+#define THROWS(...)
 
 __END_DECLS
 
