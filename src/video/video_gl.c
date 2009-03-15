@@ -73,6 +73,7 @@ driver_init(void)
 		return &gl_ctx->base;
 	}
 }
+
 void
 driver_reinit(void)
 {
@@ -80,6 +81,8 @@ driver_reinit(void)
 	init_gl_driver();
 	return;
 }
+
+
 
 static void
 init_glfunc(void)
@@ -232,6 +235,52 @@ driver_read_pixels_rgba(uint8_t * buffer, struct view_port vp)
 {
 	read_pixels(buffer, vp.x, vp.y, vp.w, vp.h, GL_RGBA);
 }
+
+void
+driver_begin_frame(void)
+{
+	int err;
+
+	static int reinited = 0;
+	static tick_t last_time = 0;
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	err = glGetError();
+	if (err != GL_NO_ERROR) {
+		ERROR(OPENGL, "driver_begin_frame failed, errno=%d\n", err);
+		throw_reinit_exception(&reinited, &last_time,
+				EXCEPTION_SUBSYS_RERUN, "frame error, try rerender",
+				EXCEPTION_SUBSYS_SKIPFRAME, "still error, skip this frame",
+				EXCEPTION_SUBSYS_REINIT, "still error, reinit subsystem",
+				EXCEPTION_FATAL, "fatal error");
+	}
+
+	return;
+}
+
+void
+driver_end_frame(void)
+{
+	int err;
+
+	static int reinited = 0;
+	static tick_t last_time = 0;
+
+	err = glGetError();
+	if (err != GL_NO_ERROR) {
+		ERROR(OPENGL, "GLError, errno=%d\n", err);
+		throw_reinit_exception(&reinited, &last_time,
+				EXCEPTION_SUBSYS_RERUN, "frame error, try rerender",
+				EXCEPTION_SUBSYS_SKIPFRAME, "still error, skip this frame",
+				EXCEPTION_SUBSYS_REINIT, "still error, reinit subsystem",
+				EXCEPTION_FATAL, "fatal error");
+	}
+
+	return;
+}
+
 
 
 /* Implentmented in engine_gl_xxx */

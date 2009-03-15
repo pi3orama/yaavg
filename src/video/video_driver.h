@@ -25,6 +25,20 @@ driver_reinit(void);
 extern void
 driver_close(void);
 
+/* 
+ * reset some vars. for examplem in opengl,
+ * begin_frame should reload ModelView matrix
+ */
+extern void
+driver_begin_frame(void);
+
+/* 
+ * after all render cmds finish.
+ * in opengl, end_frame check glError
+ */
+extern void
+driver_end_frame(void);
+
 extern void
 driver_read_pixels_rgb(uint8_t * buffer, struct view_port vp)
 	THROWS(CONTINUE, FATAL);

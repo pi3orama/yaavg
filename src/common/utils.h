@@ -19,6 +19,17 @@ tick_t get_ticks(void);
 /* for posix system, unlock SIGINT with this func */
 void unblock_sigint(void);
 
+/* solve multi reinit problem */
+/* I put this func here, not in exception.h, because
+ * it depend on tick */
+void NORETURN throw_reinit_exception(
+		int * reinited,
+		tick_t * last_time,
+		int rerun_exp_level, const char * rerun_msg,
+		int skip_exp_level, const char * skip_msg,
+		int reinit_exp_level, const char * reinit_msg,
+		int fatal_exp_level, const char * fatal_msg) ATTR_NORETURN ;
+
 /* 
  * write `buffer' to `filename'. w/h is the size of buffer. 
  */

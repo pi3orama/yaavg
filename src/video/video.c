@@ -81,12 +81,13 @@ video_reinit(void)
 	driver_reinit();
 }
 
-extern int
+int
 video_render(dtick_t delta_time)
 {
 	struct render_command * cmd, * n;
 	game_ticks += delta_time;
 
+	driver_begin_frame();
 	rlist_for_each_rcmd_safe(cmd, n, &(video_ctx->render_list)) {
 		int flags = 0;
 		dtick_t t = delta_time;
@@ -128,6 +129,7 @@ video_render(dtick_t delta_time)
 		if (flags & RENDER_STOP)
 			break;
 	}
+	driver_end_frame();
 	return 0;
 }
 
