@@ -103,9 +103,9 @@ __video_screen_shot(void)
 	assert(buffer != NULL);
 	pcleanup->buffer = buffer;
 
-	driver_read_pixels_rgba(buffer, vp);
+	driver_read_pixels_rgb(buffer, vp);
 
-	write_to_pngfile_rgba(fullname, buffer, vp.w, vp.h);
+	write_to_pngfile_rgb(fullname, buffer, vp.w, vp.h);
 }
 
 void
