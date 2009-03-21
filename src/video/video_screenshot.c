@@ -78,7 +78,7 @@ __video_screen_shot(void)
 
 	filename = alloca(64);
 	memset(filename, '\0', 64);
-	strftime(filename, 64, "YAAVG-%Y%m%d%H%M%s.png", ptm);
+	strftime(filename, 64, "YAAVG-%Y%m%d%H%M%S.png", ptm);
 
 	const char * prefix = conf_get_string("video.screenshotdir", "/tmp");
 
@@ -99,13 +99,13 @@ __video_screen_shot(void)
 	make_cleanup(&pcleanup->base);
 	vp = video_ctx->view_port;
 
-	buffer = malloc(sizeof(uint8_t) * vp.w * vp.h * 3);
+	buffer = malloc(sizeof(uint8_t) * vp.w * vp.h * 4);
 	assert(buffer != NULL);
 	pcleanup->buffer = buffer;
 
-	driver_read_pixels_rgb(buffer, vp);
+	driver_read_pixels_rgba(buffer, vp);
 
-	write_to_pngfile_rgb(fullname, buffer, vp.w, vp.h);
+	write_to_pngfile_rgba(fullname, buffer, vp.w, vp.h);
 }
 
 void

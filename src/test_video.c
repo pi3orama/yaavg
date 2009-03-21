@@ -45,7 +45,7 @@ draw_line_render(struct render_command * __rcmd, dtick_t delta_ticks)
 	glVertex2d(rcmd->x / 3.0f, rcmd->y / 3.0f);
 
 	glEnd();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glBegin(GL_POLYGON);
 	glVertex2d(0.3, 0.3);
 	glVertex2d(0.5, 0.3);
