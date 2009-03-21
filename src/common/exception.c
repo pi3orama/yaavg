@@ -67,8 +67,6 @@ grab_cleanup(struct cleanup * cleanup)
 {
 	assert(cleanup != NULL);
 	if (cleanup->chain == current_cleanup_chain) {
-		WARNING(SYSTEM, "invalid grab_cleanup: desired cleanup is"
-				" on current chain\n");
 		return;
 	}
 
