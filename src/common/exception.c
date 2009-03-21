@@ -27,18 +27,62 @@ exceptions_state_mc(enum catcher_action action);
 void
 make_cleanup(struct cleanup * cleanup)
 {
-	if (!is_cleanup_actived(cleanup))
+	if (!is_cleanup_actived(cleanup)) {
 		list_add(&cleanup->list, current_cleanup_chain);
+		cleanup->chain = current_cleanup_chain;
+	}
 }
 
 void
 remove_cleanup(struct cleanup * cleanup)
 {
 	assert(cleanup != NULL);
-	if (is_cleanup_actived(cleanup))
+	if (is_cleanup_actived(cleanup)) {
 		list_del(&cleanup->list);
+		cleanup->chain = NULL;
+	}
 }
 
+void
+push_cleanup(struct cleanup * cleanup)
+{
+	assert(cleanup != NULL);
+	if (cleanup->chain != current_cleanup_chain) {
+		ERROR(SYSTEM, "invalid push_cleanup: desired cleanup not"
+				" on current chain\n");
+	}
+
+	remove_cleanup(cleanup);
+	if ((current_catcher) && (current_catcher->saved_cleanup_chain)) {
+		list_add(&cleanup->list, current_catcher->saved_cleanup_chain);
+		cleanup->chain = current_catcher->saved_cleanup_chain;
+	} else {
+		list_add(&cleanup->list, &default_cleanup_chain);
+		cleanup->chain = &default_cleanup_chain;
+	}
+}
+
+void
+grab_cleanup(struct cleanup * cleanup)
+{
+	assert(cleanup != NULL);
+	if (cleanup->chain == current_cleanup_chain) {
+		WARNING(SYSTEM, "invalid grab_cleanup: desired cleanup is"
+				" on current chain\n");
+		return;
+	}
+
+	remove_cleanup(cleanup);
+	make_cleanup(cleanup);
+}
+
+void
+throw_cleanup(struct cleanup * cleanup)
+{
+	remove_cleanup(cleanup);
+	list_add(&cleanup->list, &default_cleanup_chain);
+	cleanup->chain = &default_cleanup_chain;
+}
 
 void
 do_cleanup(void)
@@ -214,6 +258,8 @@ fatal_cleanup(void)
 {
 	while (current_catcher != NULL)
 		catcher_pop();
+	/* cleanup the default cleanup chain */
+	do_cleanup();
 	exit(0);
 }
 

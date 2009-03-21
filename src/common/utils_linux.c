@@ -27,7 +27,7 @@ unblock_sigint(void)
 	action.sa_handler = cleanup;
 	sigaction(SIGINT, &action, NULL);
 #else
-	signal(SIGINT, SIG_DFL);
+	signal(SIGINT, cleanup);
 #endif
 }
 

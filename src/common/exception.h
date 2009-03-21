@@ -87,6 +87,7 @@ enum catcher_action {
 
 struct cleanup {
 	struct list_head list;
+	struct list_head * chain;
 	/* Cleanup func need a param, because sometime the struct cleanup
 	 * is dynamically alloced, and need to be free, sometime it is static alloced. */
 	void (*function)(struct cleanup * cleanup);
@@ -127,6 +128,18 @@ make_cleanup(struct cleanup * cleanup);
 void
 remove_cleanup(struct cleanup * cleanup);
 
+/*  move this cleanup to outer catcher */
+void
+push_cleanup(struct cleanup * cleanup);
+
+/* move this cleanup to this catcher */
+void
+grab_cleanup(struct cleanup * cleanup);
+
+/* move this cleanup to the 'outest' catchup */
+void
+throw_cleanup(struct cleanup * cleanup);
+
 static inline int
 is_cleanup_actived(struct cleanup * cleanup)
 {
@@ -136,7 +149,6 @@ is_cleanup_actived(struct cleanup * cleanup)
 		return FALSE;
 	return TRUE;
 }
-
 
 void
 do_cleanup(void);

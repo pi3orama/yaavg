@@ -469,6 +469,8 @@ int main(int argc, char * argv[])
 			ERROR(SYSTEM, "Error out: %s\n", exp.message);
 	}
 
+	do_cleanup();
+
 	show_mem_info();
 
 	return 0;

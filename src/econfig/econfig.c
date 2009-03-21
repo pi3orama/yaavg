@@ -37,7 +37,10 @@ static struct conf_entry entries[] = {
 //	{"video.opengl.driver.multisample", TypeInteger, vcast(4)},
 	{"video.screenshotdir", TypeString, vcast((const char *)"/tmp")},
 	{"video.caption", TypeString, vcast((const char *)"test")},
-	{"video.sdl.blocksigint", TypeBool, vcast(FALSE)},
+	/* If the SIGINT is raised during SwapBuffer, the SDL cleanup
+	 * function cause deadlock.  */
+	{"video.sdl.blocksigint", TypeBool, vcast(TRUE)},
+//	{"video.sdl.blocksigint", TypeBool, vcast(FALSE)},
 	{NULL, TypeNone, vcast(0)},
 };
 

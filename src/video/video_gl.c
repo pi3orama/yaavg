@@ -15,6 +15,7 @@
 #include <common/defs.h>
 #include <common/debug.h>
 #include <common/exception.h>
+#include <common/utils.h>
 
 #include <econfig/econfig.h>
 
