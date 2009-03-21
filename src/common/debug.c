@@ -233,7 +233,7 @@ static inline void print_backtrace(FILE * fp)
 	if (fp == NULL)
 		fp = stderr;
 #ifdef HAVE_BACKTRACE
-	size_t count, i;
+	size_t count;
 
 	count = backtrace(buffer, 256);
 	backtrace_symbols_fd(&buffer[1], count-1, fileno(fp));

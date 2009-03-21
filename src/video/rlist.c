@@ -91,3 +91,6 @@ rlist_snprintf(char * str, int length, struct render_list * rlist)
 #undef xsnprintf
 }
 
+// vim:tabstop=4:shiftwidth=4
+
+

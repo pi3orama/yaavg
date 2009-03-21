@@ -132,7 +132,6 @@ video_frame(int i)
 	volatile struct exception exp;
 	static int reruned = 0;
 	static int reinited = 0;
-	static int skipped = 0;
 	static int sysreinited = 0;
 	static int sysreruned = 0;
 entry:

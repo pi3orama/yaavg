@@ -9,9 +9,6 @@
 
 __BEGIN_DECLS
 
-enum texture_format {
-	
-};
 
 struct texture {
 	int w, h;

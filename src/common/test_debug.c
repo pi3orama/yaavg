@@ -12,12 +12,14 @@ int func2()
 //		internal_error(SYSTEM, "Try internal error %d\n", 100);
 //		assert(0);
 	printf("Haha\n");
+	return 0;
 }
 
 int func()
 {
 	DEBUG_MSG(FATAL, SYSTEM, "Debug test system fatal\n");
 	func2();
+	return 0;
 }
 
 int main()

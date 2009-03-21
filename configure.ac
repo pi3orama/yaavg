@@ -21,7 +21,7 @@ AC_PROG_RANLIB
 AC_PROG_LIBTOOL
 PKG_PROG_PKG_CONFIG
 
-CFLAGS="-std=gnu99"
+CFLAGS="-std=gnu99 -Wall"
 
 AC_ARG_ENABLE([link-rdynamic], [AC_HELP_STRING(--enable-link-rdynamic, [Use -rdynamic option for backtrace. default: no])],
 	[
