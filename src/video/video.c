@@ -111,7 +111,7 @@ video_render(dtick_t delta_time)
 		else if ((rcmd_is_right(cmd)) && (cmd->ops) && (cmd->ops->rrender))
 			flags = cmd->ops->rrender(cmd, t);
 		else if ((cmd->ops) && (cmd->ops->render))
-			cmd->ops->render(cmd, t);
+			flags = cmd->ops->render(cmd, t);
 
 		if (flags & RENDER_FAIL) {
 			/* rcommand doesn't throw a fatal exception, then

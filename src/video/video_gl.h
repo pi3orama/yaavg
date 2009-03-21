@@ -20,12 +20,11 @@ __BEGIN_DECLS
 
 struct gl_context {
 	struct video_context base;
-	const char * vendor;
-	const char * renderer;
-	const char * version;
-
+	const GLubyte * vendor;
+	const GLubyte * renderer;
+	const GLubyte * version;
 	/* a very long string */
-	const char *extensions;
+	const GLubyte * extensions;
 
 	/* Which platform we used? SDL or GLX or WGL... */
 	const char *platform;

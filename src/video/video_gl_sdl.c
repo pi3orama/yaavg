@@ -183,7 +183,7 @@ open_window(void)
 {
 	
 	/* SDL_SetVideoMode's params */
-	int w, h, bpp, flags;
+	int w, h, flags;
 	bool_t full_screen, resizable;
 	SDL_Surface * screen = NULL;
 

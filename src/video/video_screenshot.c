@@ -49,8 +49,6 @@ alloc_screenshot_cleanup(void)
 static void
 __video_screen_shot(void)
 {
-	
-	int err;
 	struct view_port vp;
 	struct video_context * video_ctx = video_get_current_context();
 	struct screenshot_cleanup * pcleanup = NULL;

@@ -10,6 +10,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+
 #include <common/debug.h>
 #include <common/exception.h>
 #include <common/utils.h>
@@ -79,7 +82,6 @@ png_write(struct png_writer writer, uint8_t * buffer, int w, int h, int type)
 
 	png_structp write_ptr;
 	png_infop info_ptr;
-	png_bytep * row_pointers;
 	png_text texts[1];
 
 
@@ -178,7 +180,10 @@ file_flusher(png_structp str)
 {
 	int err;
 	FILE * fp = (FILE*)(str->io_ptr);
-	fflush(fp);
+	err = fflush(fp);
+	if (err != 0) {
+		WARNING(SYSTEM, "png fflush error: %s\n", strerror(errno));
+	}
 }
 
 

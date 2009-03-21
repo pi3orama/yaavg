@@ -62,6 +62,8 @@ struct rcmd_operations {
 
 	/* remove is a callback, notice the upper level the command has been
 	 * removed */
+	/* the return value of remove is useless,
+	 * should always return 0 */
 	int (*remove)(struct render_command * command,
 			rcmd_remove_reason_t reason, int flags);
 
@@ -131,6 +133,7 @@ struct render_command {
 };
 
 /* below is some rcommand's render return flags */
+#define RENDER_OK	(0)
 #define RENDER_FAIL	(1)	/* the command met an error */
 #define RENDER_REMOVE	(2)	/* we should remove this command from list */
 #define RENDER_STOP	(4)	/* we shouldn't continue rendering */

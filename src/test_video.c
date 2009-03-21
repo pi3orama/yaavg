@@ -31,7 +31,6 @@ draw_line_render(struct render_command * __rcmd, dtick_t delta_ticks)
 		container_of(__rcmd, struct rcmd_draw_line, base);
 
 	static float old_rcolor = 0;
-	static int counter = 0;
 
 	old_rcolor = rcmd->r_color;
 	rcmd->total_time += delta_ticks;
@@ -58,6 +57,7 @@ draw_line_render(struct render_command * __rcmd, dtick_t delta_ticks)
 	glVertex2d(0, 1);
 #endif
 	glEnd();
+	return RENDER_OK;
 }
 
 static int
@@ -128,6 +128,7 @@ clear_remove(struct render_command * __rcmd,
 		container_of(__rcmd, struct rcmd_clear, base);
 	VERBOSE(VIDEO, "Remove clear cmd\n");
 	free(rcmd);
+	return 0;
 }
 
 static struct rcmd_operations clear_ops = {
@@ -136,7 +137,8 @@ static struct rcmd_operations clear_ops = {
 	.remove		= clear_remove,
 };
 
-struct render_command * alloc_clear(struct video_context * ctx)
+struct render_command *
+alloc_clear(struct video_context * ctx)
 {
 	struct rcmd_clear * cmd = calloc(1, sizeof(*cmd));
 	rcmd_init(&(cmd->base),
@@ -145,6 +147,7 @@ struct render_command * alloc_clear(struct video_context * ctx)
 			ctx,
 			&clear_ops);
 	cmd->base.pprivate = cmd;
+	return &(cmd->base);
 }
 
 struct rcmd_rotate {
@@ -221,6 +224,7 @@ rotate_remove(struct render_command * __rcmd,
 	struct rcmd_rotate * rcmd = container_of(__rcmd, struct rcmd_rotate, base);
 	VERBOSE(VIDEO, "Remove rotate cmd\n");
 	free(rcmd);
+	return 0;
 }
 
 static struct rcmd_operations rotate_ops = {
@@ -280,6 +284,7 @@ entry:
 			break;
 		case EXCEPTION_SUBSYS_RERUN:
 			WARNING(VIDEO, "video frame rerender: %s\n", exp.message);
+			goto entry;
 			break;
 		case EXCEPTION_SUBSYS_SKIPFRAME:
 			WARNING(VIDEO, "video frame skipped: %s\n", exp.message);
@@ -440,11 +445,15 @@ int main(int argc, char * argv[])
 
 		alloc_rotates(video_ctx, &lrotate, &rrotate);
 
+		VERBOSE(VIDEO, "Insert draw_line\n");
 		video_insert_command(draw_line, AFTER, NULL);
+		VERBOSE(VIDEO, "Insert clear\n");
 		video_insert_command(clear, BEFORE, draw_line);
+		VERBOSE(VIDEO, "Insert pair\n");
 		video_insert_command_pair(
 				lrotate, BEFORE, draw_line,
 				rrotate, AFTER, draw_line);
+		VERBOSE(VIDEO, "Insert over\n");
 
 		rcmd_set_active(draw_line);
 		rcmd_set_active(clear);
