@@ -38,6 +38,7 @@ enum exception_level {
 	EXCEPTION_FATAL				= 8,
 	EXCEPTION_RESET				= 9,
 	EXCEPTION_CONTINUE			= 10,
+	EXCEPTION_RESOURCE_LOST		= 11,
 };
 
 #define MASK(level)				(1 << (int)(level))
@@ -55,6 +56,8 @@ enum exception_level {
 #define MASK_NONFATAL			((MASK_ALL) & (~(MASK_FATAL)) &(~(MASK_RESET)) & (~(MASK_QUIT)))
 #define MASK_SYS_ALL			(MASK_SYS_RERUN | MASK_SYS_SKIPFRAME | MASK_SYS_REINIT)
 #define MASK_SUBSYS_ALL			(MASK_SUBSYS_RERUN | MASK_SUBSYS_SKIPFRAME | MASK_SUBSYS_REINIT)
+
+#define MASK_RESOURCE_LOST		MASK(EXCEPTION_RESOURCE_LOST)
 
 
 struct exception {

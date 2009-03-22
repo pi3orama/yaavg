@@ -1,4 +1,4 @@
-SUBDIRS = common econfig video event spikes
+SUBDIRS = common econfig resource video event spikes
 
 bin_PROGRAMS = test_video
 
@@ -8,5 +8,5 @@ test_video_LDADD= video/libvideo.la \
 		 econfig/libeconfig.la \
 		 event/libevent.la \
 		 common/libcommon.la \
-		econfig/libeconfig.la
+		 econfig/libeconfig.la
 

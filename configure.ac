@@ -226,6 +226,7 @@ AC_CONFIG_FILES([Makefile
 		 src/common/Makefile
 		 src/econfig/Makefile
 		 src/event/Makefile
+		 src/resource/Makefile
 		 src/video/Makefile
 		 src/spikes/Makefile])
 
