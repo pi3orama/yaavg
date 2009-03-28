@@ -60,6 +60,7 @@ if test "x${have_mallinfo}" = "xyes"; then
 fi
 AC_SUBST(HAVE_MALLINFO)
 
+AC_FUNC_ALLOCA
 
 # Check for SDL
 AC_PATH_PROGS([SDL_CONFIG], [sdl-config], [none])
@@ -143,6 +144,7 @@ AC_C_INLINE
 AC_TYPE_INT32_T
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
+AC_TYPE_UINT64_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT8_T
 AC_C_VOLATILE

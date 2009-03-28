@@ -7,11 +7,17 @@
 
 #include <png.h>
 
+#include <config.h>
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+
+#ifdef HAVE_ALLOCA_H
+# include <alloca.h>
+#endif
 
 #include <common/debug.h>
 #include <common/exception.h>
@@ -169,6 +175,9 @@ struct png_read_cleanup {
 	png_structp read_ptr;
 	png_structp read_ptr_save;
 	png_infop info_ptr;
+#ifndef HAVE_ALLOCA
+	png_bytep * row_pointers;
+#endif
 };
 
 static void
@@ -188,6 +197,10 @@ do_png_read_cleanup(struct cleanup * str)
 				&pcleanup->info_ptr);
 	}
 
+#ifndef HAVE_ALLOCA
+	free(pcleanup->row_pointers);
+#endif
+
 	free(pcleanup);
 }
 
@@ -203,6 +216,9 @@ alloc_png_read_cleanup(void)
 
 	pcleanup->read_ptr = NULL;
 	pcleanup->info_ptr = NULL;
+#ifndef HAVE_ALLOCA
+	pcleanup->row_pointers = NULL;
+#endif
 	return pcleanup;
 }
 
@@ -344,7 +360,12 @@ png_read(struct png_reader reader)
 	/* start read!! */
 	png_bytep *volatile row_pointers;
 	int row;
+#ifdef HAVE_ALLOCA
 	row_pointers = (png_bytep*)alloca(sizeof(png_bytep)*height);
+#else
+	row_pointers = (png_bytep*)malloc(sizeof(png_bytep)*height);
+	pcleanup->row_pointers = row_pointers;
+#endif
 	assert(row_pointers != NULL);
 
 	for (row = 0; row < (int)height; row++) {
@@ -353,6 +374,10 @@ png_read(struct png_reader reader)
 	}
 	png_read_image(read_ptr, row_pointers);
 	/* read over */
+#ifndef HAVE_ALLOCA
+	free(row_pointers);
+	pcleanup->row_pointers = NULL;
+#endif
 
 	remove_cleanup(&pcleanup->base);
 	pcleanup->base.function(&pcleanup->base);

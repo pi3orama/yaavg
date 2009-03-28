@@ -20,7 +20,7 @@ struct resource {
 	/* garbage collection utils */
 	struct list_head list;
 	struct cleanup cleanup;
-	int ref_count;
+	int pin_count;
 };
 
 
