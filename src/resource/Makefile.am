@@ -2,7 +2,9 @@ AM_CPPFLAGS= -I$(top_srcdir)/src
 
 noinst_LTLIBRARIES=libresource.la
 libresource_la_SOURCES=resource.c \
-		       resource.h
+		       resource.h \
+		       bitmap.h   \
+		       bitmap.c
 
 noinst_PROGRAMS=test_bitmap
 

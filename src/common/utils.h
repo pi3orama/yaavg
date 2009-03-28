@@ -8,6 +8,9 @@
 #include <common/defs.h>
 #include <common/exception.h>
 #include <stdint.h>
+
+#include <resource/bitmap.h>
+
 /* Some utils needed to be implentmented */
 
 /* 
@@ -44,7 +47,8 @@ void
 write_to_pngfile_rgba(char * filename, uint8_t * buffer,
 		int w, int h) THROWS(CONTINUE, FATAL);
 
-
+struct bitmap *
+read_from_pngfile(char * filename) THROWS(RESOURCE_LOST, FATAL);
 
 #endif
 

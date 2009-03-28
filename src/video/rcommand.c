@@ -102,4 +102,5 @@ rcmd_unset_inserted(struct render_command * cmd)
 	/* make_cleanup will check whether cleanup has already beed inserted */
 	make_cleanup(&cmd->cleanup);
 }
+// vim:tabstop=4:shiftwidth=4
 

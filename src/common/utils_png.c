@@ -15,14 +15,14 @@
 
 #include <common/debug.h>
 #include <common/exception.h>
+#include <common/list.h>
 #include <common/utils.h>
-
 
 struct png_write_cleanup {
 	struct cleanup base;
 	png_structp write_ptr;
 	/* if we don't want to free writer_ptr, but need to free
-	 * info_ptr, we must save the writer_ptr*/
+	 * info_ptr, we must save the writer_ptr */
 	png_structp write_ptr_save;
 	png_infop info_ptr;
 };
@@ -31,11 +31,12 @@ static void
 do_png_write_cleanup(struct cleanup * str)
 {
 	struct png_write_cleanup * pcleanup;
-	pcleanup = (struct png_write_cleanup *)(str->args);
+	pcleanup = container_of(str,
+			struct png_write_cleanup, base);
 
 	if (pcleanup->write_ptr != NULL)
 		png_destroy_write_struct(&pcleanup->write_ptr,
-				&pcleanup->info_ptr);
+				pcleanup->info_ptr ? &pcleanup->info_ptr : (png_infopp)0);
 	/* NOTICE: png_destroy_write_struct can set info_ptr and
 	 * write_ptr to NULL. if we don't have a write_ptr but
 	 * have info_ptr, we need free info_ptr. */
@@ -85,7 +86,7 @@ png_write(struct png_writer writer, uint8_t * buffer, int w, int h, int type)
 	png_text texts[1];
 
 
-	/* if png handler is passed from writer, wo needn't
+	/* if png handler is passed from writer, we needn't
 	 * create them again, however, we also needn't chain
 	 * them into cleanup */
 	if (writer.write_ptr == NULL) {
@@ -156,9 +157,210 @@ png_write(struct png_writer writer, uint8_t * buffer, int w, int h, int type)
 		png_write_rows(write_ptr, &prow, 1);
 	}
 	png_write_end(write_ptr, info_ptr);
+
+	remove_cleanup(&pcleanup->base);
+	pcleanup->base.function(&pcleanup->base);
+}
+
+/* *********************************************************** */
+
+struct png_read_cleanup {
+	struct cleanup base;
+	png_structp read_ptr;
+	png_structp read_ptr_save;
+	png_infop info_ptr;
+};
+
+static void
+do_png_read_cleanup(struct cleanup * str)
+{
+	struct png_read_cleanup * pcleanup;
+	pcleanup = container_of(str,
+			struct png_read_cleanup, base);
+
+	if (pcleanup->read_ptr != NULL)
+		png_destroy_read_struct(&pcleanup->read_ptr,
+				pcleanup->info_ptr ? &pcleanup->info_ptr : (png_infopp)0,
+				(png_infopp)0);
+	if (pcleanup->info_ptr != NULL) {
+		assert(pcleanup->read_ptr_save != NULL);
+		png_destroy_info_struct(pcleanup->read_ptr_save,
+				&pcleanup->info_ptr);
+	}
+
+	free(pcleanup);
+}
+
+static struct png_read_cleanup *
+alloc_png_read_cleanup(void)
+{
+	struct png_read_cleanup * pcleanup;
+	pcleanup = calloc(1, sizeof(*pcleanup));
+	assert(pcleanup != NULL);
+
+	pcleanup->base.function = do_png_read_cleanup;
+	pcleanup->base.args = pcleanup;
+
+	pcleanup->read_ptr = NULL;
+	pcleanup->info_ptr = NULL;
+	return pcleanup;
+}
+
+struct png_reader {
+	png_rw_ptr read_fn;
+	png_voidp io_ptr;
+	png_structp read_ptr;
+	png_infop info_ptr;
+};
+
+static void
+png_bitmap_cleanup(struct cleanup * pcleanup)
+{
+	struct bitmap * bitmap;
+	bitmap = (struct bitmap *)pcleanup->args;
+	free(bitmap);
+}
+
+static struct bitmap *
+png_read(struct png_reader reader)
+{
+	struct png_read_cleanup * pcleanup;
+	pcleanup = alloc_png_read_cleanup();
+	assert(pcleanup != NULL);
+	make_cleanup(&pcleanup->base);
+
+	png_structp read_ptr;
+	png_infop info_ptr;
+
+	if (reader.read_ptr == NULL) {
+		reader.info_ptr = NULL;
+		read_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
+				NULL, png_error, png_warning);
+		pcleanup->read_ptr = read_ptr;
+	} else {
+		read_ptr = reader.read_ptr;
+		pcleanup->read_ptr_save = read_ptr;
+	}
+
+	if (read_ptr == NULL) {
+		ERROR(SYSTEM, "libpng: create read_ptr error\n");
+		throw_exception(EXCEPTION_FATAL, "libpng read error");
+	}
+
+	if (setjmp(png_jmpbuf(read_ptr))) {
+		ERROR(SYSTEM, "libpng: read error\n");
+		throw_exception(EXCEPTION_RESOURCE_LOST, "libpng read error");
+	}
+
+	if (reader.info_ptr == NULL) {
+		info_ptr = png_create_info_struct(read_ptr);
+		pcleanup->info_ptr = info_ptr;
+	} else {
+		info_ptr = reader.info_ptr;
+	}
+
+	png_set_read_fn(read_ptr, reader.io_ptr,
+			reader.read_fn);
+
+	/* here: begin read */
+	/* code borrowed from SDL_img's IMG_png.c */
+	png_uint_32 width, height;
+	int bit_depth, color_type, interlace_type;
+
+	png_read_info(read_ptr, info_ptr);
+	png_get_IHDR(read_ptr, info_ptr, &width, &height, &bit_depth,
+			&color_type, &interlace_type, NULL, NULL);
+
+	if (bit_depth > 8)
+		png_set_strip_16(read_ptr);
+	if (bit_depth < 8)
+		png_set_packing(read_ptr);
+
+	if (color_type == PNG_COLOR_TYPE_GRAY)
+		png_set_expand(read_ptr);
+
+	if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+		png_set_gray_to_rgb(read_ptr);
+    if (color_type == PNG_COLOR_TYPE_PALETTE)
+        png_set_palette_to_rgb(read_ptr);
+
+    if (png_get_valid(read_ptr, info_ptr, PNG_INFO_tRNS))
+		png_set_tRNS_to_alpha(read_ptr);
+
+	png_read_update_info(read_ptr, info_ptr);
+	png_get_IHDR(read_ptr, info_ptr, &width, &height, &bit_depth,
+			&color_type, &interlace_type, NULL, NULL);
+	/* start read */
+	if (bit_depth != 8) {
+		WARNING(RESOURCE, "We don't support this png stream\n");
+		throw_exception(EXCEPTION_RESOURCE_LOST, "format error");
+	}
+
+	enum bitmap_format format;
+	switch (color_type) {
+		case PNG_COLOR_TYPE_GRAY:
+			format = BITMAP_LUMINANCE;
+			break;
+		case PNG_COLOR_TYPE_GRAY_ALPHA:
+			format = BITMAP_LUMINANCE_ALPHA;
+			break;
+		case PNG_COLOR_TYPE_RGB:
+			format = BITMAP_RGB;
+			break;
+		case PNG_COLOR_TYPE_RGB_ALPHA:
+			format = BITMAP_RGBA;
+			break;
+		case PNG_COLOR_TYPE_PALETTE:
+			WARNING(SYSTEM,
+					"PNG_COLOR_TYPE_PALETTE:"
+					" I don't know how to read PALETTE png stream...\n");
+			if (png_get_valid(read_ptr, info_ptr, PNG_INFO_tRNS))
+				format = BITMAP_RGB;
+			else
+				format = BITMAP_RGBA;
+			break;
+		default:
+			WARNING(RESOURCE, "We don't support this png stream\n");
+			throw_exception(EXCEPTION_RESOURCE_LOST, "format error");
+	};
+
+	/* alloc the bitmap structure and fill the cleanup */
+	/* here, we alloc once. */
+	struct bitmap * bitmap;
+	bitmap = malloc(sizeof(*bitmap) + 
+			width * height * format);
+	assert(bitmap != NULL);
+
+	bitmap->base.cleanup.args = bitmap;
+	bitmap->base.cleanup.function = png_bitmap_cleanup;
+	make_cleanup(&bitmap->base.cleanup);
+
+	bitmap->w = width;
+	bitmap->h = height;
+	bitmap->format = format;
+	bitmap->data = ((uint8_t*)bitmap)
+		+ sizeof(*bitmap);
+
+	/* start read!! */
+	png_bytep *volatile row_pointers;
+	int row;
+	row_pointers = (png_bytep*)alloca(sizeof(png_bytep)*height);
+	assert(row_pointers != NULL);
+
+	for (row = 0; row < (int)height; row++) {
+		row_pointers[row] = (png_bytep)(
+				(uint8_t*)(bitmap->data + row * format * width));
+	}
+	png_read_image(read_ptr, row_pointers);
+	/* read over */
+
+	remove_cleanup(&pcleanup->base);
+	pcleanup->base.function(&pcleanup->base);
+	return bitmap;
 }
 
 /* ********************************************************** */
+
 static void
 file_writer(png_structp str, png_bytep byte, png_size_t size)
 {
@@ -176,6 +378,26 @@ file_writer(png_structp str, png_bytep byte, png_size_t size)
 }
 
 static void
+file_reader(png_structp str, png_bytep byte, png_size_t size)
+{
+	int err;
+	FILE * fp = (FILE*)(str->io_ptr);
+	uint8_t * buffer = (uint8_t*)byte;
+
+	assert(fp != NULL);
+	err = fread(buffer, 1, size, fp);
+	if (err == 0) {
+		/* error occurs or end of file */
+		if (!feof(fp)) {
+			WARNING(SYSTEM, "file read error: %d\n", errno);
+			throw_exception(EXCEPTION_RESOURCE_LOST, "file read error");
+		}
+	}
+	return;
+}
+
+
+static void
 file_flusher(png_structp str)
 {
 	int err;
@@ -186,25 +408,29 @@ file_flusher(png_structp str)
 	}
 }
 
-
-static void
-png_write_file(FILE * fp, uint8_t * buffer, int w, int h, int type)
-{
-	struct png_writer writer;
-	writer.write_fn = file_writer;
-	writer.flush_fn = file_flusher;
-	writer.io_ptr = fp;
-	writer.write_ptr = NULL;
-	writer.info_ptr = NULL;
-	png_write(writer, buffer, w, h, type);
-}
-
 /* **************************************************************8 */
 
 struct write_file_cleanup {
 	struct cleanup base;
 	FILE * fp;
 };
+
+struct read_file_cleanup {
+	struct cleanup base;
+	FILE * fp;
+};
+
+static void
+do_read_file_cleanup(struct cleanup * base)
+{
+	struct read_file_cleanup * pcleanup =
+		(struct read_file_cleanup *)base->args;
+	if (pcleanup->fp != NULL) {
+		fclose(pcleanup->fp);
+	}
+
+	free(pcleanup);
+}
 
 static void
 do_write_file_cleanup(struct cleanup * base)
@@ -230,12 +456,56 @@ alloc_write_file_cleanup(void)
 	return pcleanup;
 }
 
+static struct read_file_cleanup *
+alloc_read_file_cleanup(void)
+{
+	struct read_file_cleanup * pcleanup;
+	pcleanup = calloc(1, sizeof(*pcleanup));
+	assert(pcleanup != NULL);
+	pcleanup->base.function = do_read_file_cleanup;
+	pcleanup->base.args = pcleanup;
+	return pcleanup;
+}
+
+
+struct bitmap *
+read_from_pngfile(char * filename)
+{
+	struct read_file_cleanup * pcleanup;
+	struct bitmap * res;
+	FILE * fp = NULL;
+
+	fp = fopen(filename, "rb");
+	if (NULL == fp) {
+		WARNING(SYSTEM, "open file %s for read failed\n", filename);
+		throw_exception(EXCEPTION_RESOURCE_LOST,
+				"open file for read error\n");
+	}
+
+	pcleanup = alloc_read_file_cleanup();
+	assert(pcleanup != NULL);
+	pcleanup->fp = fp;
+	make_cleanup(&pcleanup->base);
+
+	struct png_reader reader;
+	reader.read_fn = file_reader;
+	reader.io_ptr = fp;
+	reader.read_ptr = NULL;
+	reader.info_ptr = NULL;
+
+	res = png_read(reader);
+
+	remove_cleanup(&pcleanup->base);
+	pcleanup->base.function(&pcleanup->base);
+	return res;
+}
+
 static void
 write_to_pngfile(char * filename, uint8_t * buffer,
 		int w, int h, int type)
 {
 	struct write_file_cleanup * pcleanup;
-	FILE * fp;
+	FILE * fp = NULL;
 
 	if ((type != PNG_COLOR_TYPE_RGB) && (type != PNG_COLOR_TYPE_RGBA)) {
 		FATAL(SYSTEM, "write png format error: %d\n", type);
@@ -255,7 +525,16 @@ write_to_pngfile(char * filename, uint8_t * buffer,
 	pcleanup->fp = fp;
 	make_cleanup(&pcleanup->base);
 
-	png_write_file(fp, buffer, w, h, type);
+	struct png_writer writer;
+	writer.write_fn = file_writer;
+	writer.flush_fn = file_flusher;
+	writer.io_ptr = fp;
+	writer.write_ptr = NULL;
+	writer.info_ptr = NULL;
+	png_write(writer, buffer, w, h, type);
+
+	remove_cleanup(&pcleanup->base);
+	pcleanup->base.function(&pcleanup->base);
 }
 
 void
@@ -269,4 +548,6 @@ write_to_pngfile_rgba(char * filename, uint8_t * buffer, int w, int h)
 {
 	write_to_pngfile(filename, buffer, w, h, PNG_COLOR_TYPE_RGBA);
 }
+
+// vim:tabstop=4:shiftwidth=4
 

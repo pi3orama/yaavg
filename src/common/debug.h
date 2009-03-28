@@ -29,6 +29,7 @@ enum debug_component {
 	MEMORY,
 	OPENGL,
 	SDL,
+	RESOURCE,
 	NR_COMPONENTS
 };
 
@@ -41,17 +42,19 @@ static const char * debug_comp_name[NR_COMPONENTS] = {
 	[MEMORY] = "MEM ",
 	[OPENGL] = "GL  ",
 	[SDL] = "SDL ",
-	[VIDEO]="VENG",
+	[VIDEO]="VID ",
+	[RESOURCE]="RES "
 };
 
 static enum debug_level debug_levels[NR_COMPONENTS] = {
 	[RCOMMAND] = WARNING,
-	[RLIST] = TRACE,
+	[RLIST] = WARNING,
 	[MEMORY] = VERBOSE,
 	[SYSTEM] = TRACE,
-	[OPENGL] = TRACE,
-	[SDL] = TRACE,
-	[VIDEO] = TRACE,
+	[OPENGL] = WARNING,
+	[SDL] = WARNING,
+	[VIDEO] = WARNING,
+	[RESOURCE] = TRACE,
 };
 #endif
 
