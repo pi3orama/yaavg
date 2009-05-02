@@ -24,6 +24,8 @@
 #include <common/list.h>
 #include <common/utils.h>
 
+#include <resource/bitmap.h>
+
 struct png_write_cleanup {
 	struct cleanup base;
 	png_structp write_ptr;
@@ -82,6 +84,8 @@ static void
 png_write(struct png_writer writer, uint8_t * buffer, int w, int h, int type)
 {
 	struct png_write_cleanup * pcleanup;
+
+	TRACE(SYSTEM, "write a %dx%d image into a png stream\n", w, h);
 
 	pcleanup = alloc_png_write_cleanup();
 	assert(pcleanup != NULL);
@@ -158,12 +162,14 @@ png_write(struct png_writer writer, uint8_t * buffer, int w, int h, int type)
 			throw_exception(FATAL, "png write format error");
 	}
 
+	VERBOSE(SYSTEM, "png stream write start\n");
 	for (n = h - 1; n >= 0; n--) {
 		uint8_t * prow = buffer + n * row_size;
 		png_write_rows(write_ptr, &prow, 1);
 	}
 	png_write_end(write_ptr, info_ptr);
 
+	VERBOSE(SYSTEM, "png stream write over\n");
 	remove_cleanup(&pcleanup->base);
 	pcleanup->base.function(&pcleanup->base);
 }
@@ -232,6 +238,8 @@ struct png_reader {
 static void
 png_bitmap_cleanup(struct cleanup * pcleanup)
 {
+	remove_cleanup(pcleanup);
+
 	struct bitmap * bitmap;
 	bitmap = (struct bitmap *)pcleanup->args;
 	free(bitmap);
@@ -247,6 +255,8 @@ png_read(struct png_reader reader)
 
 	png_structp read_ptr;
 	png_infop info_ptr;
+
+	TRACE(SYSTEM, "ready to read png stream\n");
 
 	if (reader.read_ptr == NULL) {
 		reader.info_ptr = NULL;
@@ -287,43 +297,60 @@ png_read(struct png_reader reader)
 	png_get_IHDR(read_ptr, info_ptr, &width, &height, &bit_depth,
 			&color_type, &interlace_type, NULL, NULL);
 
+	TRACE(SYSTEM, "png bitmap: %dx%d:%d\n", width, height, bit_depth);
+
 	if (bit_depth > 8)
 		png_set_strip_16(read_ptr);
 	if (bit_depth < 8)
 		png_set_packing(read_ptr);
 
-	if (color_type == PNG_COLOR_TYPE_GRAY)
+	if (color_type == PNG_COLOR_TYPE_GRAY) {
+		TRACE(SYSTEM, "\tcolor type: PNG_COLOR_TYPE_GRAY\n");
 		png_set_expand(read_ptr);
+	}
 
-	if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+	if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
+		TRACE(SYSTEM, "\tcolor type: PNG_COLOR_TYPE_GRAY_ALPHA\n");
 		png_set_gray_to_rgb(read_ptr);
-    if (color_type == PNG_COLOR_TYPE_PALETTE)
+	}
+    if (color_type == PNG_COLOR_TYPE_PALETTE) {
+		TRACE(SYSTEM, "\tcolor type: PNG_COLOR_TYPE_PALETTE\n");
         png_set_palette_to_rgb(read_ptr);
+	}
 
-    if (png_get_valid(read_ptr, info_ptr, PNG_INFO_tRNS))
+    if (png_get_valid(read_ptr, info_ptr, PNG_INFO_tRNS)) {
+		TRACE(SYSTEM, "\tstream has PNG_INFO_tRNS\n");
 		png_set_tRNS_to_alpha(read_ptr);
+	}
 
 	png_read_update_info(read_ptr, info_ptr);
 	png_get_IHDR(read_ptr, info_ptr, &width, &height, &bit_depth,
 			&color_type, &interlace_type, NULL, NULL);
+
+	TRACE(SYSTEM, "update png bitmap: %dx%d:%d\n", width, height, bit_depth);
+
 	/* start read */
 	if (bit_depth != 8) {
 		WARNING(RESOURCE, "We don't support this png stream\n");
 		throw_exception(EXCEPTION_RESOURCE_LOST, "format error");
 	}
 
-	enum bitmap_format format;
+	bitmap_format_t format;
 	switch (color_type) {
 		case PNG_COLOR_TYPE_GRAY:
+			TRACE(SYSTEM, "\tcolor type: PNG_COLOR_TYPE_GRAY\n");
 			format = BITMAP_LUMINANCE;
 			break;
 		case PNG_COLOR_TYPE_GRAY_ALPHA:
+			TRACE(SYSTEM, "\tcolor type: PNG_COLOR_TYPE_GRAY_ALPHA\n");
 			format = BITMAP_LUMINANCE_ALPHA;
 			break;
 		case PNG_COLOR_TYPE_RGB:
+			TRACE(SYSTEM, "\tcolor type: PNG_COLOR_TYPE_RGB\n");
 			format = BITMAP_RGB;
 			break;
 		case PNG_COLOR_TYPE_RGB_ALPHA:
+			TRACE(SYSTEM, "\tcolor type: PNG_COLOR_TYPE_RGB_ALPHA\n");
 			format = BITMAP_RGBA;
 			break;
 		case PNG_COLOR_TYPE_PALETTE:
@@ -343,9 +370,11 @@ png_read(struct png_reader reader)
 	/* alloc the bitmap structure and fill the cleanup */
 	/* here, we alloc once. */
 	struct bitmap * bitmap;
-	bitmap = malloc(sizeof(*bitmap) + 
+	bitmap = (struct bitmap *)malloc(sizeof(*bitmap) + 
 			width * height * format);
 	assert(bitmap != NULL);
+
+	memset(bitmap, 0, sizeof(*bitmap));
 
 	bitmap->base.cleanup.args = bitmap;
 	bitmap->base.cleanup.function = png_bitmap_cleanup;
@@ -354,10 +383,14 @@ png_read(struct png_reader reader)
 	bitmap->w = width;
 	bitmap->h = height;
 	bitmap->format = format;
-	bitmap->data = ((uint8_t*)bitmap)
-		+ sizeof(*bitmap);
+
+	bitmap->base.data_size = width * height * format;
+	bitmap->base.ref_count = 1;
+	bitmap->base.type = RES_BITMAP;
+	bitmap->base.id = 0;
 
 	/* start read!! */
+	VERBOSE(SYSTEM, "png stream read start\n");
 	png_bytep *volatile row_pointers;
 	int row;
 #ifdef HAVE_ALLOCA
@@ -370,7 +403,7 @@ png_read(struct png_reader reader)
 
 	for (row = 0; row < (int)height; row++) {
 		row_pointers[row] = (png_bytep)(
-				(uint8_t*)(bitmap->data + row * format * width));
+				(uint8_t*)(bitmap->data + ((int)height-row) * format * width));
 	}
 	png_read_image(read_ptr, row_pointers);
 	/* read over */
@@ -378,6 +411,7 @@ png_read(struct png_reader reader)
 	free(row_pointers);
 	pcleanup->row_pointers = NULL;
 #endif
+	VERBOSE(SYSTEM, "png stream read OK\n");
 
 	remove_cleanup(&pcleanup->base);
 	pcleanup->base.function(&pcleanup->base);
@@ -500,6 +534,9 @@ read_from_pngfile(char * filename)
 	struct bitmap * res;
 	FILE * fp = NULL;
 
+	VERBOSE(SYSTEM, "read bitmap data from png file %s\n",
+			filename);
+
 	fp = fopen(filename, "rb");
 	if (NULL == fp) {
 		WARNING(SYSTEM, "open file %s for read failed\n", filename);
@@ -544,6 +581,7 @@ write_to_pngfile(char * filename, uint8_t * buffer,
 				"open file for write failed");
 		return;
 	}
+	TRACE(SYSTEM, "file %s opened for write\n", filename);
 	
 	pcleanup = alloc_write_file_cleanup();
 	assert(pcleanup != NULL);
@@ -565,12 +603,16 @@ write_to_pngfile(char * filename, uint8_t * buffer,
 void
 write_to_pngfile_rgb(char * filename, uint8_t * buffer, int w, int h)
 {
+	TRACE(SYSTEM, "write a %dx%d image in RGB format into file %s\n",
+			w, h, filename);
 	write_to_pngfile(filename, buffer, w, h, PNG_COLOR_TYPE_RGB);
 }
 
 void
 write_to_pngfile_rgba(char * filename, uint8_t * buffer, int w, int h)
 {
+	TRACE(SYSTEM, "write a %dx%d image in RGBA format into file %s\n",
+			w, h, filename);
 	write_to_pngfile(filename, buffer, w, h, PNG_COLOR_TYPE_RGBA);
 }
 

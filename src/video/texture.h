@@ -7,6 +7,8 @@
 #include <common/defs.h>
 #include <common/exception.h>
 
+#include <resource/bitmap.h>
+
 __BEGIN_DECLS
 
 
