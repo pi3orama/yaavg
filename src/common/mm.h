@@ -36,16 +36,12 @@ struct gc_active_list {
 };
 extern struct gc_active_list gc_active_list;
 
-
-
 struct gc_tag {
 	struct list_head gc_list;
 	int size;
 	uint32_t flags;
 	/* shrink is called when memory shortage. */
-	/* shrink can be NULL, if it's NULL,
-	 * shrink level heighter than normal will
-	 * free ptr. */
+	/* shrink can be NULL */
 	gc_shrink_t shrink;
 	/* ptr is the malloc returned pointer */
 	void * ptr;
