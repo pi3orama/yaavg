@@ -34,7 +34,9 @@ main(int argc, char * argv[])
 		default:
 			ERROR(SYSTEM, "Error out: %s\n", exp.message);
 	}
+
 	do_cleanup();
+	gc_cleanup();
 
 	show_mem_info();
 	return 0;

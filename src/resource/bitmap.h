@@ -58,6 +58,15 @@ alloc_bitmap(int width, int height, bitmap_format_t format)
 			bitmap_shrink,
 			NULL);
 
+	bitmap->w = width;
+	bitmap->h = height;
+	bitmap->format = format;
+
+	bitmap->base.data_size = width * height * format;
+	bitmap->base.ref_count = 1;
+	bitmap->base.type = RES_BITMAP;
+	bitmap->base.id = 0;
+
 	return bitmap;
 }
 
