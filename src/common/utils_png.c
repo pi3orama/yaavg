@@ -23,10 +23,12 @@
 #include <common/exception.h>
 #include <common/list.h>
 #include <common/utils.h>
+#include <common/mm.h>
 
 #include <resource/bitmap.h>
 
 struct png_write_cleanup {
+	GC_TAG;
 	struct cleanup base;
 	png_structp write_ptr;
 	/* if we don't want to free writer_ptr, but need to free
@@ -54,14 +56,14 @@ do_png_write_cleanup(struct cleanup * str)
 				&pcleanup->info_ptr);
 	}
 
-	free(pcleanup);
+	GC_TRIVAL_FREE(pcleanup);
 }
 
 static struct png_write_cleanup *
 alloc_png_write_cleanup(void)
 {
 	struct png_write_cleanup * pcleanup;
-	pcleanup = calloc(1, sizeof(*pcleanup));
+	pcleanup = GC_TRIVAL_CALLOC(pcleanup);
 	assert(pcleanup != NULL);
 
 	pcleanup->base.function = do_png_write_cleanup;
@@ -177,6 +179,7 @@ png_write(struct png_writer writer, uint8_t * buffer, int w, int h, int type)
 /* *********************************************************** */
 
 struct png_read_cleanup {
+	GC_TAG;
 	struct cleanup base;
 	png_structp read_ptr;
 	png_structp read_ptr_save;
@@ -207,14 +210,14 @@ do_png_read_cleanup(struct cleanup * str)
 	free(pcleanup->row_pointers);
 #endif
 
-	free(pcleanup);
+	GC_TRIVAL_FREE(pcleanup);
 }
 
 static struct png_read_cleanup *
 alloc_png_read_cleanup(void)
 {
 	struct png_read_cleanup * pcleanup;
-	pcleanup = calloc(1, sizeof(*pcleanup));
+	pcleanup = GC_TRIVAL_CALLOC(pcleanup);
 	assert(pcleanup != NULL);
 
 	pcleanup->base.function = do_png_read_cleanup;
@@ -242,7 +245,7 @@ png_bitmap_cleanup(struct cleanup * pcleanup)
 
 	struct bitmap * bitmap;
 	bitmap = (struct bitmap *)pcleanup->args;
-	free(bitmap);
+	dealloc_bitmap(bitmap);
 }
 
 static struct bitmap *
@@ -370,11 +373,9 @@ png_read(struct png_reader reader)
 	/* alloc the bitmap structure and fill the cleanup */
 	/* here, we alloc once. */
 	struct bitmap * bitmap;
-	bitmap = (struct bitmap *)malloc(sizeof(*bitmap) + 
-			width * height * format);
-	assert(bitmap != NULL);
 
-	memset(bitmap, 0, sizeof(*bitmap));
+	bitmap = alloc_bitmap(width, height, format);
+	assert(bitmap != NULL);
 
 	bitmap->base.cleanup.args = bitmap;
 	bitmap->base.cleanup.function = png_bitmap_cleanup;
@@ -470,11 +471,13 @@ file_flusher(png_structp str)
 /* **************************************************************8 */
 
 struct write_file_cleanup {
+	GC_TAG;	
 	struct cleanup base;
 	FILE * fp;
 };
 
 struct read_file_cleanup {
+	GC_TAG;
 	struct cleanup base;
 	FILE * fp;
 };
@@ -488,7 +491,7 @@ do_read_file_cleanup(struct cleanup * base)
 		fclose(pcleanup->fp);
 	}
 
-	free(pcleanup);
+	GC_TRIVAL_FREE(pcleanup);
 }
 
 static void
@@ -501,14 +504,14 @@ do_write_file_cleanup(struct cleanup * base)
 		fclose(pcleanup->fp);
 	}
 
-	free(pcleanup);
+	GC_TRIVAL_FREE(pcleanup);
 }
 
 static struct write_file_cleanup *
 alloc_write_file_cleanup(void)
 {
 	struct write_file_cleanup * pcleanup;
-	pcleanup = calloc(1, sizeof(*pcleanup));
+	pcleanup = GC_TRIVAL_CALLOC(pcleanup);
 	assert(pcleanup != NULL);
 	pcleanup->base.function = do_write_file_cleanup;
 	pcleanup->base.args = pcleanup;
@@ -519,7 +522,7 @@ static struct read_file_cleanup *
 alloc_read_file_cleanup(void)
 {
 	struct read_file_cleanup * pcleanup;
-	pcleanup = calloc(1, sizeof(*pcleanup));
+	pcleanup = GC_TRIVAL_CALLOC(pcleanup);
 	assert(pcleanup != NULL);
 	pcleanup->base.function = do_read_file_cleanup;
 	pcleanup->base.args = pcleanup;

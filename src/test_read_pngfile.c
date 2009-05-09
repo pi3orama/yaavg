@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <common/utils.h>
-
+#include <resource/bitmap.h>
 int main()
 {
 	struct bitmap * bitmapA, * bitmapB;
@@ -8,8 +8,8 @@ int main()
 
 	volatile struct exception exp;
 	TRY_CATCH(exp, MASK_ALL) {
-		bitmapA = read_from_pngfile("./rgb.png");
-		bitmapB = read_from_pngfile("./rgba.png");
+		bitmapA = read_from_pngfile("./common/rgb.png");
+		bitmapB = read_from_pngfile("./common/rgba.png");
 		push_cleanup(&bitmapA->base.cleanup);
 		push_cleanup(&bitmapB->base.cleanup);
 	}
@@ -30,6 +30,7 @@ int main()
 	printf("\tsize: %dx%d\n", bitmapB->w, bitmapB->h);
 
 	do_cleanup();
+	gc_cleanup();
 	show_mem_info();
 	return 0;
 }

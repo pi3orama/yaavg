@@ -6,15 +6,18 @@ libcommon_la_SOURCES=debug.c \
 		     utils_sdl.c \
 		     utils_png.c \
 		     utils_linux.c \
+		     mm.c \
 		     utils.h \
 		     debug.h \
 		     exception.h \
 		     defs.h \
+		     mm.h \
 		     list.h
-libcommon_la_LIBADD=$(SDL_LIBS)
+
+libcommon_la_LIBADD=$(SDL_LIBS) $(LIBPNG_LIBS)
 
 
-noinst_PROGRAMS = test_debug test_debug2 test_exception test_read_pngfile
+noinst_PROGRAMS = test_debug test_debug2 test_exception
 test_debug_SOURCES=test_debug.c
 test_debug_LDADD=libcommon.la
 
@@ -24,6 +27,4 @@ test_debug2_LDADD=libcommon.la
 test_exception_SOURCES=test_exception.c
 test_exception_LDADD=libcommon.la
 
-test_read_pngfile_SOURCES=test_read_pngfile.c
-test_read_pngfile_LDADD=libcommon.la $(LIBPNG_LIBS)
 

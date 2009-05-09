@@ -9,10 +9,9 @@
 #include <common/exception.h>
 #include <stdint.h>
 
-#include <resource/bitmap.h>
 
 /* Some utils needed to be implentmented */
-
+__BEGIN_DECLS
 /* 
  * delay for some milseconds
  */
@@ -47,8 +46,12 @@ void
 write_to_pngfile_rgba(char * filename, uint8_t * buffer,
 		int w, int h) THROWS(CONTINUE, FATAL);
 
+struct bitmap;
+
 struct bitmap *
 read_from_pngfile(char * filename) THROWS(RESOURCE_LOST, FATAL);
+
+__END_DECLS
 
 #endif
 

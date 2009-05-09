@@ -10,6 +10,7 @@
 #include <common/exception.h>
 #include <common/debug.h>
 #include <common/list.h>
+#include <common/mm.h>
 
 #include <resource/resource.h>
 
@@ -29,6 +30,11 @@ struct bitmap {
 	uint8_t data[0];
 };
 
+#define BITMAP_CLEANUP(b) \
+	do {	\
+		RES_CLEANUP(&((b)->base)); \
+	} while(0)
+
 static inline int
 bitmap_data_size(struct bitmap * s)
 {
@@ -37,6 +43,29 @@ bitmap_data_size(struct bitmap * s)
 
 extern struct bitmap *
 res_load_bitmap(res_id_t id) THROWS(EXCEPTION_RESOURCE_LOST);
+
+extern void
+bitmap_shrink(struct gc_tag * tag, enum gc_power p);
+
+static inline struct bitmap *
+alloc_bitmap(int width, int height, bitmap_format_t format)
+{
+	struct bitmap * bitmap;
+	bitmap = gc_calloc(sizeof(*bitmap) + 
+			width * height * format,
+			offsetof(struct bitmap, base.gc_tag),
+			0,
+			bitmap_shrink,
+			NULL);
+
+	return bitmap;
+}
+
+static inline void
+dealloc_bitmap(struct bitmap * p)
+{
+	gc_free(&p->base.gc_tag);
+}
 
 #endif
 // vim:tabstop=4:shiftwidth=4

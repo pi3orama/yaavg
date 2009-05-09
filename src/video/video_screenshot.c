@@ -5,6 +5,9 @@
 #include <common/debug.h>
 #include <common/exception.h>
 #include <common/utils.h>
+
+#include <common/mm.h>
+
 #include <econfig/econfig.h>
 #include <video/video.h>
 #include <video/video_driver.h>
@@ -17,6 +20,7 @@
 #include <errno.h>
 
 struct screenshot_cleanup {
+	GC_TAG;
 	struct cleanup base;
 	void * buffer;
 };
@@ -27,17 +31,17 @@ do_screenshot_cleanup(struct cleanup * base)
 	struct screenshot_cleanup * pcleanup =
 		(struct screenshot_cleanup *)base->args;
 	if (pcleanup->buffer != NULL) {
-		free(pcleanup->buffer);
+		GC_FREE_BLOCK(pcleanup->buffer);
 		pcleanup->buffer = NULL;
 	}
-	free(pcleanup);
+	GC_TRIVAL_FREE(pcleanup);
 }
 
 static struct screenshot_cleanup *
 alloc_screenshot_cleanup(void)
 {
 	struct screenshot_cleanup * pcleanup;
-	pcleanup = calloc(1, sizeof(*pcleanup));
+	pcleanup = GC_TRIVAL_CALLOC(pcleanup);
 	assert(pcleanup != NULL);
 	pcleanup->base.function = do_screenshot_cleanup;
 	pcleanup->base.args = pcleanup;
@@ -99,7 +103,7 @@ __video_screen_shot(void)
 	make_cleanup(&pcleanup->base);
 	vp = video_ctx->view_port;
 
-	buffer = malloc(sizeof(uint8_t) * vp.w * vp.h * 4);
+	buffer = GC_MALLOC_BLOCK(sizeof(uint8_t) * vp.w * vp.h * 4);
 	assert(buffer != NULL);
 	pcleanup->buffer = buffer;
 

@@ -479,6 +479,7 @@ int main(int argc, char * argv[])
 	}
 
 	do_cleanup();
+	gc_cleanup();
 
 	show_mem_info();
 

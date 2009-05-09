@@ -12,7 +12,7 @@
 #include <common/utils.h>
 #include <common/list.h>
 
-#include <resource/resource.h>
+#include <resource/bitmap.h>
 
 #include <assert.h>
 
@@ -28,7 +28,30 @@ res_load_bitmap(res_id_t resid)
 	bitmap = read_from_pngfile(filename);
 	assert(bitmap != NULL);
 	bitmap->base.id = resid;
+	RES_BIRTH(&bitmap->base);
 	return bitmap;
+}
+
+void
+bitmap_shrink(struct gc_tag * tag, enum gc_power p)
+{
+	struct bitmap * b;
+	b = (struct bitmap *)tag->ptr;
+	if (b->base.ref_count <= 0) {
+		RES_DIE(&b->base);
+		BITMAP_CLEANUP(b);
+		return;
+	}
+
+	if (p >= GC_DESTROY) {
+		WARNING(MEMORY, "bitmap %lx destroied while refcount > 0\n",
+				b->base.ref_count);
+		RES_DIE(&b->base);
+		BITMAP_CLEANUP(b);
+		return;
+	}
+
+	return;
 }
 
 // vim:tabstop=4:shiftwidth=4

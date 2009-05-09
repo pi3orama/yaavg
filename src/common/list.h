@@ -10,8 +10,8 @@ __BEGIN_DECLS
 #define LIST_POISON2  ((void *) 0x00200200)
 
 #undef offsetof
-#ifdef __compiler_offsetof
-#define offsetof(TYPE,MEMBER) __compiler_offsetof(TYPE,MEMBER)
+#if (__GNUC__ == 4)
+#define offsetof(TYPE,MEMBER) __builtin_offsetof(TYPE,MEMBER)
 #else
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 #endif
