@@ -3,6 +3,7 @@
 #define _LIST_H
 
 #include <stdlib.h> /* NULL */
+#include <common/defs.h> /* true and false */
 
 __BEGIN_DECLS
 

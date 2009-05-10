@@ -21,6 +21,8 @@ main(int argc, char * argv[])
 		bitmap1 = res_load_bitmap((res_id_t)(uint32_t)name1);
 		bitmap2 = res_load_bitmap((res_id_t)(uint32_t)name2);
 
+		bitmap1 = res_load_bitmap((res_id_t)(uint32_t)name1);
+		bitmap2 = res_load_bitmap((res_id_t)(uint32_t)name2);
 		write_to_pngfile_rgb("/tmp/rgb.png", bitmap1->data, bitmap1->w, bitmap1->h);
 		write_to_pngfile_rgba("/tmp/rgba.png", bitmap2->data, bitmap2->w, bitmap2->h);
 	}

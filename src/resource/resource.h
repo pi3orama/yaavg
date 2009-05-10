@@ -35,8 +35,17 @@ struct resource {
 #define RES_GRAB(r) do {} while(0)
 #define RES_PENDING(r) do {} while(0)
 
-#define RES_BIRTH(t) do {} while(0)
-#define RES_DIE(t) do {} while(0)
+struct resource *
+res_search(res_id_t id, res_type_t type);
+
+extern void
+res_birth(struct resource * res);
+
+extern void
+res_die(struct resource * res);
+
+#define RES_BIRTH(r) do {res_birth(r);} while(0)
+#define RES_DIE(r) do {res_die(r);} while(0)
 
 #define RES_CLEANUP(r) ((r)->cleanup.function(&((r)->cleanup)))
 

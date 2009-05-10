@@ -24,6 +24,13 @@ res_load_bitmap(res_id_t resid)
 	 * but in the final system, one may cache
 	 * the metadata of the resource. */
 	struct bitmap * bitmap;
+
+	/* search from res pool first */
+	struct resource * res = res_search(resid, RES_BITMAP);
+	if (res != NULL) {
+		return container_of(res, struct bitmap, base);
+	}
+
 	char * filename = (char*)((uint32_t)resid);
 	bitmap = read_from_pngfile(filename);
 	assert(bitmap != NULL);
