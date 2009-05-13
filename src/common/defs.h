@@ -30,11 +30,12 @@ typedef void * icon_t;
 
 /* Copy code from list.h */
 #ifndef offsetof
-# ifdef __compiler_offsetof
-#  define offsetof(TYPE,MEMBER) __compiler_offsetof(TYPE,MEMBER)
-# else
-#  define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-# endif
+
+#if (__GNUC__ == 4)
+#define offsetof(TYPE,MEMBER) __builtin_offsetof(TYPE,MEMBER)
+#else
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#endif
 #endif
 
 #ifndef container_of
@@ -78,4 +79,6 @@ typedef void * icon_t;
 __END_DECLS
 
 #endif
+
+// vim:tabstop=4:shiftwidth=4
 

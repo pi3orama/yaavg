@@ -51,8 +51,8 @@ bitmap_shrink(struct gc_tag * tag, enum gc_power p)
 	}
 
 	if (p >= GC_DESTROY) {
-		WARNING(MEMORY, "bitmap %lx destroied while refcount > 0\n",
-				b->base.ref_count);
+		WARNING(MEMORY, "bitmap %p destroied while refcount = %d > 0\n",
+				b, b->base.ref_count);
 		RES_DIE(&b->base);
 		BITMAP_CLEANUP(b);
 		return;

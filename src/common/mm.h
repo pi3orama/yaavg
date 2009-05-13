@@ -85,10 +85,10 @@ gc_free(struct gc_tag * tag);
 #define GC_XALLOC_BLOCK(s, xalloc) ({ 	\
 		struct gc_tag * tag;	\
 		void * ptr;				\
-		if (s <= sizeof(*tag))	\
+		if ((s) <= sizeof(*tag))	\
 			ptr = NULL;			\
 		else {					\
-			tag = xalloc(s, 0, 0, NULL, NULL);	\
+			tag = xalloc((s) + sizeof(*tag), 0, 0, NULL, NULL);	\
 			if (tag == NULL)	\
 				ptr = NULL;		\
 			else				\
@@ -103,7 +103,7 @@ gc_free(struct gc_tag * tag);
 	GC_XALLOC_BLOCK(s, gc_calloc)
 #define GC_FREE_BLOCK(p) \
 	do {	\
-		struct gc_tag * tag = container_of(p, struct gc_tag, data);	\
+		struct gc_tag * tag = container_of((void*)(p), struct gc_tag, data);	\
 		gc_free(tag); \
 	} while(0)
 

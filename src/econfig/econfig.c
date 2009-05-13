@@ -41,6 +41,9 @@ static struct conf_entry entries[] = {
 	 * function cause deadlock.  */
 	{"video.sdl.blocksigint", TypeBool, vcast(TRUE)},
 //	{"video.sdl.blocksigint", TypeBool, vcast(FALSE)},
+	{"sys.mem.threshold",	TypeInteger, vcast(1048576)},	/* in Kbs, no use now */
+	{"video.opengl.texture.maxtexsize", TypeInteger, vcast(131072)},	/* in Kbs, no use now */
+	{"video.opengl.texture.compress", TypeBool, vcast(TRUE)},
 	{NULL, TypeNone, vcast(0)},
 };
 

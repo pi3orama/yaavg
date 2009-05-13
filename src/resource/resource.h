@@ -29,6 +29,7 @@ struct resource {
 	int ref_count;
 	uint32_t data_size;
 	res_type_t type;
+	/* resid should not be 0 */
 	res_id_t id;
 };
 
