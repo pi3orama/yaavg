@@ -31,8 +31,7 @@ do_screenshot_cleanup(struct cleanup * base)
 	struct screenshot_cleanup * pcleanup =
 		(struct screenshot_cleanup *)base->args;
 	if (pcleanup->buffer != NULL) {
-		GC_FREE_BLOCK(pcleanup->buffer);
-		pcleanup->buffer = NULL;
+		GC_FREE_BLOCK_SET(pcleanup->buffer);
 	}
 	GC_TRIVAL_FREE(pcleanup);
 }

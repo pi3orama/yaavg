@@ -21,7 +21,7 @@ enum texture_type {
 	/* internal texture, no coorsponding bitmap */
 	TEXTYPE_INTERNAL,
 	/* helper texture, render redirection */
-	TEXTURE_HELPER,
+	TEXTYPE_HELPER,
 };
 
 struct texture {
@@ -31,7 +31,7 @@ struct texture {
 	struct rectangle rect;
 	enum texture_type type;
 	/* should this texture be pinned into system memory? */
-	bool_t pinned;
+	bool_t pin;
 	/* if no coorsponding bitmap, bitmap_res_id should be set to 0 */
 	res_id_t bitmap_res_id;
 	/* sometime the bitmap's data field is useful.
@@ -53,11 +53,12 @@ struct texture {
  * 3. int importance: when hardware memory shortage, which one
  *    be unloaded first? */
 extern struct texture *
-tex_create(res_id_t bitmap_res_id, struct rectangle rect, void * args)
+tex_create(res_id_t bitmap_res_id, struct rectangle rect,
+		enum texture_type type, bool_t pin, void * args)
 	THROWS(INTERNAL_ERROR);
 
-#define TEX_CLEANUP(t)	(t)->cleanup.function(&((t)->cleanup))
-
+#define TEX_CLEANUP(t)		CLEANUP(&((t)->cleanup))
+#define TEX_SHRINK(t, p)	GC_SHRINK((&(t)->__gc_tag), (p))
 
 __END_DECLS
 #endif

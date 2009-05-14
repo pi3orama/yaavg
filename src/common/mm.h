@@ -15,7 +15,7 @@
 enum gc_power {
 	GC_NORMAL,
 	GC_LIGHT,
-	GC_MEIDUM,
+	GC_MEDIUM,
 	GC_HARD,
 	GC_DESTROY,
 };
@@ -101,13 +101,22 @@ gc_free(struct gc_tag * tag);
 	GC_XALLOC_BLOCK(s, gc_malloc)
 #define GC_CALLOC_BLOCK(s) \
 	GC_XALLOC_BLOCK(s, gc_calloc)
-#define GC_FREE_BLOCK(p) \
+#define GC_FREE_BLOCK_RVAL(p) \
 	do {	\
 		struct gc_tag * tag = container_of((void*)(p), struct gc_tag, data);	\
 		gc_free(tag); \
 	} while(0)
 
+#define GC_FREE_BLOCK_SET(p) \
+do {	\
+	struct gc_tag * tag = container_of((void*)(p), struct gc_tag, data);	\
+	gc_free(tag); \
+	(p) = NULL;\
+} while(0)
+
 #define GC_TAG	struct gc_tag __gc_tag
+
+#define GC_SHRINK(t, p)	(t)->shrink((t), (p))
 
 #define GC_SIMPLE_MALLOC(ptr, member) \
 	gc_malloc(sizeof(*ptr), offsetof(typeof(*ptr), member), 0, NULL, NULL)

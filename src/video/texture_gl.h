@@ -48,8 +48,8 @@ struct texture_gl_params {
 	FALSE,						\
 	50,							\
 	GL_TEXTURE_2D,				\
-	GL_LINER,					\
-	GL_LINER,					\
+	GL_LINEAR,					\
+	GL_LINEAR,					\
 	GL_CLAMP_TO_EDGE,			\
 	GL_CLAMP_TO_EDGE,			\
 	GL_CLAMP_TO_EDGE,			\
@@ -68,6 +68,9 @@ struct texture_gl {
 	 * */
 	void * phy_bitmap;
 
+	/* if true, texture need to hold the bitmap */
+	bool_t use_bitmap_data;
+
 	/* below 2 arrays is used to store hw textures gened
 	 * by glGenTextures. if nr_hwtexs are more than NR_HWTEX_LMT,
 	 * hwtexs_extends is allocated and used, then hwtexts is useless. */
@@ -82,7 +85,9 @@ struct texture_gl {
 
 #define TEXGL_BITMAP(t)	TEX_BITMAP(&((t)->base))
 #define SET_TEXGL_BITMAP(t, b)	SET_TEX_BITMAP(&((t)->base), (b))
+
 #define TEXGL_CLEANUP(t)	TEX_CLEANUP(&((t)->base))
+#define TEXGL_SHRINK(t, p)	TEX_SHRINK(&((t)->base), (p))
 
 __END_DECLS
 

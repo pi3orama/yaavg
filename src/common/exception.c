@@ -91,7 +91,7 @@ do_cleanup(void)
 		/* Notice: func may release the cleanup structure,
 		 * therefore we first save the next cleanup data */
 		list_del(&pos->list);
-		pos->function(pos);
+		CLEANUP(pos);
 	}
 }
 

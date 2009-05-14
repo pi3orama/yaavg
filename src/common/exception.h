@@ -97,6 +97,8 @@ struct cleanup {
 	void * args;
 };
 
+#define CLEANUP(c)	(c)->function((c))
+
 struct catcher {
 	EXCEPTIONS_SIGJMP_BUF buf;
 	enum catcher_state state;

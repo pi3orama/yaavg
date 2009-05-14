@@ -173,7 +173,7 @@ png_write(struct png_writer writer, uint8_t * buffer, int w, int h, int type)
 
 	VERBOSE(SYSTEM, "png stream write over\n");
 	remove_cleanup(&pcleanup->base);
-	pcleanup->base.function(&pcleanup->base);
+	CLEANUP(&pcleanup->base);
 }
 
 /* *********************************************************** */
@@ -408,7 +408,7 @@ png_read(struct png_reader reader)
 	VERBOSE(SYSTEM, "png stream read OK\n");
 
 	remove_cleanup(&pcleanup->base);
-	pcleanup->base.function(&pcleanup->base);
+	CLEANUP(&pcleanup->base);
 	return bitmap;
 }
 
@@ -554,7 +554,7 @@ read_from_pngfile(char * filename)
 	res = png_read(reader);
 
 	remove_cleanup(&pcleanup->base);
-	pcleanup->base.function(&pcleanup->base);
+	CLEANUP(&pcleanup->base);
 	return res;
 }
 
@@ -593,7 +593,8 @@ write_to_pngfile(char * filename, uint8_t * buffer,
 	png_write(writer, buffer, w, h, type);
 
 	remove_cleanup(&pcleanup->base);
-	pcleanup->base.function(&pcleanup->base);
+	CLEANUP(&pcleanup->base);
+	return;
 }
 
 void

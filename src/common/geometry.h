@@ -14,9 +14,14 @@ struct point {
 	int x, y;
 };
 
+#define POINT_FMT	"(%d, %d)"
+#define POINT_ARG(p)	(p)->x, (p)->y
+
 struct rectangle {
 	int x, y, w, h;
 };
+#define RECT_FMT	"(%d, %d)++(%d, %d)"
+#define RECT_ARG(r)	(r)->x, (r)->y, (r)->w, (r)->h
 
 __END_DECLS
 #endif
