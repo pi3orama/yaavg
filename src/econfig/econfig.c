@@ -45,7 +45,7 @@ static struct conf_entry entries[] = {
 	{"video.opengl.texture.totalhwsize", TypeInteger, vcast(0)},	/* in Kbs, no use now, 0 means don't care */
 	/* 0 means use max avaliable size */	
 	{"video.opengl.texture.maxsize", TypeInteger, vcast(0)},
-	{"video.opengl.texture.compress", TypeBool, vcast(TRUE)},
+	{"video.opengl.texture.enableCOMPRESSION", TypeBool, vcast(FALSE)},
 	{"video.opengl.texture.enableNPOT", TypeBool, vcast(TRUE)},
 	{"video.opengl.texture.enableRECT", TypeBool, vcast(TRUE)},
 	{NULL, TypeNone, vcast(0)},

@@ -9,9 +9,6 @@
 #include <assert.h>
 #include <sys/stat.h>
 
-#include <GL/gl.h>
-#include <GL/glu.h>
-
 #include <common/defs.h>
 #include <common/debug.h>
 #include <common/exception.h>
@@ -20,8 +17,12 @@
 #include <econfig/econfig.h>
 
 #include <video/video_driver.h>
+/* video_gl.h includes gl.h */
 #include <video/video_gl.h>
 #include <video/video.h>
+
+#include <stdarg.h>
+#include <regex.h>
 
 struct gl_context * gl_ctx = NULL;
 
@@ -105,23 +106,124 @@ init_glfunc(void)
 #endif
 }
 
+/* There may be many candidate string for an extension */
 static bool_t
-check_extension(const char * str)
+check_extension(const char * conf_key, ...)
 {
-	
+	va_list args;
+	int err;
+	const char * f, * e;
+
+	e = (const char *)(gl_ctx->extensions);
+	assert(e != NULL);
+
+	bool_t retval = FALSE;
+
+	retval = conf_get_bool(conf_key, TRUE);
+	/* conf set this feature to FALSE */
+	if (!retval)
+		return FALSE;
+
+	retval = FALSE;
+
+	va_start(args, conf_key);
+
+	f = va_arg(args, const char *);
+	while(f != NULL) {
+		assert(strlen(f) < 64);
+
+		TRACE(OPENGL, "check for feature %s\n", f);
+
+		char nf[64];
+		snprintf(nf, 64, "\\<%s\\>", f);
+
+		regex_t reg;
+		err = regcomp(&reg, nf, REG_NOSUB);
+		assert(err == 0);
+
+		err = regexec(&reg, e, 0, NULL, 0);
+		regfree(&reg);
+
+		if (err == 0) {
+			TRACE(OPENGL, "found feature %s\n", f);
+			va_end(args);
+			return TRUE;
+		}
+		f = va_arg(args, const char *);
+	}
+
+	va_end(args);
+	return FALSE;
 }
+
+#ifndef STATIC_OPENGL
+struct func_table {
+	void ** k;
+	void * v;
+};
+static void
+replace_func_ptr(struct func_table * t)
+{
+	while(t->k != NULL) {
+		if (*(t->k) == NULL)
+			*(t->k) = t->v;
+		t++;
+	}
+}
+#endif
 
 static void
 check_features(void)
 {
-
 	assert(gl_ctx != NULL);
 
 	gl_ctx->max_texture_size = gl_getint(GL_MAX_TEXTURE_SIZE,
 			"video.opengl.texture.maxsize",
 			0, min0);
-	TRACE(OPENGL, "OpenGL max texture size = %d\n", gl_ctx->max_texture_size);
+	VERBOSE(OPENGL, "OpenGL max texture size = %d\n", gl_ctx->max_texture_size);
 
+#define VERBOSE_FEATURE(name, exp) do {\
+	if (exp)	\
+		VERBOSE(OPENGL, name " is enabled\n");	\
+	else		\
+		VERBOSE(OPENGL, name " is disabled\n");	\
+	} while(0)
+
+	gl_ctx->texture_NPOT = check_extension("video.opengl.texture.enableNPOT",
+			"GL_ARB_texture_non_power_of_two",
+			NULL);
+	VERBOSE_FEATURE("NPOT texture", gl_ctx->texture_NPOT);
+
+	gl_ctx->texture_RECT = check_extension("video.opengl.texture.enableRECT",
+			"GL_ARB_texture_rectangle",
+			"GL_EXT_texture_rectangle",
+			"GL_NV_texture_rectangle",
+			NULL);
+	VERBOSE_FEATURE("RECT texture", gl_ctx->texture_RECT);
+
+	gl_ctx->texture_COMPRESSION = check_extension("video.opengl.texture.enableCOMPRESSION",
+		"GL_ARB_texture_compression",
+		NULL);
+	VERBOSE_FEATURE("texture compression", gl_ctx->texture_COMPRESSION);
+
+#ifndef STATIC_OPENGL
+	{
+	struct func_table t[] = {
+		{(void**)&glCompressedTexImage3D, 		(void*)glCompressedTexImage3DARB},
+		{(void**)&glCompressedTexImage2D, 		(void*)glCompressedTexImage2DARB},
+		{(void**)&glCompressedTexImage1D, 		(void*)glCompressedTexImage1DARB},
+		{(void**)&glCompressedTexSubImage3D, 	(void*)glCompressedTexSubImage3DARB},
+		{(void**)&glCompressedTexSubImage2D, 	(void*)glCompressedTexSubImage2DARB},
+		{(void**)&glCompressedTexSubImage1D, 	(void*)glCompressedTexSubImage1DARB},
+		{(void**)&glGetCompressedTexImage, 		(void*)glGetCompressedTexImageARB},
+		{NULL, NULL},
+	};
+	replace_func_ptr(t);
+	}
+#endif
+
+
+#undef VERBOSE_FEATURE
 }
 
 

@@ -13,8 +13,7 @@
 /* Below is opengl functions definitions */
 /* define struct gl_funcs  */
 
-#include <GL/gl.h>
-#include <GL/glext.h>
+/* gl_funcs includes gl.h  */
 #include <video/gl_funcs.h>
 
 __BEGIN_DECLS

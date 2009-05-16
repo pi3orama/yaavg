@@ -98,4 +98,24 @@ glPolygonMode
 glPolygonStipple
 glClipPlane
 glGetClipPlane
+
+- GL_ARB_texture_compression
+
+glCompressedTexImage3D
+glCompressedTexImage2D
+glCompressedTexImage1D
+glCompressedTexSubImage3D
+glCompressedTexSubImage2D
+glCompressedTexSubImage1D
+glGetCompressedTexImage
+
+
+glCompressedTexImage3DARB
+glCompressedTexImage2DARB
+glCompressedTexImage1DARB
+glCompressedTexSubImage3DARB
+glCompressedTexSubImage2DARB
+glCompressedTexSubImage1DARB
+glGetCompressedTexImageARB
+
 # 
