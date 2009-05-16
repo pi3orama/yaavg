@@ -105,6 +105,26 @@ init_glfunc(void)
 #endif
 }
 
+static bool_t
+check_extension(const char * str)
+{
+	
+}
+
+static void
+check_features(void)
+{
+
+	assert(gl_ctx != NULL);
+
+	gl_ctx->max_texture_size = gl_getint(GL_MAX_TEXTURE_SIZE,
+			"video.opengl.texture.maxsize",
+			0, min0);
+	TRACE(OPENGL, "OpenGL max texture size = %d\n", gl_ctx->max_texture_size);
+
+}
+
+
 static void
 init_gl_driver(void)
 {
@@ -127,6 +147,9 @@ init_gl_driver(void)
 	VERBOSE(OPENGL, "Extensions : %s\n", gl_ctx->extensions);
 
 	/* init opengl environment: */
+
+	check_features();
+
 	/* set view port and coordinator system */
 	video_reshape(gl_ctx->base.width, gl_ctx->base.height);
 
@@ -137,6 +160,18 @@ init_gl_driver(void)
 	glEnable(GL_TEXTURE_1D);
 	glEnable(GL_TEXTURE_2D);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	/* set all avaliable hints to NISTEST */
+	/* FIXME */
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+	glHint(GL_FOG_HINT, GL_NICEST);
+	glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
+	glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
+
 
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
@@ -295,7 +330,7 @@ gl_check_error(void)
 
 	static struct kvp tb[] = {
 		{GL_INVALID_ENUM, "Enum argument out of range"},
-		{GL_INVALID_VALUE,"Numeric argument out of range"},
+		{GL_INVALID_VALUE, "Numeric argument out of range"},
 		{GL_INVALID_OPERATION, "Operation illegal in current state"},
 		{GL_INVALID_FRAMEBUFFER_OPERATION, "Framebuffer object is not complete"},
 		{GL_STACK_OVERFLOW, "Command would cause a stack overflow"},

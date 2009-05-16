@@ -26,12 +26,17 @@ struct gl_context {
 	const GLubyte * version;
 	/* a very long string */
 	const GLubyte * extensions;
-
 	/* Which platform we used? SDL or GLX or WGL... */
 	const char *platform;
 
+
 	/* belong is for dynamic gl use: func pointers */
 	struct gl_funcs gl_funcs;
+
+	int max_texture_size;
+	bool_t texture_NPOT;
+	bool_t texture_RECT;
+	bool_t texture_COMPRESSION;
 };
 
 extern struct gl_context * gl_ctx;
@@ -63,6 +68,15 @@ gl_check_error(void) THROWS(all);
 #  define GL_INVALID_FRAMEBUFFER_OPERATION GL_INVALID_FRAMEBUFFER_OPERATION_EXT
 # endif
 #endif
+
+/* OpenGL feature check */
+#define gl_getint(e, s, d, op) ({		\
+		int vala, valb;			\
+		vala = conf_get_integer(s, d);	\
+		glGetIntegerv(e, &valb);	\
+	/* here: the order of vala, valb is important */\
+		op(vala, valb);			\
+			})
 
 __END_DECLS
 

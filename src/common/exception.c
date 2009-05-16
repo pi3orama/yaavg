@@ -85,12 +85,14 @@ throw_cleanup(struct cleanup * cleanup)
 void
 do_cleanup(void)
 {
-	struct cleanup * pos, *n;
+	struct cleanup * pos;
 	assert(current_cleanup_chain != NULL);
-	list_for_each_entry_safe(pos, n, current_cleanup_chain, list) {
-		/* Notice: func may release the cleanup structure,
-		 * therefore we first save the next cleanup data */
-		list_del(&pos->list);
+
+	/* We should use more graceful method to remove a cleanup.
+	 * One cleanup may remove another. */
+	while(!list_empty(current_cleanup_chain)) {
+		pos = list_entry(current_cleanup_chain->next,
+				typeof(*pos), list);
 		CLEANUP(pos);
 	}
 }

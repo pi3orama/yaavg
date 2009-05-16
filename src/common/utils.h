@@ -51,7 +51,24 @@ struct bitmap;
 struct bitmap *
 read_from_pngfile(char * filename) THROWS(RESOURCE_LOST, FATAL);
 
+static inline int
+count_1s(uint32_t c1)
+{
+	register uint32_t c2 = (c1 >> 1) & 033333333333;
+	c2 = c1 - c2 - ((c2 >> 1) & 033333333333);
+	return (((c2 + (c2 >> 3)) & 030707070707) % 077);
+}
+
+static inline int
+count_1s_64(uint64_t c1)
+{
+	uint64_t c2 = (c1 >> 1) & 0x7777777777777777ULL;
+	uint64_t c3 = (c1 >> 2) & 0x3333333333333333ULL;
+	uint64_t c4 = (c1 >> 3) & 0x1111111111111111ULL;
+	c1 = c1 - c2 - c3 - c4;
+	return ((c1 + (c1 >> 4)) & 0x0F0F0F0F0F0F0F0FULL) % 0xFF;
+}
 __END_DECLS
 
 #endif
-
+// vim:tabstop=4:shiftwidth=4

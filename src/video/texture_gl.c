@@ -178,6 +178,8 @@ init_texgl(struct texture_gl * tex)
 	};
 	*rect = geom_rect_cover(full_rect, *rect);
 	TRACE(OPENGL, "bounded rect:" RECT_FMT "\n", RECT_ARG(rect));
+
+	/* how many hw texture we need? */
 }
 
 static void

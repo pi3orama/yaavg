@@ -42,8 +42,12 @@ static struct conf_entry entries[] = {
 	{"video.sdl.blocksigint", TypeBool, vcast(TRUE)},
 //	{"video.sdl.blocksigint", TypeBool, vcast(FALSE)},
 	{"sys.mem.threshold",	TypeInteger, vcast(1048576)},	/* in Kbs, no use now */
-	{"video.opengl.texture.maxtexsize", TypeInteger, vcast(131072)},	/* in Kbs, no use now */
+	{"video.opengl.texture.totalhwsize", TypeInteger, vcast(0)},	/* in Kbs, no use now, 0 means don't care */
+	/* 0 means use max avaliable size */	
+	{"video.opengl.texture.maxsize", TypeInteger, vcast(0)},
 	{"video.opengl.texture.compress", TypeBool, vcast(TRUE)},
+	{"video.opengl.texture.enableNPOT", TypeBool, vcast(TRUE)},
+	{"video.opengl.texture.enableRECT", TypeBool, vcast(TRUE)},
 	{NULL, TypeNone, vcast(0)},
 };
 

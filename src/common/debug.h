@@ -49,12 +49,12 @@ static const char * debug_comp_name[NR_COMPONENTS] = {
 static enum debug_level debug_levels[NR_COMPONENTS] = {
 	[RCOMMAND] = WARNING,
 	[RLIST] = WARNING,
-	[MEMORY] = TRACE,
-	[SYSTEM] = TRACE,
-	[OPENGL] = WARNING,
+	[MEMORY] = WARNING,
+	[SYSTEM] = WARNING,
+	[OPENGL] = TRACE,
 	[SDL] = WARNING,
 	[VIDEO] = WARNING,
-	[RESOURCE] = TRACE,
+	[RESOURCE] = WARNING,
 };
 #endif
 
