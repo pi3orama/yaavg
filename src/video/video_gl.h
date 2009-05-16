@@ -14,6 +14,7 @@
 /* define struct gl_funcs  */
 
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <video/gl_funcs.h>
 
 __BEGIN_DECLS
@@ -48,6 +49,20 @@ gl_reinit(void);
 /* Like video_close and driver_close, we don't really need a gl_close */
 extern void
 gl_close(void);
+
+
+/* for OpenGL command use */
+extern void
+gl_check_error(void) THROWS(all);
+
+#define GL_POP_ERROR()	NOTHROW_RET(gl_check_error)
+
+/* OpenGL definition fixup */
+#ifndef GL_INVALID_FRAMEBUFFER_OPERATION
+# ifdef GL_INVALID_FRAMEBUFFER_OPERATION_EXT
+#  define GL_INVALID_FRAMEBUFFER_OPERATION GL_INVALID_FRAMEBUFFER_OPERATION_EXT
+# endif
+#endif
 
 __END_DECLS
 

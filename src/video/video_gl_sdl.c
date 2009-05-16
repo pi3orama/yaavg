@@ -104,14 +104,14 @@ init_sdl(void)
 
 	if (sdl_ctx != NULL) {
 		ERROR(SDL, "sdl has already inited\n");
-		throw_exception(EXCEPTION_FATAL, "sdl has already inited");
+		THROW(EXCEPTION_FATAL, "sdl has already inited");
 	}
 
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
 		FATAL(SDL, "Failed to init SDL video subsystem, SDL report: \"%s\", "
 				"check for your configuration.\n", SDL_GetError());
 		/* exit immediatly */
-		throw_exception(EXCEPTION_FATAL, "init_sdl failed");
+		THROW(EXCEPTION_FATAL, "init_sdl failed");
 	}
 
 	if (!conf_get_bool("video.sdl.blocksigint", TRUE)) {
@@ -131,7 +131,7 @@ init_sdl(void)
 		FATAL(SDL, "Load OpenGL library failed: %s\n", SDL_GetError());
 		/* don't use gl_close, we haven't set sdl_ctx */
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
-		throw_exception(EXCEPTION_FATAL, "Load OpenGL library failed");
+		THROW(EXCEPTION_FATAL, "Load OpenGL library failed");
 	}
 
 	sdl_ctx->gllibrary = library_name;
@@ -190,7 +190,7 @@ open_window(void)
 	TRACE(SDL, "try SDL OpenWindow\n");
 	if (sdl_ctx == NULL) {
 		ERROR(SDL, "try OpenWindow before init sdl platform.\n");
-		throw_exception(EXCEPTION_FATAL,
+		THROW(EXCEPTION_FATAL,
 				"try OpenWindow before init sdl platform");
 	}
 	
@@ -217,7 +217,7 @@ open_window(void)
 		FATAL(SDL, "Failed to set video mode to %ix%i, SDL report: \"%s\", "
 				"check for your configuration!\n", w, h,
 				SDL_GetError());
-		throw_exception(EXCEPTION_FATAL, "set video mode failed");
+		THROW(EXCEPTION_FATAL, "set video mode failed");
 	}
 
 	/* Set context structure */

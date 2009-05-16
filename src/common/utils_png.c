@@ -115,7 +115,7 @@ png_write(struct png_writer writer, uint8_t * buffer, int w, int h, int type)
 
 	if (write_ptr == NULL) {
 		ERROR(SYSTEM, "libpng: create write_ptr error\n");
-		throw_exception(EXCEPTION_CONTINUE, "libpng error");
+		THROW(EXCEPTION_CONTINUE, "libpng error");
 	}
 
 	/* We have to use setjmp here, because if we 
@@ -123,7 +123,7 @@ png_write(struct png_writer writer, uint8_t * buffer, int w, int h, int type)
 	 * call abort(). */
 	if (setjmp(png_jmpbuf(write_ptr))) {
 		ERROR(SYSTEM, "libpng: write error\n");
-		throw_exception(EXCEPTION_CONTINUE, "libpng: write error");
+		THROW(EXCEPTION_CONTINUE, "libpng: write error");
 	}
 
 	if (writer.info_ptr == NULL) {
@@ -161,7 +161,7 @@ png_write(struct png_writer writer, uint8_t * buffer, int w, int h, int type)
 			break;
 		default:
 			FATAL(SYSTEM, "png write format error: %d\n", type);
-			throw_exception(FATAL, "png write format error");
+			THROW(FATAL, "png write format error");
 	}
 
 	VERBOSE(SYSTEM, "png stream write start\n");
@@ -273,12 +273,12 @@ png_read(struct png_reader reader)
 
 	if (read_ptr == NULL) {
 		ERROR(SYSTEM, "libpng: create read_ptr error\n");
-		throw_exception(EXCEPTION_FATAL, "libpng read error");
+		THROW(EXCEPTION_FATAL, "libpng read error");
 	}
 
 	if (setjmp(png_jmpbuf(read_ptr))) {
 		ERROR(SYSTEM, "libpng: read error\n");
-		throw_exception(EXCEPTION_RESOURCE_LOST, "libpng read error");
+		THROW(EXCEPTION_RESOURCE_LOST, "libpng read error");
 	}
 
 	if (reader.info_ptr == NULL) {
@@ -335,7 +335,7 @@ png_read(struct png_reader reader)
 	/* start read */
 	if (bit_depth != 8) {
 		WARNING(RESOURCE, "We don't support this png stream\n");
-		throw_exception(EXCEPTION_RESOURCE_LOST, "format error");
+		THROW(EXCEPTION_RESOURCE_LOST, "format error");
 	}
 
 	bitmap_format_t format;
@@ -367,7 +367,7 @@ png_read(struct png_reader reader)
 			break;
 		default:
 			WARNING(RESOURCE, "We don't support this png stream\n");
-			throw_exception(EXCEPTION_RESOURCE_LOST, "format error");
+			THROW(EXCEPTION_RESOURCE_LOST, "format error");
 	};
 
 	/* alloc the bitmap structure and fill the cleanup */
@@ -425,7 +425,7 @@ file_writer(png_structp str, png_bytep byte, png_size_t size)
 	err = fwrite(buffer, 1, size, fp);
 	if (err != size) {
 		WARNING(SYSTEM, "file write error: %d\n", err);
-		throw_exception(EXCEPTION_CONTINUE, "file write error");
+		THROW(EXCEPTION_CONTINUE, "file write error");
 	}
 	return;
 }
@@ -443,7 +443,7 @@ file_reader(png_structp str, png_bytep byte, png_size_t size)
 		/* error occurs or end of file */
 		if (!feof(fp)) {
 			WARNING(SYSTEM, "file read error: %d\n", errno);
-			throw_exception(EXCEPTION_RESOURCE_LOST, "file read error");
+			THROW(EXCEPTION_RESOURCE_LOST, "file read error");
 		}
 	}
 	return;
@@ -536,7 +536,7 @@ read_from_pngfile(char * filename)
 	fp = fopen(filename, "rb");
 	if (NULL == fp) {
 		WARNING(SYSTEM, "open file %s for read failed\n", filename);
-		throw_exception(EXCEPTION_RESOURCE_LOST,
+		THROW(EXCEPTION_RESOURCE_LOST,
 				"open file for read error\n");
 	}
 
@@ -567,13 +567,13 @@ write_to_pngfile(char * filename, uint8_t * buffer,
 
 	if ((type != PNG_COLOR_TYPE_RGB) && (type != PNG_COLOR_TYPE_RGBA)) {
 		FATAL(SYSTEM, "write png format error: %d\n", type);
-		throw_exception(EXCEPTION_FATAL, "write png format error");
+		THROW(EXCEPTION_FATAL, "write png format error");
 	}
 
 	fp = fopen(filename, "wb");
 	if (NULL == fp) {
 		WARNING(SYSTEM, "open file %s failed\n", filename);
-		throw_exception(EXCEPTION_CONTINUE,
+		THROW(EXCEPTION_CONTINUE,
 				"open file for write failed");
 		return;
 	}

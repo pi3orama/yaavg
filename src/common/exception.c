@@ -131,7 +131,8 @@ exceptions_state_mc_action_iter_1 (void)
 }
 
 NORETURN void
-throw_exception (enum exception_level level, const char * message)
+throw_exception (enum exception_level level,
+		const char * message, uintptr_t val)
 {
 	if (current_catcher == NULL) {
 		/* We are not in a catch block. do all cleanup then
@@ -149,6 +150,7 @@ throw_exception (enum exception_level level, const char * message)
 
 	current_catcher->exception->level = level;
 	current_catcher->exception->message = message;
+	current_catcher->exception->val = val;
 
 	exceptions_state_mc(CATCH_THROWING);
 	/* do the longjmp! */
@@ -239,7 +241,7 @@ exceptions_state_mc(enum catcher_action action)
 
 					catcher_pop();
 					/* This catcher cannot handle this */
-					throw_exception(exception.level, exception.message);
+					RETHROW(exception);
 					/* We should not be here */
 					return 0;
 				}

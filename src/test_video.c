@@ -292,7 +292,7 @@ entry:
 		case EXCEPTION_SUBSYS_REINIT:
 			WARNING(VIDEO, "video reinit: %s\n", exp.message);
 			video_reinit();
-			throw_exception(EXCEPTION_SYS_SKIPFRAME, "video reinit, skip this frame");
+			THROW(EXCEPTION_SYS_SKIPFRAME, "video reinit, skip this frame");
 			break;
 		default:
 			INTERNAL_ERROR(SYSTEM, "!@#$%^&\n");
@@ -361,17 +361,17 @@ entry:
 					conf_set_bool("video.fullscreen", TRUE);
 				}
 				conf_set_string("video.opengl.driver.gllibrary", NULL);
-				throw_exception(EXCEPTION_SYS_REINIT, "normal reinit");
+				THROW(EXCEPTION_SYS_REINIT, "normal reinit");
 			}
 			if (event == 3)
 				video_screen_shot();
 
 			if (event == 4) {
-				throw_exception(EXCEPTION_SYS_RERUN, "normal rerun");
+				THROW(EXCEPTION_SYS_RERUN, "normal rerun");
 			}
 
 			if (event == 5) {
-				throw_exception(EXCEPTION_SYS_SKIPFRAME, "normal skip");
+				THROW(EXCEPTION_SYS_SKIPFRAME, "normal skip");
 			}
 
 			frame(video_ctx, deltatime, event);

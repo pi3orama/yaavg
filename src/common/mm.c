@@ -58,7 +58,7 @@ alloc_mem(size_t size, bool_t fill)
 		r = malloc(size);
 	TRACE(MEMORY, "alloc new block: %p\n", r);
 	if (r == NULL) {
-		throw_exception(EXCEPTION_FATAL, "Out of memory!");
+		THROW(EXCEPTION_FATAL, "Out of memory!");
 	}
 
 	return r;

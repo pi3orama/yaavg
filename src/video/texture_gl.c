@@ -102,6 +102,7 @@ free_hwmem(struct texture_gl * tex)
 	if (tex->hwtexs) {
 		TRACE(OPENGL, "\tdelete hw texture\n");
 		glDeleteTextures(tex->nr_hwtexs, tex->hwtexs);
+		GL_POP_ERROR();
 		
 		if (tex->hwtexs != tex->_hwtexs_save)
 			GC_FREE_BLOCK_SET(tex->hwtexs);

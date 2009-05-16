@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <setjmp.h>
-
+#include <stdint.h>
 
 __BEGIN_DECLS
 
@@ -39,6 +39,7 @@ enum exception_level {
 	EXCEPTION_RESET				= 9,
 	EXCEPTION_CONTINUE			= 10,
 	EXCEPTION_RESOURCE_LOST		= 11,
+	EXCEPTION_RENDER_ERROR		= 12,
 };
 
 #define MASK(level)				(1 << (int)(level))
@@ -58,11 +59,14 @@ enum exception_level {
 #define MASK_SUBSYS_ALL			(MASK_SUBSYS_RERUN | MASK_SUBSYS_SKIPFRAME | MASK_SUBSYS_REINIT)
 
 #define MASK_RESOURCE_LOST		MASK(EXCEPTION_RESOURCE_LOST)
+#define MASK_RENDER_ERROR		MASK(EXCEPTION_RENDER_ERROR)
 
 
 struct exception {
 	enum exception_level level;
 	const char * message;
+	/* helper ptr */
+	uintptr_t val;
 };
 
 #if defined(HAVE_SIGSETJMP)
@@ -97,7 +101,7 @@ struct cleanup {
 	void * args;
 };
 
-#define CLEANUP(c)	(c)->function((c))
+#define CLEANUP(c)	do {remove_cleanup((c)); (c)->function((c));} while(0)
 
 struct catcher {
 	EXCEPTIONS_SIGJMP_BUF buf;
@@ -172,7 +176,29 @@ exceptions_state_mc_action_iter_1(void);
 
 
 NORETURN void
-throw_exception(enum exception_level, const char * message) ATTR_NORETURN;
+throw_exception(enum exception_level, const char * message,
+		uintptr_t val) ATTR_NORETURN;
+
+#define THROW(l, m)			throw_exception(l, m, 0)
+#define THROW_VAL(l, m, v)	throw_exception(l, m, v)
+#define RETHROW(e)			throw_exception((e).level, (e).message, (e).val)
+
+#define NOTHROW(fn, ...)	do {		\
+	volatile struct exception exp;		\
+	TRY_CATCH(exp, MASK_NONFATAL) {		\
+		fn(__VA_ARGS__);				\
+	}									\
+} while(0)
+
+#define NOTHROW_RET(fn, defret, ...)	({	\
+	typeof(fn(__VA_ARGS__) retval);		\
+	retval = defret;					\
+	volatile struct exception exp;		\
+	TRY_CATCH(exp, MASK_NONFATAL) {		\
+		retval = fn(__VA_ARGS__);		\
+	}									\
+	retval;								\
+})
 
 #define THROWS(...)
 

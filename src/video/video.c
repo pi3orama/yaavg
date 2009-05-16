@@ -64,7 +64,7 @@ video_init(void)
 	if (video_ctx == NULL) {
 		/* We shouldn't be here, driver should have
 		 * throw an exception */
-		throw_exception(EXCEPTION_FATAL, "Driver init failed");
+		THROW(EXCEPTION_FATAL, "Driver init failed");
 	}
 	rlist_init(&(video_ctx->render_list));
 	make_cleanup(&video_cleanup_str);
@@ -193,7 +193,7 @@ video_insert_command_pair(struct render_command * lcmd,
 		/* if lpos == NULL, then we want to insert
 		 * the left command "before the tail of list" */
 		if (rpos != NULL)
-			throw_exception(EXCEPTION_FATAL,
+			THROW(EXCEPTION_FATAL,
 					"Insert rcmd pair failed.");
 	} else {
 		rcmd_pair_flag_t sum = 0;
@@ -203,22 +203,22 @@ video_insert_command_pair(struct render_command * lcmd,
 		{
 			sum += pos->pairflag;
 			if (sum < 0)
-				throw_exception(EXCEPTION_FATAL,
+				THROW(EXCEPTION_FATAL,
 						"try insert rcmd pair"
 						" in invalid position");
 		}
 
 		/* rpos is on the left of lpos! */
 		if ((pos == NULL) && (rpos != NULL))
-			throw_exception(EXCEPTION_FATAL,
+			THROW(EXCEPTION_FATAL,
 					"try insert rcmd pair"
 					" in invalid position");
 		if (pos != rpos)
-			throw_exception(EXCEPTION_FATAL,
+			THROW(EXCEPTION_FATAL,
 					"try insert rcmd pair"
 					" in invalid position");
 		if (sum != 0)
-			throw_exception(EXCEPTION_FATAL,
+			THROW(EXCEPTION_FATAL,
 					"try insert rcmd pair"
 					" in invalid position");
 	}

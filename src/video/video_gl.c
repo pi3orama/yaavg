@@ -37,10 +37,12 @@ static struct cleanup driver_cleanup_str = {
 	.function = __driver_close,
 	.list = {NULL, NULL},
 };
+
 static void
 __driver_close(struct cleanup * str)
 {
 	assert(str == &driver_cleanup_str);
+	remove_cleanup(str);
 	if (gl_ctx != NULL) {
 		gl_close();
 		gl_ctx = NULL;
@@ -67,7 +69,7 @@ driver_init(void)
 	if (gl_ctx == NULL) {
 		/* We shouldn't be here! */
 		ERROR(OPENGL, "gl_init failed\n");
-		throw_exception(EXCEPTION_FATAL, "gl_init failed");
+		THROW(EXCEPTION_FATAL, "gl_init failed");
 	} else {
 		make_cleanup(&driver_cleanup_str);
 		init_gl_driver();
@@ -139,7 +141,7 @@ init_gl_driver(void)
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
 		ERROR(OPENGL, "init_gl_driver failed, errno=%d\n", err);
-		throw_exception(EXCEPTION_FATAL, "init_gl_driver failed");
+		THROW(EXCEPTION_FATAL, "init_gl_driver failed");
 	}
 }
 
@@ -191,7 +193,7 @@ video_reshape(int w, int h)
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
 		ERROR(OPENGL, "video_reshape failed, errno=%d\n", err);
-		throw_exception(EXCEPTION_FATAL, "video_reshape failed");
+		THROW(EXCEPTION_FATAL, "video_reshape failed");
 	}
 }
 
@@ -201,19 +203,19 @@ read_pixels(uint8_t * buffer, int x, int y, int w, int h, GLenum format)
 	GLenum err;
 	if (gl_ctx == NULL) {
 		ERROR(OPENGL, "OpenGL has not been inited\n");
-		throw_exception(EXCEPTION_FATAL, "OpenGL has not been inited");
+		THROW(EXCEPTION_FATAL, "OpenGL has not been inited");
 	}
 
 	if (x + w > gl_ctx->base.width) {
 		WARNING(OPENGL, "Width (%d + %d) out of range (%d)\n",
 				x, w, gl_ctx->base.width);
-		throw_exception(EXCEPTION_CONTINUE, "Width out of range");
+		THROW(EXCEPTION_CONTINUE, "Width out of range");
 	}
 
 	if (y + h > gl_ctx->base.height) {
 		WARNING(OPENGL, "Height (%d + %d) out of range (%d)\n",
 				y, h, gl_ctx->base.height);
-		throw_exception(EXCEPTION_CONTINUE, "Height out of range");
+		THROW(EXCEPTION_CONTINUE, "Height out of range");
 	}
 
 	glReadPixels(x, y, w, h, format, GL_UNSIGNED_BYTE, buffer);
@@ -221,7 +223,7 @@ read_pixels(uint8_t * buffer, int x, int y, int w, int h, GLenum format)
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
 		WARNING(OPENGL, "ReadPixels failed, errno=%d\n", err);
-		throw_exception(EXCEPTION_CONTINUE, "Read pixels failed\n");
+		THROW(EXCEPTION_CONTINUE, "Read pixels failed\n");
 	}
 }
 
@@ -282,6 +284,43 @@ driver_end_frame(void)
 	return;
 }
 
+void
+gl_check_error(void)
+{
+
+	struct kvp {
+		GLenum errno;
+		const char * description;
+	};
+
+	static struct kvp tb[] = {
+		{GL_INVALID_ENUM, "Enum argument out of range"},
+		{GL_INVALID_VALUE,"Numeric argument out of range"},
+		{GL_INVALID_OPERATION, "Operation illegal in current state"},
+		{GL_INVALID_FRAMEBUFFER_OPERATION, "Framebuffer object is not complete"},
+		{GL_STACK_OVERFLOW, "Command would cause a stack overflow"},
+		{GL_STACK_UNDERFLOW, "Command would cause a stack underflow"},
+		{GL_OUT_OF_MEMORY, "Not enough memory left to execute command"},
+		{GL_TABLE_TOO_LARGE, "The specified table is too large"},
+		/* 0 is resvred for GL_NO_ERROR at least in nvidia opengl */
+		{0, "Unknown error"}
+	};
+
+	GLenum err;
+	err = glGetError();
+	if (err == GL_NO_ERROR)
+		return;
+
+	struct kvp * ptr = tb;
+	while(ptr->errno != 0)
+		if (ptr->errno == err)
+			break;
+
+
+	VERBOSE(OPENGL, "glGetError() returns %s (0x%X)\n", ptr->description, err);
+	THROW_VAL(EXCEPTION_RENDER_ERROR, "OpenGL error", err);
+	return;
+}
 
 
 /* Implentmented in engine_gl_xxx */

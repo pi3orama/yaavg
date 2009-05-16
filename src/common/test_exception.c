@@ -140,34 +140,34 @@ entry:
 		printf("video frame %d called\n", i);
 		if ((i == 1) && (reruned == 0)) {
 			reruned = 1;
-			throw_exception(EXCEPTION_SUBSYS_RERUN, "video frame 1 need rerun");
+			THROW(EXCEPTION_SUBSYS_RERUN, "video frame 1 need rerun");
 		}
 
 		if ((i == 2) && (reinited == 0)) {
 			reinited = 1;
-			throw_exception(EXCEPTION_SUBSYS_REINIT, "video frame 2 need video sys reinit");
+			THROW(EXCEPTION_SUBSYS_REINIT, "video frame 2 need video sys reinit");
 		}
 
 		if (i == 3) {
-			throw_exception(EXCEPTION_SUBSYS_SKIPFRAME, "video frame 3 need video sys skip");
+			THROW(EXCEPTION_SUBSYS_SKIPFRAME, "video frame 3 need video sys skip");
 		}
 
 		if (i == 4) {
-			throw_exception(EXCEPTION_SYS_SKIPFRAME, "video frame 4 need whole sys skip");
+			THROW(EXCEPTION_SYS_SKIPFRAME, "video frame 4 need whole sys skip");
 		}
 
 		if ((i == 5) && (sysreinited == 0)) {
 			sysreinited = 1;
-			throw_exception(EXCEPTION_SYS_REINIT, "video frame 5 need whole sys reinit");
+			THROW(EXCEPTION_SYS_REINIT, "video frame 5 need whole sys reinit");
 		}
 
 		if ((i == 6) && (sysreruned == 0)) {
 			sysreruned = 1;
-			throw_exception(EXCEPTION_SYS_RERUN, "video frame 6 need whole sys rerun");
+			THROW(EXCEPTION_SYS_RERUN, "video frame 6 need whole sys rerun");
 		}
 
 		if ((i == 7)) {
-			throw_exception(EXCEPTION_USER_QUIT, "video frame 7 user quit");
+			THROW(EXCEPTION_USER_QUIT, "video frame 7 user quit");
 		}
 
 		printf("video frame %d finished\n", i);
