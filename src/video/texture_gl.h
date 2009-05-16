@@ -60,7 +60,7 @@ struct texture_gl_params {
 
 struct texture_gl {
 	struct texture base;
-	struct texture_gl_params params;
+	struct texture_gl_params gl_params;
 	/* gl textures is linked into a list, sorted by importance */
 	struct list_head list;
 	/* if texture too large, one need split the origin

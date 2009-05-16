@@ -79,6 +79,7 @@ dealloc_bitmap(struct bitmap * p)
 
 #define GRAB_BITMAP(b)	res_grab_resource(&((b)->base))
 #define PUT_BITMAP(b)	res_put_resource(&((b)->base))
+#define GET_BITMAP(id)	res_load_bitmap(id)
 
 #endif
 // vim:tabstop=4:shiftwidth=4

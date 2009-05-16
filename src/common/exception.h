@@ -191,7 +191,7 @@ throw_exception(enum exception_level, const char * message,
 } while(0)
 
 #define NOTHROW_RET(fn, defret, ...)	({	\
-	typeof(fn(__VA_ARGS__) retval);		\
+	typeof(fn(__VA_ARGS__)) retval;		\
 	retval = defret;					\
 	volatile struct exception exp;		\
 	TRY_CATCH(exp, MASK_NONFATAL) {		\

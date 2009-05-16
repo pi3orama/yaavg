@@ -55,7 +55,7 @@ gl_close(void);
 extern void
 gl_check_error(void) THROWS(all);
 
-#define GL_POP_ERROR()	NOTHROW_RET(gl_check_error)
+#define GL_POP_ERROR()	NOTHROW(gl_check_error)
 
 /* OpenGL definition fixup */
 #ifndef GL_INVALID_FRAMEBUFFER_OPERATION

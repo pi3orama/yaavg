@@ -24,20 +24,32 @@ enum texture_type {
 	TEXTYPE_HELPER,
 };
 
-struct texture {
-	GC_TAG;
-	struct cleanup cleanup;
-	/* texture can be part of the bitmap */
-	struct rectangle rect;
+struct texture_params {
 	enum texture_type type;
 	/* should this texture be pinned into system memory? */
 	bool_t pin;
+};
+
+#define TEXTURE_PARAM_INIT {	\
+	TEXTYPE_NORMAL,				\
+	FALSE,						\
+}
+
+#define TEXTURE_PARAM(name) \
+	struct texture_params name = TEXTURE_PARAM_INIT;
+
+struct texture {
+	GC_TAG;
+	struct cleanup cleanup;
 	/* if no coorsponding bitmap, bitmap_res_id should be set to 0 */
 	res_id_t bitmap_res_id;
 	/* sometime the bitmap's data field is useful.
 	 * this field should be set to NULL at most of the time.
 	 * the refcounter of bitmap should be properly adjusted */
 	struct bitmap * bitmap;
+	/* texture can be part of the bitmap */
+	struct rectangle rect;
+	struct texture_params params;
 };
 
 #define TEX_BITMAP(t)	(t)->bitmap
@@ -53,12 +65,22 @@ struct texture {
  * 3. int importance: when hardware memory shortage, which one
  *    be unloaded first? */
 extern struct texture *
-tex_create(res_id_t bitmap_res_id, struct rectangle rect,
-		enum texture_type type, bool_t pin, void * args)
-	THROWS(INTERNAL_ERROR);
+tex_create(res_id_t bitmap_res_id,
+		struct rectangle rect,
+		struct texture_params * params,
+		void * args) THROWS(all);
 
 #define TEX_CLEANUP(t)		CLEANUP(&((t)->cleanup))
 #define TEX_SHRINK(t, p)	GC_SHRINK((&(t)->__gc_tag), (p))
+
+extern void
+tex_common_init(struct texture * tex,
+		res_id_t bitmap_res_id,
+		struct rectangle rect,
+		struct texture_params * params);
+
+extern void
+tex_common_cleanup(struct texture * tex);
 
 __END_DECLS
 #endif

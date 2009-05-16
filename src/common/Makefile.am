@@ -17,7 +17,7 @@ libcommon_la_SOURCES=debug.c \
 libcommon_la_LIBADD=$(SDL_LIBS) $(LIBPNG_LIBS)
 
 
-noinst_PROGRAMS = test_debug test_debug2 test_exception
+noinst_PROGRAMS = test_debug test_debug2 test_exception test_geom
 test_debug_SOURCES=test_debug.c
 test_debug_LDADD=libcommon.la
 
@@ -27,4 +27,6 @@ test_debug2_LDADD=libcommon.la
 test_exception_SOURCES=test_exception.c
 test_exception_LDADD=libcommon.la
 
+test_geom_SOURCES=test_geom.c
+test_geom_LDADD=libcommon.la
 

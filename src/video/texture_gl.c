@@ -25,7 +25,7 @@ insert_texgl(struct texture_gl * tex)
 	list_for_each(pos, &texture_gl_list) {
 		struct texture_gl * t;
 		t = list_entry(pos, typeof(*t), list);
-		if (t->params.importance >= tex->params.importance)
+		if (t->gl_params.importance >= tex->gl_params.importance)
 			break;
 	}
 	__list_add(&tex->list, pos->prev, pos);
@@ -46,6 +46,7 @@ alloc_texture_gl(void)
 			texture_gl_shrink,
 			NULL);
 	TRACE(MEMORY, "alloc result: %p\n", tex);
+	INIT_LIST_HEAD(&tex->list);
 	return tex;
 }
 
@@ -85,15 +86,9 @@ static void
 load_bitmap(struct texture_gl * tex)
 {
 	struct bitmap * b;
-	b = res_load_bitmap(tex->base.bitmap_res_id);
+	b = GET_BITMAP(tex->base.bitmap_res_id);
 	assert(b != NULL);
 	SET_TEXGL_BITMAP(tex, b);
-}
-
-static void
-load_texgl(struct texture_gl * tex)
-{
-	return;
 }
 
 static void
@@ -131,7 +126,7 @@ texture_gl_shrink(struct gc_tag * tag, enum gc_power p)
 		case GC_LIGHT:
 			free_phy_bitmap(tex);
 		case GC_NORMAL:
-			if (tex->base.pin) {
+			if (tex->base.params.pin) {
 				free_phy_bitmap(tex);
 			}
 		default:
@@ -156,25 +151,54 @@ texture_gl_cleanup(struct cleanup * str)
 
 	list_del(&tex->list);
 
+	tex_common_cleanup(&tex->base);
+
 	dealloc_texture_gl(tex);
 }
 
+/* init texgl will hold the bitmap, continouse methods should
+ * release it */
 static void
 init_texgl(struct texture_gl * tex)
 {
+	struct bitmap * b;
+	struct rectangle * rect = &tex->base.rect;
+
+	TRACE(OPENGL, "Init texgl %p from bitmap %llu\n",
+			tex->base.bitmap_res_id);
+
 	load_bitmap(tex);
+	b = tex->base.bitmap;
+	assert(b != NULL);
+	TRACE(OPENGL, "bitmap size: %d, %d\n", b->w, b->h);
+
+	/* convert the rect */
+	struct rectangle full_rect = {
+		0, 0, b->w, b->h,
+	};
+	*rect = geom_rect_cover(full_rect, *rect);
+	TRACE(OPENGL, "bounded rect:" RECT_FMT "\n", RECT_ARG(rect));
 }
+
+static void
+load_texgl(struct texture_gl * tex)
+{
+	return;
+}
+
 
 struct texture *
 tex_create(res_id_t bitmap_res_id, struct rectangle rect,
-		enum texture_type type, bool_t pin, void * args)
+		struct texture_params * params,
+		void * args)
 {
-	struct texture_gl_params * params = (struct texture_gl_params *)args;
+	struct texture_gl_params * gl_params = (struct texture_gl_params *)args;
 	struct texture_gl * tex;
-	static TEXTURE_GL_PARAM(default_param);
 
-	if (params == NULL)
-		params = &default_param;
+	static TEXTURE_GL_PARAM(default_gl_param);
+
+	if (gl_params == NULL)
+		gl_params = &default_gl_param;
 
 	TRACE(OPENGL, "create texture from bitmap %llu {"  RECT_FMT "}\n",
 			bitmap_res_id, RECT_ARG(&rect));
@@ -184,13 +208,9 @@ tex_create(res_id_t bitmap_res_id, struct rectangle rect,
 	tex->base.cleanup.args = tex;
 	tex->base.cleanup.function = texture_gl_cleanup;
 
-	tex->base.rect = rect;
-	tex->base.type = type;
-	tex->base.pin = pin;
-	tex->base.bitmap_res_id = bitmap_res_id;
-	tex->base.bitmap = NULL;
+	tex_common_init(&tex->base, bitmap_res_id, rect, params);
 
-	tex->params = *params;
+	tex->gl_params = *gl_params;
 
 	/* insert into priority list */
 	insert_texgl(tex);
@@ -200,7 +220,7 @@ tex_create(res_id_t bitmap_res_id, struct rectangle rect,
 
 	/* compute hw data */
 	init_texgl(tex);
-	if ((tex->base.pin) || (tex->params.imm)) {
+	if ((tex->base.params.pin) || (tex->gl_params.imm)) {
 		load_texgl(tex);
 		TEXGL_SHRINK(tex, GC_NORMAL);
 	}
