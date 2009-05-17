@@ -80,6 +80,13 @@ struct texture_gl {
 	int nr_hwtexs;
 	int nw, nh;
 
+	enum {
+		TEXGL_NPOT,
+		TEXGL_RECT,
+		TEXGL_NORMAL,
+	} internal_type;
+	int tile_w, tile_h;
+
 	/* for opengl texture size profile */
 	int occupied_hwmem;
 };

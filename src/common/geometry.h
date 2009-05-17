@@ -20,8 +20,17 @@ struct point {
 struct rectangle {
 	int x, y, w, h;
 };
+
+#define RECT_SAME(r1, r2) \
+	(((r1)->x == (r2)->x) && \
+	 ((r1)->y == (r2)->y) && \
+	 ((r1)->w == (r2)->w) && \
+	 ((r1)->h == (r2)->h))
+
 #define RECT_FMT	"(%d, %d)++(%d, %d)"
 #define RECT_ARG(r)	(r)->x, (r)->y, (r)->w, (r)->h
+
+#define is_square(r)	((r)->w == (r)->h)
 
 #define lower_bound_val(x, b)	((x) > (b) ? (x) : (b))
 #define lower_bound(x, b)		(x) = lower_bound_val(x, b)

@@ -68,6 +68,31 @@ count_1s_64(uint64_t c1)
 	c1 = c1 - c2 - c3 - c4;
 	return ((c1 + (c1 >> 4)) & 0x0F0F0F0F0F0F0F0FULL) % 0xFF;
 }
+
+#define is_power_of_two(x)	(count_1s(x) == 1)
+#define is_power_of_two64(x)	(count_1s64(x) == 1)
+
+#ifndef max
+# define max(a, b)	(((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef min
+# define min(a, b)	(((a) < (b)) ? (a) : (b))
+#endif
+static inline int
+pow2roundup (int x)
+{
+    if (x < 0)
+        return 0;
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return x+1;
+}
+
 __END_DECLS
 
 #endif

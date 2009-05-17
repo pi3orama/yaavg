@@ -30,6 +30,13 @@ struct bitmap {
 	uint8_t data[0];
 };
 
+struct rgba_pixel {
+	uint8_t r;
+	uint8_t g;
+	uint8_t b;
+	uint8_t a;
+};
+
 #define BITMAP_CLEANUP(b) \
 	do {	\
 		RES_CLEANUP(&((b)->base)); \
@@ -39,6 +46,18 @@ static inline int
 bitmap_data_size(struct bitmap * s)
 {
 	return s->w * s->h * s->format;
+}
+
+static inline int
+copy_pixels(struct bitmap * b, int x, int y, int n, uint8_t * dest)
+{
+	/* FIXME */
+	uint8_t * src;
+	int l;
+	src = b->data + b->format * (y * b->w + x);
+	l = n * b->format;
+	memcpy(dest, src, l);
+	return l;
 }
 
 extern struct bitmap *
@@ -80,6 +99,11 @@ dealloc_bitmap(struct bitmap * p)
 #define GRAB_BITMAP(b)	res_grab_resource(&((b)->base))
 #define PUT_BITMAP(b)	res_put_resource(&((b)->base))
 #define GET_BITMAP(id)	res_load_bitmap(id)
+
+/* FIXME */
+/* A lot of places needs replacement! */
+#define bitmap_bytes_pre_pixel(b)	((b)->format)
+#define bitmap_bytes_pre_line(b)	((b)->w * bitmap_bytes_pre_pixel(b))
 
 #endif
 // vim:tabstop=4:shiftwidth=4

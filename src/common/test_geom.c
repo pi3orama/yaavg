@@ -69,6 +69,18 @@ main()
 	};
 	check(r41, r42);
 
+	struct rectangle r51 = {
+		1,2,3,4
+	};
+
+	struct rectangle r52 = {
+		1,2,3,4
+	};
+
+	if (RECT_SAME(&r51, &r52))
+		printf("r51 == r52\n");
+	else
+		printf("error\n");
 	return 0;
 }
 
