@@ -352,6 +352,7 @@ load_hwtexs(struct texture_gl * tex)
 	int nr = 0;
 	TRACE(OPENGL, "Begin to load tex %p into hw memory\n",
 			tex);
+	tex->occupied_hwmem = 0;
 	if (tex->gl_params.flat) {
 		TRACE(OPENGL, "%p is flat tex\n", tex);
 		return;
@@ -363,6 +364,38 @@ load_hwtexs(struct texture_gl * tex)
 	}
 
 	GL_POP_ERROR();
+
+	/* create the texture */
+	GLint internalformat;
+	GLenum format;
+	GLenum type = GL_UNSIGNED_BYTE;
+
+	if (gl_tex_compression_enabled())
+		internalformat = GL_COMPRESSED_RGBA;
+	else
+		internalformat = GL_RGBA;
+
+	switch (TEXGL_BITMAP(tex)->format) {
+		case BITMAP_RGB:
+			format = GL_RGB;
+			break;
+		case BITMAP_RGBA:
+			format = GL_RGBA;
+			break;
+		case BITMAP_LUMINANCE:
+			format = GL_LUMINANCE;
+			break;
+		case BITMAP_LUMINANCE_ALPHA:
+			format = GL_LUMINANCE_ALPHA;
+			break;
+		default:
+			FATAL(OPENGL, "Unknown texture format here: %d\n",
+					TEXGL_BITMAP(tex)->format);
+			THROW_VAL(EXCEPTION_FATAL,
+					"Unknown texture format",
+					TEXGL_BITMAP(tex)->format);
+	}
+
 	for (y = 0; y < tex->nh; y ++) {
 		for (x = 0; x < tex->nw; x++) {
 			uint8_t * data;
@@ -371,7 +404,6 @@ load_hwtexs(struct texture_gl * tex)
 			glBindTexture(target, tex->hwtexs[nr]);
 			TRACE(OPENGL, "tex %p: start load hwtex %d from phy data %p\n",
 					tex, nr, data);
-			nr ++;
 
 			glTexParameteri(target, GL_TEXTURE_WRAP_S,
 					tex->gl_params.wrap_s);
@@ -391,23 +423,66 @@ load_hwtexs(struct texture_gl * tex)
 			TRACE(OPENGL, "begin load tex %p's tile %d into hwmem\n",
 					tex, nr);
 
-			/* create the texture */
-			GLint internalformat = GL_RGBA;
-			GLenum format;
-			GLenum type;
-			/* FIXME */
-
 			switch (target) {
 				case GL_TEXTURE_1D:
+					glTexImage1D(GL_TEXTURE_1D,
+							0,
+							internalformat,
+							tex->tile_w,
+							0,
+							format,
+							type,
+							NULL);
+					glTexSubImage1D(GL_TEXTURE_1D,
+							0, 0,
+							get_tile_width(tex, x, y),
+							format,
+							type,
+							data);
 					break;
 				case GL_TEXTURE_2D:
+					glTexImage2D(GL_TEXTURE_2D,
+							0,
+							internalformat,
+							tex->tile_w,
+							tex->tile_h,
+							0,	/* border */
+							format,
+							type,
+							NULL);
+					glTexSubImage2D(GL_TEXTURE_2D,
+							0, 0, 0,
+							get_tile_width(tex, x, y),
+							get_tile_height(tex, x, y),
+							format,
+							type,
+							data);
 					break;
 				default:
 					FATAL(OPENGL, "Unknown texture target here: %d\n", target);
-					THROW_VAL(EXCEPTION_FATAL, "Unknown texture target", target);
+					THROW_VAL(EXCEPTION_FATAL,
+							"Unknown texture target", target);
 			}
-			
+			gl_check_error();
 
+			TRACE(OPENGL, "Finish load texture %d\n", nr);
+			/* check result */
+			if (gl_tex_compression_enabled()) {
+				GLint c, f, s;
+				glGetTexLevelParameteriv(
+						target, 0, GL_TEXTURE_COMPRESSED, &c);
+				glGetTexLevelParameteriv(
+						target, 0, GL_TEXTURE_INTERNAL_FORMAT, &f);
+				glGetTexLevelParameteriv(
+						target, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &s);
+				TRACE(OPENGL, "result: compressed=%d, internal format=%d, size=%d\n",
+						c, f, s);
+				tex->occupied_hwmem += s;
+			} else {
+				tex->occupied_hwmem += get_tile_width(tex, x, y)
+					* get_tile_height(tex, x, y) * 4;
+			}
+			nr ++;
 		}
 	}
 	return;
