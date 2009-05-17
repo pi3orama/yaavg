@@ -26,7 +26,7 @@ main(int argc, char * argv[])
 		write_to_pngfile_rgb("/tmp/rgb.png", bitmap1->data, bitmap1->w, bitmap1->h);
 		write_to_pngfile_rgba("/tmp/rgba.png", bitmap2->data, bitmap2->w, bitmap2->h);
 	}
-	switch (exp.level) {
+	CATCH(exp) {
 		case (EXCEPTION_NO_ERROR):
 			VERBOSE(SYSTEM, "No error!\n");
 			break;

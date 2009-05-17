@@ -278,7 +278,7 @@ entry:
 		video_render(deltatime);
 		video_swap_buffers();
 	}
-	switch (exp.level) 
+	CATCH(exp)
 	{
 		case EXCEPTION_NO_ERROR:
 			break;
@@ -377,7 +377,7 @@ entry:
 			frame(video_ctx, deltatime, event);
 			frames ++;
 		}
-		switch(exp.level) {
+		CATCH(exp) {
 			case EXCEPTION_NO_ERROR:
 				break;
 			case EXCEPTION_SYS_RERUN:
@@ -467,7 +467,7 @@ int main(int argc, char * argv[])
 
 		render(video_ctx);
 	}
-	switch (exp.level) {
+	CATCH(exp) {
 		case (EXCEPTION_NO_ERROR):
 			VERBOSE(SYSTEM, "No error!\n");
 			break;

@@ -13,7 +13,7 @@ int main()
 		push_cleanup(&bitmapA->base.cleanup);
 		push_cleanup(&bitmapB->base.cleanup);
 	}
-	switch (exp.level) {
+	CATCH(exp) {
 		case EXCEPTION_NO_ERROR:
 			printf("No error\n");
 			break;

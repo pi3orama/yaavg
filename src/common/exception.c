@@ -105,6 +105,7 @@ exceptions_state_mc_init(
 {
 	exception->level = EXCEPTION_NO_ERROR;
 	exception->message = NULL;
+	exception->val = 0;
 
 	catcher->exception = exception;
 	catcher->mask = mask;

@@ -54,7 +54,7 @@ enum exception_level {
 #define MASK_RESET				MASK(EXCEPTION_RESET)
 #define MASK_CONTINUE			MASK(EXCEPTION_CONTINUE)
 #define MASK_ALL				(0xffffffff)
-#define MASK_NONFATAL			((MASK_ALL) & (~(MASK_FATAL)) &(~(MASK_RESET)) & (~(MASK_QUIT)))
+#define MASK_NONFATAL			((MASK_ALL) & (~(MASK_FATAL)) &(~(MASK_RESET)))
 #define MASK_SYS_ALL			(MASK_SYS_RERUN | MASK_SYS_SKIPFRAME | MASK_SYS_REINIT)
 #define MASK_SUBSYS_ALL			(MASK_SUBSYS_RERUN | MASK_SUBSYS_SKIPFRAME | MASK_SUBSYS_REINIT)
 
@@ -115,7 +115,8 @@ struct catcher {
 
 typedef uint32_t return_mask;
 
-
+/* We left an unmatched bracket here deliberate. We MUST
+ * keep the 'catcher' var. */
 #define TRY_CATCH(EXCEPTION,MASK) \
      { \
 		 struct catcher catcher; \
@@ -123,10 +124,12 @@ typedef uint32_t return_mask;
        EXCEPTIONS_SIGJMP_BUF *buf = \
 		 exceptions_state_mc_init (&catcher, &(EXCEPTION), (MASK)); \
        EXCEPTIONS_SIGSETJMP (*buf); \
-     } \
      while (exceptions_state_mc_action_iter ()) \
        while (exceptions_state_mc_action_iter_1 ())
 
+#define END_TRY	}
+
+#define CATCH(exp)	END_TRY; switch (exp.level)
 
 /* 
  * NOTICE: cleanup MUST inactived. see cleanup_actived
@@ -187,7 +190,7 @@ throw_exception(enum exception_level, const char * message,
 	volatile struct exception exp;		\
 	TRY_CATCH(exp, MASK_NONFATAL) {		\
 		fn(__VA_ARGS__);				\
-	}									\
+	} END_TRY;							\
 } while(0)
 
 #define NOTHROW_RET(fn, defret, ...)	({	\
@@ -196,9 +199,71 @@ throw_exception(enum exception_level, const char * message,
 	volatile struct exception exp;		\
 	TRY_CATCH(exp, MASK_NONFATAL) {		\
 		retval = fn(__VA_ARGS__);		\
+	} END_TRY;							\
+	retval;								\
+})
+
+#define TRY_CLEANUP(fn, cleanup, ...)	do {		\
+	volatile struct exception exp;		\
+	TRY_CATCH(exp, MASK_NONFATAL) {		\
+		fn(__VA_ARGS__);				\
+	} END_TRY;							\
+	switch (exp.level) {				\
+		case EXCEPTION_NO_ERROR:		\
+			break;						\
+		default:						\
+			cleanup;					\
+			RETHROW(exp);				\
+	}									\
+} while(0)
+
+#define TRY_CLEANUP_RET(fn, defret, cleanup, ...)	({\
+	typeof(fn(__VA_ARGS__)) retval;		\
+	volatile struct exception exp;		\
+	TRY_CATCH(exp, MASK_NONFATAL) {		\
+		retval = fn(__VA_ARGS__);				\
+	} END_TRY;							\
+	switch (exp.level) {				\
+		case EXCEPTION_NO_ERROR:		\
+			break;						\
+		default:						\
+			cleanup;					\
+			RETHROW(exp);				\
 	}									\
 	retval;								\
 })
+
+#define TRY_FINALLY(fn, fin, ...)	do {		\
+	volatile struct exception exp;		\
+	TRY_CATCH(exp, MASK_NONFATAL) {		\
+		fn(__VA_ARGS__);				\
+	} END_TRY;							\
+	fin;						\
+	switch (exp.level) {				\
+		case EXCEPTION_NO_ERROR:		\
+			break;						\
+		default:						\
+			RETHROW(exp);				\
+	}									\
+} while(0)
+
+#define TRY_FINALLY_RET(fn, defret, fin, ...)	({\
+	typeof(fn(__VA_ARGS__)) retval;		\
+	volatile struct exception exp;		\
+	TRY_CATCH(exp, MASK_NONFATAL) {		\
+		retval = fn(__VA_ARGS__);				\
+	} END_TRY;							\
+	fin;						\
+	switch (exp.level) {				\
+		case EXCEPTION_NO_ERROR:		\
+			break;						\
+		default:						\
+			RETHROW(exp);				\
+	}									\
+	retval;								\
+})
+
+
 
 #define THROWS(...)
 

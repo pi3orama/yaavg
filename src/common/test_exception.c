@@ -172,6 +172,7 @@ entry:
 
 		printf("video frame %d finished\n", i);
 	}
+	END_TRY;
 	switch (exp.level) {
 		case EXCEPTION_NO_ERROR:
 			return;
@@ -216,6 +217,7 @@ entry:
 			snd_frame(i);
 		}
 	}
+	END_TRY;
 	switch (exp.level) {
 		case EXCEPTION_NO_ERROR:
 			printf("No error! WOW!!!\n");
@@ -253,6 +255,9 @@ int main()
 		snd_init(TRUE);
 		run();
 	}
+	END_TRY;
+
+
 	switch (exp.level) {
 		case (EXCEPTION_NO_ERROR):
 			printf("No error!\n");
@@ -264,6 +269,11 @@ int main()
 			printf("Error!!!\n");
 			break;
 	}
+
+	
+
+
+	do_cleanup();
 	return 0;
 }
 

@@ -86,6 +86,8 @@ static void
 load_bitmap(struct texture_gl * tex)
 {
 	struct bitmap * b;
+	if (TEXGL_BITMAP(tex) != NULL)
+		return;
 	b = GET_BITMAP(tex->base.bitmap_res_id);
 	assert(b != NULL);
 	SET_TEXGL_BITMAP(tex, b);
@@ -156,7 +158,7 @@ texture_gl_cleanup(struct cleanup * str)
 	dealloc_texture_gl(tex);
 }
 
-/* init texgl will hold the bitmap, continouse methods should
+/* init texgl will hold the bitmap, continuouse methods should
  * release it */
 static void
 init_texgl(struct texture_gl * tex)
@@ -164,10 +166,19 @@ init_texgl(struct texture_gl * tex)
 	struct bitmap * b;
 	struct rectangle * rect = &tex->base.rect;
 
+	assert(gl_inited());
+
 	TRACE(OPENGL, "Init texgl %p from bitmap %llu\n",
 			tex->base.bitmap_res_id);
 
 	load_bitmap(tex);
+
+	if (tex->gl_params.flat) {
+		tex->nr_hwtexs = 0;
+		tex->use_bitmap_data = TRUE;
+		return;
+	}
+
 	b = tex->base.bitmap;
 	assert(b != NULL);
 	TRACE(OPENGL, "bitmap size: %d, %d\n", b->w, b->h);
@@ -180,12 +191,35 @@ init_texgl(struct texture_gl * tex)
 	TRACE(OPENGL, "bounded rect:" RECT_FMT "\n", RECT_ARG(rect));
 
 	/* how many hw texture we need? */
+	int nw, nh;
+	nw = (b->w + gl_max_texture_size() - 1) / gl_max_texture_size();
+	nh = (b->h + gl_max_texture_size() - 1) / gl_max_texture_size();
+
+	tex->nr_hwtexs = nw * nh;
+	assert(tex->nr_hwtexs > 0);
+	TRACE(OPENGL, "tex %p should be split into (%d x %d) pieces\n",
+			nw, nh);
+	tex->nw = nw;
+	tex->nh = nh;
+	if (nw * nh == 1)
+		tex->use_bitmap_data = TRUE;
 }
 
 static void
 load_texgl(struct texture_gl * tex)
 {
-	return;
+	/* alloc hwlist array */
+	if (tex->nr_hwtexs == 0)
+		return;
+	if (tex->nr_hwtexs < NR_HWTEX_LMT)
+		tex->hwtexs = tex->_hwtexs_save;
+	else
+		tex->hwtexs = GC_CALLOC_BLOCK(sizeof(GLuint) * tex->nr_hwtexs);
+
+	/* generate texture objects */
+	glGenTextures(tex->nr_hwtexs, tex->hwtexs);
+	/* FIXME */
+	gl_check_error();
 }
 
 
@@ -216,16 +250,19 @@ tex_create(res_id_t bitmap_res_id, struct rectangle rect,
 
 	/* insert into priority list */
 	insert_texgl(tex);
+	make_cleanup(&tex->base.cleanup);
 
 	if (bitmap_res_id == 0)
 		return &tex->base;
 
 	/* compute hw data */
+	/* init_texgl load the bitmap */
 	init_texgl(tex);
 	if ((tex->base.params.pin) || (tex->gl_params.imm)) {
 		load_texgl(tex);
 		TEXGL_SHRINK(tex, GC_NORMAL);
 	}
+	release_bitmap(tex);
 	return &tex->base;
 }
 

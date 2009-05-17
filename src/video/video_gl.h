@@ -33,13 +33,18 @@ struct gl_context {
 	struct gl_funcs gl_funcs;
 
 	int max_texture_size;
+#define gl_max_texture_size()	(gl_ctx->max_texture_size)
 	bool_t texture_NPOT;
+#define gl_tex_NPOT_enabled()	(gl_ctx->texture_NPOT)
 	bool_t texture_RECT;
+#define gl_tex_RECT_enabled()	(gl_ctx->texture_NPOT)
 	bool_t texture_COMPRESSION;
+#define gl_tex_compression_enabled()	(gl_ctx->texture_COMPRESSION)
 };
 
 extern struct gl_context * gl_ctx;
 #define GLOPS	(&gl_ctx->gl_funcs)
+#define gl_inited()	(gl_ctx != NULL)
 
 extern void *
 gl_get_proc_address(const char * name);

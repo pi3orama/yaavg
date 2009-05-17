@@ -78,6 +78,7 @@ struct texture_gl {
 	GLuint * hwtexs;
 
 	int nr_hwtexs;
+	int nw, nh;
 
 	/* for opengl texture size profile */
 	int occupied_hwmem;

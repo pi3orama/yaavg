@@ -123,7 +123,7 @@ video_screen_shot(void)
 	TRY_CATCH(exp, MASK_CONTINUE) {
 		__video_screen_shot();
 	}
-	switch (exp.level) {
+	CATCH(exp) {
 		case (EXCEPTION_CONTINUE):
 			ERROR(SYSTEM, "error when taking exceptions: %s\n",
 					exp.message);
