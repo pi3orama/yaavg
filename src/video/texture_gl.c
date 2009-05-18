@@ -360,7 +360,6 @@ build_phybitmap(struct texture_gl * tex)
 			* bitmap_bytes_pre_pixel(TEXGL_DUMMY_BITMAP(tex)));
 	/* rearrange bitmap */
 	int x, y;
-	int temp_size = 0;
 	for (y = 0; y < tex->nh; y ++) {
 		for (x = 0; x < tex->nw; x++) {
 			/* XXX */
@@ -373,7 +372,6 @@ build_phybitmap(struct texture_gl * tex)
 			for (i = 0; i < h; i++) {
 				int len = w * bitmap_bytes_pre_pixel(TEXGL_DUMMY_BITMAP(tex));
 				memcpy(dest, src, len);
-				temp_size += len;
 				src += bitmap_bytes_pre_line(TEXGL_DUMMY_BITMAP(tex));
 				dest += len;
 			}
