@@ -93,6 +93,13 @@ pow2roundup (int x)
     return x+1;
 }
 
+static inline int
+pow2rounddown (int x)
+{
+	return pow2roundup(x) >> 1;
+}
+
+
 __END_DECLS
 
 #endif

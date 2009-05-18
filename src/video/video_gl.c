@@ -250,6 +250,15 @@ check_features(void)
 			"video.opengl.texture.maxsize",
 			0, min0);
 	VERBOSE(OPENGL, "OpenGL max texture size = %d\n", gl_ctx->max_texture_size);
+	if (!is_power_of_two(gl_ctx->max_texture_size)) {
+		WARNING(OPENGL, "Max texture size %d not power of to. Check your configuration\n",
+				gl_ctx->max_texture_size);
+
+		int n;
+		n = pow2rounddown(gl_ctx->max_texture_size);
+		gl_ctx->max_texture_size = n;
+		WARNING(OPENGL, "fall back to %d\n", gl_ctx->max_texture_size);
+	}
 
 #define VERBOSE_FEATURE(name, exp) do {\
 	if (exp)	\
