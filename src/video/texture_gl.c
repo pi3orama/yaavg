@@ -70,7 +70,7 @@ free_phy_bitmap(struct texture_gl * tex)
 {
 	if (tex->phy_bitmap == NULL)
 		return;
-	TRACE(OPENGL, "tex %p free pphy_bitmap\n", tex);
+	TRACE(OPENGL, "tex %p free phy_bitmap\n", tex);
 	if ((TEXGL_BITMAP(tex))
 			&&
 			(tex->phy_bitmap == TEXGL_BITMAP(tex)->data))
@@ -95,11 +95,41 @@ static void
 load_bitmap(struct texture_gl * tex)
 {
 	struct bitmap * b;
-	if (TEXGL_BITMAP(tex) != NULL)
+	if (TEXGL_BITMAP(tex) != NULL) {
+		if (TEXGL_DUMMY_BITMAP(tex) == NULL) {
+			memcpy(&tex->__dummy_bitmap, b, sizeof(*b));
+			tex->dummy_bitmap = &tex->__dummy_bitmap;
+		}
 		return;
+	}
 	b = GET_BITMAP(tex->base.bitmap_res_id);
 	assert(b != NULL);
 	SET_TEXGL_BITMAP(tex, b);
+	/* save bitmap layout */
+	memcpy(&tex->__dummy_bitmap, b, sizeof(*b));
+	tex->dummy_bitmap = &tex->__dummy_bitmap;
+
+	switch (tex->dummy_bitmap->format) {
+		case BITMAP_RGB:
+			tex->tex_data_format = GL_RGB;
+			break;
+		case BITMAP_RGBA:
+			tex->tex_data_format = GL_RGBA;
+			break;
+		case BITMAP_LUMINANCE:
+			tex->tex_data_format = GL_LUMINANCE;
+			break;
+		case BITMAP_LUMINANCE_ALPHA:
+			tex->tex_data_format = GL_LUMINANCE_ALPHA;
+			break;
+		default:
+			FATAL(OPENGL, "Unknown texture format here: %d\n",
+					TEXGL_DUMMY_BITMAP(tex)->format);
+			THROW_VAL(EXCEPTION_FATAL,
+					"Unknown texture format",
+					TEXGL_DUMMY_BITMAP(tex)->format);
+	}
+
 }
 
 static void
@@ -272,6 +302,8 @@ init_texgl(struct texture_gl * tex)
 static inline uint8_t *
 tile_to_data(struct texture_gl * tex, int x, int y)
 {
+	load_bitmap(tex);
+
 	struct bitmap * b = TEXGL_BITMAP(tex);
 	struct rectangle * rect = &tex->base.rect;
 	assert(b != NULL);
@@ -287,17 +319,14 @@ tile_to_data(struct texture_gl * tex, int x, int y)
 		bitmap_bytes_pre_pixel(b);
 }
 
-#define tile_bytes_pre_line(tex) (bitmap_bytes_pre_line(TEXGL_BITMAP(tex)) * (tex)->tile_h)
-#define normal_tile_size(tex)	((tex)->tile_w * (tex)->tile_h) * bitmap_bytes_pre_pixel(TEXGL_BITMAP(tex))
+#define tile_bytes_pre_line(tex) (bitmap_bytes_pre_line(TEXGL_DUMMY_BITMAP(tex)) * (tex)->tile_h)
+#define normal_tile_size(tex)	((tex)->tile_w * (tex)->tile_h) * bitmap_bytes_pre_pixel(TEXGL_DUMMY_BITMAP(tex))
 
 /* give the tex number(x, y), return:
  * the start ptr in bitmap's data */
 static inline uint8_t *
 tile_to_phydata(struct texture_gl * tex, int x, int y)
 {
-	struct bitmap * b = TEXGL_BITMAP(tex);
-	assert(b != NULL);
-
 	return tex->phy_bitmap + y * tile_bytes_pre_line(tex) +
 		x * (normal_tile_size(tex));
 }
@@ -318,16 +347,15 @@ build_phybitmap(struct texture_gl * tex)
 		return;
 
 	load_bitmap(tex);
-	struct bitmap * b = TEXGL_BITMAP(tex);
 	if (tex->use_bitmap_data) {
-		tex->phy_bitmap = b->data;
+		tex->phy_bitmap = TEXGL_BITMAP(tex)->data;
 		/* XXX don't release bitmap */
 		return;
 	}
 
 	tex->phy_bitmap = GC_CALLOC_BLOCK(tex->base.rect.w
 			* tex->base.rect.h
-			* bitmap_bytes_pre_pixel(TEXGL_BITMAP(tex)));
+			* bitmap_bytes_pre_pixel(TEXGL_DUMMY_BITMAP(tex)));
 	/* rearrange bitmap */
 	int x, y;
 	for (y = 0; y < tex->nh; y ++) {
@@ -340,9 +368,9 @@ build_phybitmap(struct texture_gl * tex)
 			w = get_tile_width(tex, x, y);
 			h = get_tile_height(tex, x, y);
 			for (i = 0; i < h; i++) {
-				int len = w * bitmap_bytes_pre_pixel(TEXGL_BITMAP(tex));
+				int len = w * bitmap_bytes_pre_pixel(TEXGL_DUMMY_BITMAP(tex));
 				memcpy(dest, src, len);
-				src += bitmap_bytes_pre_line(TEXGL_BITMAP(tex));
+				src += bitmap_bytes_pre_line(TEXGL_DUMMY_BITMAP(tex));
 				dest += len;
 			}
 		}
@@ -393,26 +421,7 @@ load_hwtexs(struct texture_gl * tex)
 	else
 		internalformat = GL_RGBA;
 
-	switch (TEXGL_BITMAP(tex)->format) {
-		case BITMAP_RGB:
-			format = GL_RGB;
-			break;
-		case BITMAP_RGBA:
-			format = GL_RGBA;
-			break;
-		case BITMAP_LUMINANCE:
-			format = GL_LUMINANCE;
-			break;
-		case BITMAP_LUMINANCE_ALPHA:
-			format = GL_LUMINANCE_ALPHA;
-			break;
-		default:
-			FATAL(OPENGL, "Unknown texture format here: %d\n",
-					TEXGL_BITMAP(tex)->format);
-			THROW_VAL(EXCEPTION_FATAL,
-					"Unknown texture format",
-					TEXGL_BITMAP(tex)->format);
-	}
+	format = tex->tex_data_format;
 
 	for (y = 0; y < tex->nh; y ++) {
 		for (x = 0; x < tex->nw; x++) {

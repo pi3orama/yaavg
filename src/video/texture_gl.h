@@ -60,6 +60,10 @@ struct texture_gl_params {
 
 struct texture_gl {
 	struct texture base;
+	/* save a dummy bitmap, sometime texture need its layout
+	 * to do some computation */
+	struct bitmap * dummy_bitmap;
+	struct bitmap __dummy_bitmap;
 	struct reinit_hook reinit_hook;
 	struct texture_gl_params gl_params;
 	/* gl textures is linked into a list, sorted by importance */
@@ -67,7 +71,7 @@ struct texture_gl {
 	/* if texture too large, one need split the origin
 	 * bitmap into small tiles. phy_bitmap is used for this.
 	 * */
-	void * phy_bitmap;
+	uint8_t * phy_bitmap;
 
 	/* if true, texture need to hold the bitmap */
 	bool_t use_bitmap_data;
@@ -78,8 +82,11 @@ struct texture_gl {
 	GLuint _hwtexs_save[NR_HWTEX_LMT];
 	GLuint * hwtexs;
 
+	/* tex_data_format is determined by bitmap->format */
+	GLenum tex_data_format;
 	int nr_hwtexs;
 	int nw, nh;
+
 
 	enum {
 		TEXGL_NPOT,
@@ -94,6 +101,8 @@ struct texture_gl {
 
 #define TEXGL_BITMAP(t)	TEX_BITMAP(&((t)->base))
 #define SET_TEXGL_BITMAP(t, b)	SET_TEX_BITMAP(&((t)->base), (b))
+
+#define TEXGL_DUMMY_BITMAP(t)	({assert((t)->dummy_bitmap != NULL); (t)->dummy_bitmap;})
 
 #define TEXGL_CLEANUP(t)	TEX_CLEANUP(&((t)->base))
 #define TEXGL_SHRINK(t, p)	TEX_SHRINK(&((t)->base), (p))

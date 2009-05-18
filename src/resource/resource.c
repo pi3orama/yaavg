@@ -14,14 +14,17 @@ struct resource *
 res_search(res_id_t id, res_type_t type)
 {
 	struct resource * pos;
+	TRACE(RESOURCE, "Search for res %d, type %d\n", id, type);
 	if (id == 0)
 		return NULL;
 
 	list_for_each_entry(pos, &res_list, list) {
 		if ((pos->id == id) && (pos->type == type)) {
+			TRACE(RESOURCE, "found: %p\n", pos);
 			return pos;
 		}
 	}
+	TRACE(RESOURCE, "not found\n");
 	return NULL;
 }
 

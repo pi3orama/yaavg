@@ -67,8 +67,10 @@ draw_line_render(struct render_command * __rcmd, dtick_t delta_ticks)
 	glVertex2d(0.4, -0.4);
 	static int ttt = 0;
 
-	/* Here! reinit cause this bug. See git log */
+#if 0
+	/* reinit subsystem */
 	if (ttt > 2)
+#endif
 		glEnd();
 	ttt ++;
 
