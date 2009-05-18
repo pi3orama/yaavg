@@ -153,6 +153,8 @@ get_level_name(enum debug_level level)
 {
 	if (level == SILENT)
 		return "S";
+	if (level == FORCE)
+		return "FORCE";
 	if (level == VERBOSE)
 		return "V";
 	if (level == TRACE)
@@ -174,6 +176,15 @@ turn_red(void)
 		return;
 	fprintf(fdebug_out, "%c[1;31m", 0x1b);
 }
+
+static void
+turn_blue(void)
+{
+	if (!colorful_terminal)
+		return;
+	fprintf(fdebug_out, "%c[1;34m", 0x1b);
+}
+
 
 static void
 turn_normal(void)
@@ -198,8 +209,12 @@ vdebug_out(int prefix, enum debug_level level, enum debug_component comp,
 		fdebug_out = stderr;
 
 	if (debug_levels[comp] <= level) {
-		if (level >= WARNING)
-			turn_red();
+		if (level >= WARNING) {
+			if (level == FORCE)
+				turn_blue();
+			else
+				turn_red();
+		}
 		if (prefix) {
 			fprintf (fdebug_out, "[%s %s@%s:%d]\t", get_comp_name(comp),
 					get_level_name(level), func_name, line_no);
@@ -339,4 +354,5 @@ char * yaavg_strdup(const char * S)
 	strdup_times ++;
 	return res;
 }
+// vim:tabstop=4:shiftwidth=4
 

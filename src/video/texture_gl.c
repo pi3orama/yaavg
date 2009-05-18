@@ -319,8 +319,15 @@ tile_to_data(struct texture_gl * tex, int x, int y)
 		bitmap_bytes_pre_pixel(b);
 }
 
+#define get_tile_width(tex, x, y) \
+	(((x) < (tex)->nw - 1) ? (tex)->tile_w : ((tex)->base.rect.w - ((tex)->nw - 1) * (tex)->tile_w))
+#define get_tile_height(tex, x, y) \
+	(((y) < (tex)->nh - 1) ? (tex)->tile_h : ((tex)->base.rect.h - ((tex)->nh - 1) * (tex)->tile_h))
+
 #define tile_bytes_pre_line(tex) (bitmap_bytes_pre_line(TEXGL_DUMMY_BITMAP(tex)) * (tex)->tile_h)
-#define normal_tile_size(tex)	((tex)->tile_w * (tex)->tile_h) * bitmap_bytes_pre_pixel(TEXGL_DUMMY_BITMAP(tex))
+
+#define normal_tile_size(tex, y)	((tex)->tile_w * get_tile_height(tex, 0, y)) \
+	* bitmap_bytes_pre_pixel(TEXGL_DUMMY_BITMAP(tex))
 
 /* give the tex number(x, y), return:
  * the start ptr in bitmap's data */
@@ -328,14 +335,9 @@ static inline uint8_t *
 tile_to_phydata(struct texture_gl * tex, int x, int y)
 {
 	return tex->phy_bitmap + y * tile_bytes_pre_line(tex) +
-		x * (normal_tile_size(tex));
+		x * (normal_tile_size(tex, y));
 }
 
-
-#define get_tile_width(tex, x, y) \
-	(((x) < (tex)->nw - 1) ? (tex)->tile_w : ((tex)->base.rect.w - ((tex)->nw - 1) * (tex)->tile_w))
-#define get_tile_height(tex, x, y) \
-	(((y) < (tex)->nh - 1) ? (tex)->tile_h : ((tex)->base.rect.h - ((tex)->nh - 1) * (tex)->tile_h))
 
 /* 
  * after build_phybitmap, bitmap is released, if not use bitmap data
@@ -358,6 +360,7 @@ build_phybitmap(struct texture_gl * tex)
 			* bitmap_bytes_pre_pixel(TEXGL_DUMMY_BITMAP(tex)));
 	/* rearrange bitmap */
 	int x, y;
+	int temp_size = 0;
 	for (y = 0; y < tex->nh; y ++) {
 		for (x = 0; x < tex->nw; x++) {
 			/* XXX */
@@ -370,6 +373,7 @@ build_phybitmap(struct texture_gl * tex)
 			for (i = 0; i < h; i++) {
 				int len = w * bitmap_bytes_pre_pixel(TEXGL_DUMMY_BITMAP(tex));
 				memcpy(dest, src, len);
+				temp_size += len;
 				src += bitmap_bytes_pre_line(TEXGL_DUMMY_BITMAP(tex));
 				dest += len;
 			}

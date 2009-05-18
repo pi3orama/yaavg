@@ -17,6 +17,7 @@ enum debug_level {
 	WARNING,
 	ERROR,
 	FATAL,
+	FORCE,
 	SILENT,
 	NR_DEBUG_LEVELS
 };
@@ -84,6 +85,7 @@ extern enum debug_level get_comp_level(enum debug_component comp);
 # define WARNING(comp, str...) DEBUG_MSG(WARNING, comp, str)
 # define ERROR(comp, str...) DEBUG_MSG(ERROR, comp, str)
 # define FATAL(comp, str...) DEBUG_MSG(FATAL, comp, str)
+# define FORCE(comp, str...) DEBUG_MSG(FORCE, comp, str)
 #else
 extern void WARNING(enum debug_component, char * fmt, ...);
 extern void ERROR(enum debug_component, char * fmt, ...);
