@@ -28,6 +28,10 @@ struct gl_context {
 	/* Which platform we used? SDL or GLX or WGL... */
 	const char *platform;
 
+	int major_version;
+	int minor_version;
+	int full_version;
+
 
 	/* belong is for dynamic gl use: func pointers */
 	struct gl_funcs gl_funcs;

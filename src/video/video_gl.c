@@ -226,11 +226,45 @@ check_features(void)
 #undef VERBOSE_FEATURE
 }
 
+/* set major and minor version number */
+static void
+update_version(void)
+{
+	regex_t reg;
+	regmatch_t rm[3];
+	int err, maj, min;
+	err = regcomp(&reg, "^\\([0-9]\\+\\)\\.\\([0-9]\\+\\)", 0);
+	assert(err == 0);
+	err = regexec(&reg, (const char *)gl_ctx->version, 3, rm, 0);
+	if (err != 0) {
+		FATAL(OPENGL, "Invalid opengl version string: %s", gl_ctx->version);
+		THROW(EXCEPTION_FATAL, "Invalid OpenGL library");
+	}
+
+	char s[16];
+	memset(s, 0, sizeof(s));
+
+	if (rm[0].rm_eo >= 15) {
+		FATAL(OPENGL, "Strange opengl version string: %s", gl_ctx->version);
+		THROW(EXCEPTION_FATAL, "Invalid OpenGL library");
+	}
+
+	strncpy(s, (const char *)gl_ctx->version, rm[0].rm_eo);
+	s[rm[0].rm_eo] = '\0';
+	sscanf(s, "%d.%d", &maj, &min);
+
+	TRACE(OPENGL, "OpenGL API version: %d.%d\n", maj, min);
+#define MKGLVER(a, b)	((a) * 100 + (b))
+	gl_ctx->major_version = maj;
+	gl_ctx->minor_version = min;
+	gl_ctx->full_version = MKGLVER(maj, min);
+	return;
+}
+
 
 static void
 init_gl_driver(void)
 {
-	GLenum err;
 	gl_ctx->base.driver_name = "OpenGL";
 
 	/* Init OpenGL */
@@ -240,6 +274,7 @@ init_gl_driver(void)
 	gl_ctx->vendor     = glGetString(GL_VENDOR);
 	gl_ctx->renderer   = glGetString(GL_RENDERER);
 	gl_ctx->version    = glGetString(GL_VERSION);
+	update_version();
 	gl_ctx->extensions = glGetString(GL_EXTENSIONS);
 
 	VERBOSE(OPENGL, "GL driver info:\n");
@@ -270,16 +305,15 @@ init_gl_driver(void)
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_FOG_HINT, GL_NICEST);
-	glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
-	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
-	glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
 
+	if (gl_ctx->full_version >= MKGLVER(1, 3))
+		glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
+	if (gl_ctx->full_version >= MKGLVER(1, 4))
+		glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+	if (gl_ctx->full_version >= MKGLVER(2, 0))
+		glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
 
-	err = glGetError();
-	if (err != GL_NO_ERROR) {
-		ERROR(OPENGL, "init_gl_driver failed, errno=%d\n", err);
-		THROW(EXCEPTION_FATAL, "init_gl_driver failed");
-	}
+	gl_check_error();
 }
 
 void
@@ -454,7 +488,7 @@ gl_check_error(void)
 			break;
 
 
-	VERBOSE(OPENGL, "glGetError() returns %s (0x%X)\n", ptr->description, err);
+	VERBOSE(OPENGL, "glGetError() returns \"%s\" (0x%X)\n", ptr->description, err);
 	THROW_VAL(EXCEPTION_RENDER_ERROR, "OpenGL error", err);
 	return;
 }
