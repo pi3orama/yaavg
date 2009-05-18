@@ -531,7 +531,7 @@ load_hwtexs(struct texture_gl * tex)
 						target, 0, GL_TEXTURE_INTERNAL_FORMAT, &f);
 				glGetTexLevelParameteriv(
 						target, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &s);
-				FORCE(OPENGL,
+				TRACE(OPENGL,
 						"result: compressed=%d, internal format=0x%x, size=%d\n",
 						c, f, s);
 				tex->occupied_hwmem += s;
