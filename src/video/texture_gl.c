@@ -3,6 +3,8 @@
  * Texture OpenGL implementation
  */
 
+#include <stdio.h>
+
 #include <common/defs.h>
 #include <common/exception.h>
 #include <common/mm.h>
@@ -454,38 +456,63 @@ load_hwtexs(struct texture_gl * tex)
 
 			switch (target) {
 				case GL_TEXTURE_1D:
-					glTexImage1D(GL_TEXTURE_1D,
-							0,
-							internalformat,
-							tex->tile_w,
-							0,
-							format,
-							type,
-							NULL);
-					glTexSubImage1D(GL_TEXTURE_1D,
-							0, 0,
-							get_tile_width(tex, x, y),
-							format,
-							type,
-							data);
+					if (tex->tile_w == get_tile_width(tex, x, y)) {
+						glTexImage1D(GL_TEXTURE_1D,
+								0,
+								internalformat,
+								tex->tile_w,
+								0,
+								format,
+								type,
+								data);
+					} else {
+						glTexImage1D(GL_TEXTURE_1D,
+								0,
+								internalformat,
+								tex->tile_w,
+								0,
+								format,
+								type,
+								NULL);
+						glTexSubImage1D(GL_TEXTURE_1D,
+								0, 0,
+								get_tile_width(tex, x, y),
+								format,
+								type,
+								data);
+					}
 					break;
 				case GL_TEXTURE_2D:
-					glTexImage2D(GL_TEXTURE_2D,
-							0,
-							internalformat,
-							tex->tile_w,
-							tex->tile_h,
-							0,	/* border */
-							format,
-							type,
-							NULL);
-					glTexSubImage2D(GL_TEXTURE_2D,
-							0, 0, 0,
-							get_tile_width(tex, x, y),
-							get_tile_height(tex, x, y),
-							format,
-							type,
-							data);
+					if ((tex->tile_w == get_tile_width(tex, x, y)) &&
+							(tex->tile_h == get_tile_height(tex, x, y)))
+					{
+						glTexImage2D(GL_TEXTURE_2D,
+								0,
+								internalformat,
+								tex->tile_w,
+								tex->tile_h,
+								0,	/* border */
+								format,
+								type,
+								data);
+					} else {
+						glTexImage2D(GL_TEXTURE_2D,
+								0,
+								internalformat,
+								tex->tile_w,
+								tex->tile_h,
+								0,	/* border */
+								format,
+								type,
+								NULL);
+						glTexSubImage2D(GL_TEXTURE_2D,
+								0, 0, 0,
+								get_tile_width(tex, x, y),
+								get_tile_height(tex, x, y),
+								format,
+								type,
+								data);
+					}
 					break;
 				default:
 					FATAL(OPENGL, "Unknown texture target here: %d\n", target);
@@ -504,7 +531,8 @@ load_hwtexs(struct texture_gl * tex)
 						target, 0, GL_TEXTURE_INTERNAL_FORMAT, &f);
 				glGetTexLevelParameteriv(
 						target, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &s);
-				TRACE(OPENGL, "result: compressed=%d, internal format=%d, size=%d\n",
+				FORCE(OPENGL,
+						"result: compressed=%d, internal format=0x%x, size=%d\n",
 						c, f, s);
 				tex->occupied_hwmem += s;
 			} else {
@@ -514,6 +542,9 @@ load_hwtexs(struct texture_gl * tex)
 			nr ++;
 		}
 	}
+
+	ALLOC_HWMEM(tex->occupied_hwmem);
+
 	return;
 }
 
@@ -538,6 +569,9 @@ texgl_reinit_hook(struct reinit_hook * hook)
 			struct texture_gl, reinit_hook);
 	TRACE(OPENGL, "tex %p know video reinit\n", tex);
 	if (tex->hwtexs != NULL) {
+		/* Re generate hw texture */
+		glGenTextures(tex->nr_hwtexs, tex->hwtexs);
+		TRY_CLEANUP(gl_check_error, free_hwtexs(tex));
 		load_hwtexs(tex);
 	}
 }

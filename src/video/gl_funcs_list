@@ -119,5 +119,5 @@ glCompressedTexSubImage1DARB
 glGetCompressedTexImageARB
 
 glGetTexLevelParameteriv
-
+glGetTexImage
 # 

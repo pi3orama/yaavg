@@ -114,8 +114,10 @@ draw_line_remove(struct render_command * __rcmd,
 	
 	struct rcmd_draw_line * rcmd =
 		container_of(__rcmd, struct rcmd_draw_line, base);
-	TEXGL_RELEASE(rcmd->tex);
-	TEXGL_RELEASE(rcmd->tex2);
+	if (rcmd->tex)
+		TEXGL_RELEASE(rcmd->tex);
+	if (rcmd->tex2)
+		TEXGL_RELEASE(rcmd->tex2);
 	VERBOSE(VIDEO, "Remove drawline cmd\n");
 	free(rcmd);
 	return 0;
