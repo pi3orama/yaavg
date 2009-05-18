@@ -70,6 +70,7 @@ free_phy_bitmap(struct texture_gl * tex)
 {
 	if (tex->phy_bitmap == NULL)
 		return;
+	TRACE(OPENGL, "tex %p free pphy_bitmap\n", tex);
 	if ((TEXGL_BITMAP(tex))
 			&&
 			(tex->phy_bitmap == TEXGL_BITMAP(tex)->data))
@@ -82,6 +83,7 @@ static void
 release_bitmap(struct texture_gl * tex)
 {
 	if (TEXGL_BITMAP(tex)) {
+		TRACE(OPENGL, "tex %p release bitmap\n", tex);
 		if (tex->phy_bitmap == TEXGL_BITMAP(tex)->data)
 			tex->phy_bitmap = NULL;
 		PUT_BITMAP(TEXGL_BITMAP(tex));
@@ -104,7 +106,7 @@ static void
 free_hwmem(struct texture_gl * tex)
 {
 	if (tex->hwtexs) {
-		TRACE(OPENGL, "\tdelete hw texture\n");
+		TRACE(OPENGL, "tex %p delete hw texture\n", tex);
 		glDeleteTextures(tex->nr_hwtexs, tex->hwtexs);
 		GL_POP_ERROR();
 		
@@ -137,6 +139,7 @@ texture_gl_shrink(struct gc_tag * tag, enum gc_power p)
 			if (tex->base.params.pin) {
 				free_phy_bitmap(tex);
 			}
+			break;
 		default:
 			INTERNAL_ERROR(MEMORY, "shrink power %d unknown\n", p);
 	}
@@ -144,11 +147,12 @@ texture_gl_shrink(struct gc_tag * tag, enum gc_power p)
 }
 
 static void
-texture_gl_cleanup(struct cleanup * str)
+texture_gl_cleanup(struct cleanup * c)
 {
 	struct texture_gl * tex;
 
-	tex = container_of(str,
+	remove_cleanup(c);
+	tex = container_of(c,
 			struct texture_gl, base.cleanup);
 
 	TRACE(OPENGL, "cleanup gl texture %p\n", tex);
@@ -164,15 +168,11 @@ texture_gl_cleanup(struct cleanup * str)
 	dealloc_texture_gl(tex);
 }
 
-/* init texgl will hold the bitmap, continuouse methods should
- * release it */
 static void
 init_texgl(struct texture_gl * tex)
 {
 	struct bitmap * b;
 	struct rectangle * rect = &tex->base.rect;
-
-	assert(gl_inited());
 
 	TRACE(OPENGL, "Init texgl %p from bitmap %llu\n",
 			tex, tex->base.bitmap_res_id);
@@ -188,7 +188,7 @@ init_texgl(struct texture_gl * tex)
 
 	b = tex->base.bitmap;
 	assert(b != NULL);
-	TRACE(OPENGL, "bitmap size: %d, %d\n", b->w, b->h);
+	TRACE(OPENGL, "bitmap size: (%d x %d)\n", b->w, b->h);
 
 	/* convert the rect */
 	struct rectangle full_rect = {
@@ -204,8 +204,8 @@ init_texgl(struct texture_gl * tex)
 
 	tex->nr_hwtexs = nw * nh;
 	assert(tex->nr_hwtexs > 0);
-	TRACE(OPENGL, "tex %p should be split into (%d x %d) pieces\n",
-			tex, nw, nh);
+	TRACE(OPENGL, "tex %p should be split into %d (%d x %d) pieces\n",
+			tex, tex->nr_hwtexs, nw, nh);
 	tex->nw = nw;
 	tex->nh = nh;
 
@@ -216,10 +216,14 @@ init_texgl(struct texture_gl * tex)
 		tex->use_bitmap_data = FALSE;
 
 	/* can this texture use NPOT or RECT? */
+	int potw, poth;
+	potw = pow2roundup(rect->w);
+	poth = pow2roundup(rect->h);
 	if (nw * nh == 1) {
-		if (is_square(rect) && is_power_of_two(rect->w)) {
+		if ((rect->w == potw) && (rect->h == poth)) {
 			tex->internal_type = TEXGL_NORMAL;
-			tex->tile_w = tex->tile_h = rect->w;
+			tex->tile_w = rect->w;
+			tex->tile_h = rect->h;
 			TRACE(OPENGL,
 					"tex %p use NORMAL (%d x %d)\n",
 					tex, tex->tile_w, tex->tile_h);
@@ -240,8 +244,8 @@ init_texgl(struct texture_gl * tex)
 						tex, tex->tile_w, tex->tile_h);
 			} else {
 				tex->internal_type = TEXGL_NORMAL;
-				tex->tile_w = tex->tile_h =
-					max(pow2roundup(rect->w), pow2roundup(rect->h));
+				tex->tile_w = potw;
+				tex->tile_h = poth;
 				TRACE(OPENGL,
 						"tex %p use NORMAL (%d x %d)\n",
 						tex, tex->tile_w, tex->tile_h);
@@ -249,12 +253,14 @@ init_texgl(struct texture_gl * tex)
 		}
 	} else {
 		tex->internal_type = TEXGL_NORMAL;
-		tex->tile_w = tex->tile_h = gl_max_texture_size();
+		tex->tile_w = rect->w > gl_max_texture_size() ?
+			gl_max_texture_size() : potw;
+		tex->tile_h = rect->h > gl_max_texture_size() ?
+			gl_max_texture_size() : poth;
 		TRACE(OPENGL,
 				"tex %p use NORMAL (%d x %d)\n",
 				tex, tex->tile_w, tex->tile_h);
 	}
-
 
 	release_bitmap(tex);
 	return;
@@ -278,11 +284,11 @@ tile_to_data(struct texture_gl * tex, int x, int y)
 	oy += y * tex->tile_h;
 
 	return b->data + (oy * b->w + ox) *
-		b->format;
+		bitmap_bytes_pre_pixel(b);
 }
 
 #define tile_bytes_pre_line(tex) (bitmap_bytes_pre_line(TEXGL_BITMAP(tex)) * (tex)->tile_h)
-#define normal_tile_size(tex)	((tex)->tile_w * (tex)->tile_h) * (TEXGL_BITMAP(tex)->format)
+#define normal_tile_size(tex)	((tex)->tile_w * (tex)->tile_h) * bitmap_bytes_pre_pixel(TEXGL_BITMAP(tex))
 
 /* give the tex number(x, y), return:
  * the start ptr in bitmap's data */
@@ -341,8 +347,6 @@ build_phybitmap(struct texture_gl * tex)
 			}
 		}
 	}
-
-	release_bitmap(tex);
 }
 
 static void
@@ -350,13 +354,27 @@ load_hwtexs(struct texture_gl * tex)
 {
 	int x, y;
 	int nr = 0;
-	TRACE(OPENGL, "Begin to load tex %p into hw memory\n",
-			tex);
-	tex->occupied_hwmem = 0;
+
+	build_phybitmap(tex);
 	if (tex->gl_params.flat) {
-		TRACE(OPENGL, "%p is flat tex\n", tex);
+		tex->occupied_hwmem = 0;
 		return;
 	}
+
+	if (tex->hwtexs == NULL) {
+		if (tex->nr_hwtexs < NR_HWTEX_LMT)
+			tex->hwtexs = tex->_hwtexs_save;
+		else
+			tex->hwtexs = GC_CALLOC_BLOCK(sizeof(GLuint) * tex->nr_hwtexs);
+
+		/* generate texture objects */
+		glGenTextures(tex->nr_hwtexs, tex->hwtexs);
+
+		TRY_CLEANUP(gl_check_error, free_hwtexs(tex));
+	}
+
+	TRACE(OPENGL, "Begin to load tex %p into hw memory\n",
+			tex);
 
 	if (tex->gl_params.target == GL_TEXTURE_3D) {
 		WARNING(OPENGL, "3D texture hasn't implemented\n");
@@ -494,35 +512,36 @@ load_hwtexs(struct texture_gl * tex)
 static void
 load_texgl(struct texture_gl * tex)
 {
-	/* alloc hwlist array */
-	if (tex->nr_hwtexs == 0) {
+	if (tex->gl_params.flat)
 		return;
-	}
+	if (tex->nr_hwtexs == 0) 
+		return;
+	if (tex->hwtexs == NULL)
+		load_hwtexs(tex);
+}
 
-	if (tex->hwtexs == NULL) {
-		if (tex->nr_hwtexs < NR_HWTEX_LMT)
-			tex->hwtexs = tex->_hwtexs_save;
-		else
-			tex->hwtexs = GC_CALLOC_BLOCK(sizeof(GLuint) * tex->nr_hwtexs);
-		/* generate texture objects */
-		glGenTextures(tex->nr_hwtexs, tex->hwtexs);
-		TRY_CLEANUP(gl_check_error, free_hwtexs(tex));
-
-		build_phybitmap(tex);
+static void
+texgl_reinit_hook(struct reinit_hook * hook)
+{
+	struct texture_gl * tex = container_of(hook,
+			struct texture_gl, reinit_hook);
+	TRACE(OPENGL, "tex %p know video reinit\n", tex);
+	if (tex->hwtexs != NULL) {
 		load_hwtexs(tex);
 	}
 }
 
 
-struct texture *
-tex_create(res_id_t bitmap_res_id, struct rectangle rect,
+struct texture_gl *
+texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
 		struct texture_params * params,
-		void * args)
+		struct texture_gl_params * gl_params)
 {
-	struct texture_gl_params * gl_params = (struct texture_gl_params *)args;
 	struct texture_gl * tex;
 
 	static TEXTURE_GL_PARAM(default_gl_param);
+
+	assert(gl_inited());
 
 	if (gl_params == NULL)
 		gl_params = &default_gl_param;
@@ -537,6 +556,11 @@ tex_create(res_id_t bitmap_res_id, struct rectangle rect,
 
 	tex_common_init(&tex->base, bitmap_res_id, rect, params);
 
+	/* insert the reinit hook */
+	tex->reinit_hook.fn = texgl_reinit_hook;
+	tex->reinit_hook.pprivate = tex;
+	video_hook_reinit(&tex->reinit_hook);
+
 	tex->gl_params = *gl_params;
 
 	/* insert into priority list */
@@ -544,15 +568,18 @@ tex_create(res_id_t bitmap_res_id, struct rectangle rect,
 	make_cleanup(&tex->base.cleanup);
 
 	if (bitmap_res_id == 0)
-		return &tex->base;
+		return tex;
 
 	/* compute hw data */
 	init_texgl(tex);
 	if ((tex->base.params.pin) || (tex->gl_params.imm)) {
 		load_texgl(tex);
-		TEXGL_SHRINK(tex, GC_NORMAL);
 	}
-	return &tex->base;
+
+	TEXGL_SHRINK(tex, GC_NORMAL);
+	if (!tex->use_bitmap_data)
+		release_bitmap(tex);
+	return tex;
 }
 
 // vim:tabstop=4:shiftwidth=4

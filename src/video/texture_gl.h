@@ -45,7 +45,7 @@ struct texture_gl_params {
 
 #define TEXTURE_GL_PARAM_INIT {	\
 	FALSE,						\
-	FALSE,						\
+	TRUE,						\
 	50,							\
 	GL_TEXTURE_2D,				\
 	GL_LINEAR,					\
@@ -60,6 +60,7 @@ struct texture_gl_params {
 
 struct texture_gl {
 	struct texture base;
+	struct reinit_hook reinit_hook;
 	struct texture_gl_params gl_params;
 	/* gl textures is linked into a list, sorted by importance */
 	struct list_head list;
@@ -73,7 +74,7 @@ struct texture_gl {
 
 	/* below 2 arrays is used to store hw textures gened
 	 * by glGenTextures. if nr_hwtexs are more than NR_HWTEX_LMT,
-	 * hwtexs_extends is allocated and used, then hwtexts is useless. */
+	 * hwtexs_extends is allocated and used, then __hwtexs_save is useless. */
 	GLuint _hwtexs_save[NR_HWTEX_LMT];
 	GLuint * hwtexs;
 
@@ -96,6 +97,16 @@ struct texture_gl {
 
 #define TEXGL_CLEANUP(t)	TEX_CLEANUP(&((t)->base))
 #define TEXGL_SHRINK(t, p)	TEX_SHRINK(&((t)->base), (p))
+
+#define TEXGL_GRAB(t)		TEX_GRAB(&(t)->base)
+#define TEXGL_RELEASE(t)	TEX_RELEASE(&(t)->base)
+
+extern struct texture_gl *
+texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
+	struct texture_params * params,
+	struct texture_gl_params * gl_params);
+
+#define texgl_destroy(t)	TEXGL_CLEANUP(t)
 
 __END_DECLS
 

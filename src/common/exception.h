@@ -271,6 +271,15 @@ throw_exception(enum exception_level, const char * message,
 NORETURN void
 fatal_cleanup(void) ATTR_NORETURN;
 
+/* after subsystem reinit, exec the reinit hook to notify
+ * the sensable objects. */
+struct reinit_hook {
+	struct list_head list;
+	void (*fn)(struct reinit_hook *);
+	void * pprivate;
+};
+
+
 __END_DECLS
 
 

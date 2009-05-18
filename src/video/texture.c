@@ -13,11 +13,13 @@ tex_common_init(struct texture * tex,
 	static TEXTURE_PARAM(default_param);
 	tex->bitmap_res_id = bitmap_res_id;
 	tex->rect = rect;
+	geom_adjust_rect(&tex->rect);
 	if (params == NULL)
 		params = &default_param;
 	tex->params = *params;
 
 	tex->bitmap = NULL;
+	tex->ref_count = 0;
 	return;
 }
 

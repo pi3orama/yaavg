@@ -324,7 +324,8 @@ void * yaavg_calloc(size_t count, size_t eltsize)
 	void * res = NULL;
 	res = calloc (count, eltsize);
 	assert(res != NULL);
-	MEM_TRACE("calloc %d\tres=%p\n", count, res);
+	MEM_TRACE("calloc %d x %d\tres=%p\n", count,
+			eltsize, res);
 	calloc_times ++;
 	return res;
 }

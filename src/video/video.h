@@ -31,8 +31,18 @@ video_get_current_context(void);
 extern struct video_context *
 video_init(void);
 
+/* In the final stage of video reinit,
+ * call each hook in a hook list, to notify
+ * the objects which sensable of video reinit */
 extern void
 video_reinit(void);
+
+
+extern void
+video_hook_reinit(struct reinit_hook * hook);
+
+extern void
+video_unhook_reinit(struct reinit_hook * hook);
 
 /* We don't really need a video_close, because the try-catch structure
  * can do the job. However, we keep this func for consistency. */

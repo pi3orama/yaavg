@@ -32,6 +32,38 @@ init_gl_driver(void);
 static void
 init_glfunc(void);
 
+static const char *
+glerrno_to_desc(GLenum errno)
+{
+	struct kvp {
+		GLenum errno;
+		const char * desc;
+	};
+
+	static struct kvp tb[] = {
+		{GL_INVALID_ENUM, "Enum argument out of range"},
+		{GL_INVALID_VALUE, "Numeric argument out of range"},
+		{GL_INVALID_OPERATION, "Operation illegal in current state"},
+		{GL_INVALID_FRAMEBUFFER_OPERATION, "Framebuffer object is not complete"},
+		{GL_STACK_OVERFLOW, "Command would cause a stack overflow"},
+		{GL_STACK_UNDERFLOW, "Command would cause a stack underflow"},
+		{GL_OUT_OF_MEMORY, "Not enough memory left to execute command"},
+		{GL_TABLE_TOO_LARGE, "The specified table is too large"},
+		/* 0 is resvred for GL_NO_ERROR at least in nvidia opengl */
+		{0, "Unknown error"}
+	};
+
+	struct kvp * ptr = tb;
+	while(ptr->errno != 0) {
+		if (ptr->errno == errno)
+			break;
+		ptr ++;
+	}
+	return ptr->desc;
+}
+
+
+
 
 static void __driver_close(struct cleanup * str);
 static struct cleanup driver_cleanup_str = {
@@ -78,11 +110,48 @@ driver_init(void)
 	}
 }
 
+static LIST_HEAD(reinit_list);
+
+void
+video_hook_reinit(struct reinit_hook * hook)
+{
+	assert(hook != NULL);
+	if (list_head_deleted(&hook->list))
+		list_add(&hook->list, &reinit_list);
+	else if (list_empty(&hook->list))
+		list_add(&hook->list, &reinit_list);
+	return;
+}
+
+void
+video_unhook_reinit(struct reinit_hook * hook)
+{
+	assert(hook != NULL);
+	if (list_empty(&hook->list))
+		return;
+	if (list_head_deleted(&hook->list))
+		return;
+	list_del(&hook->list);
+	return;
+}
+
+static void
+exec_reinit_hooks(void)
+{
+	struct reinit_hook * pos, * n;
+	TRACE(OPENGL, "OpenGL reinit, exec hooks\n");
+	list_for_each_entry_safe(pos, n, &reinit_list, list) {
+		pos->fn(pos);
+	}
+	return;
+}
+
 void
 driver_reinit(void)
 {
 	gl_reinit();
 	init_gl_driver();
+	exec_reinit_hooks();
 	return;
 }
 
@@ -363,7 +432,8 @@ video_reshape(int w, int h)
 
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
-		ERROR(OPENGL, "video_reshape failed, errno=%d\n", err);
+		ERROR(OPENGL, "video_reshape failed: \"%s\" (0x%x)\n",
+				glerrno_to_desc(err), err);
 		THROW(EXCEPTION_FATAL, "video_reshape failed");
 	}
 }
@@ -393,7 +463,8 @@ read_pixels(uint8_t * buffer, int x, int y, int w, int h, GLenum format)
 
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
-		WARNING(OPENGL, "ReadPixels failed, errno=%d\n", err);
+		WARNING(OPENGL, "ReadPixels failed: \"%s\" (0x%x)\n",
+				glerrno_to_desc(err), err);
 		THROW(EXCEPTION_CONTINUE, "Read pixels failed\n");
 	}
 }
@@ -423,7 +494,8 @@ driver_begin_frame(void)
 
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
-		ERROR(OPENGL, "driver_begin_frame failed, errno=%d\n", err);
+		ERROR(OPENGL, "driver_begin_frame failed: \"%s\" (0x%x)\n",
+				glerrno_to_desc(err), err);
 		throw_reinit_exception(&reinited, &last_time,
 				EXCEPTION_SUBSYS_RERUN, "frame error, try rerender",
 				EXCEPTION_SUBSYS_SKIPFRAME, "still error, skip this frame",
@@ -444,7 +516,8 @@ driver_end_frame(void)
 
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
-		ERROR(OPENGL, "GLError, errno=%d\n", err);
+		ERROR(OPENGL, "OpenGL error: \"%s\" (0x%x)\n",
+				glerrno_to_desc(err), err);
 		throw_reinit_exception(&reinited, &last_time,
 				EXCEPTION_SUBSYS_RERUN, "frame error, try rerender",
 				EXCEPTION_SUBSYS_SKIPFRAME, "still error, skip this frame",
@@ -459,36 +532,13 @@ void
 gl_check_error(void)
 {
 
-	struct kvp {
-		GLenum errno;
-		const char * description;
-	};
-
-	static struct kvp tb[] = {
-		{GL_INVALID_ENUM, "Enum argument out of range"},
-		{GL_INVALID_VALUE, "Numeric argument out of range"},
-		{GL_INVALID_OPERATION, "Operation illegal in current state"},
-		{GL_INVALID_FRAMEBUFFER_OPERATION, "Framebuffer object is not complete"},
-		{GL_STACK_OVERFLOW, "Command would cause a stack overflow"},
-		{GL_STACK_UNDERFLOW, "Command would cause a stack underflow"},
-		{GL_OUT_OF_MEMORY, "Not enough memory left to execute command"},
-		{GL_TABLE_TOO_LARGE, "The specified table is too large"},
-		/* 0 is resvred for GL_NO_ERROR at least in nvidia opengl */
-		{0, "Unknown error"}
-	};
-
 	GLenum err;
 	err = glGetError();
 	if (err == GL_NO_ERROR)
 		return;
 
-	struct kvp * ptr = tb;
-	while(ptr->errno != 0)
-		if (ptr->errno == err)
-			break;
-
-
-	VERBOSE(OPENGL, "glGetError() returns \"%s\" (0x%X)\n", ptr->description, err);
+	VERBOSE(OPENGL, "glGetError() returns \"%s\" (0x%x)\n",
+			glerrno_to_desc(err), err);
 	THROW_VAL(EXCEPTION_RENDER_ERROR, "OpenGL error", err);
 	return;
 }

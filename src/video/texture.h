@@ -41,6 +41,8 @@ struct texture_params {
 struct texture {
 	GC_TAG;
 	struct cleanup cleanup;
+	/* if refcount > 0, don't actulally delete this texture*/
+	int ref_count;
 	/* if no coorsponding bitmap, bitmap_res_id should be set to 0 */
 	res_id_t bitmap_res_id;
 	/* sometime the bitmap's data field is useful.
@@ -55,23 +57,21 @@ struct texture {
 #define TEX_BITMAP(t)	(t)->bitmap
 #define SET_TEX_BITMAP(t, b)	do {(t)->bitmap = (b);}while(0)
 
-/* args is implementation specified. For OpenGL
- * texture, args contain:
- * 1. bool_t flat: if true, 'texture' is write to framebuffer using
- *    bitmap directly, and cannot take any special effects. default
- *    is false. No hardware texture is created.
- * 2. bool_t imm: if true, this texture is load into hardware
- *    immediately;
- * 3. int importance: when hardware memory shortage, which one
- *    be unloaded first? */
-extern struct texture *
-tex_create(res_id_t bitmap_res_id,
-		struct rectangle rect,
-		struct texture_params * params,
-		void * args) THROWS(all);
-
 #define TEX_CLEANUP(t)		CLEANUP(&((t)->cleanup))
 #define TEX_SHRINK(t, p)	GC_SHRINK((&(t)->__gc_tag), (p))
+
+#define TEX_GRAB(t)		do	{		\
+	if (((t)->ref_count) == 0)		\
+		remove_cleanup(&(t)->cleanup);	\
+	(t)->ref_count ++;		\
+} while(0)
+
+#define TEX_RELEASE(t)		do	{		\
+	if (--((t)->ref_count) == 0)			\
+		TEX_CLEANUP(t);					\
+} while(0)
+
+
 
 extern void
 tex_common_init(struct texture * tex,

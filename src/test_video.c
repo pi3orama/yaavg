@@ -12,6 +12,8 @@
 #include <video/video.h>
 #include <video/video_gl.h>
 
+#include <video/texture_gl.h>
+
 #include <event/event.h>
 
 /* Define 2 rcommands: 1. draw a line; 2. rotate */
@@ -22,6 +24,9 @@ struct rcmd_draw_line {
 	/* from (0, 0) to (x, y) */
 	float x, y, r_color;
 	tick_t total_time;
+
+	struct texture_gl * tex;
+	struct texture_gl * tex2;
 };
 
 static int
@@ -39,24 +44,53 @@ draw_line_render(struct render_command * __rcmd, dtick_t delta_ticks)
 
 	rcmd->r_color = (float)(rcmd->total_time % 1000) / 1000.0f;
 
-	glColor3f(rcmd->r_color, 0.0f, 0.0f);
+	glColor3f(rcmd->r_color, 0.0f, 1.0f);
+#if 0
 	glBegin(GL_LINES);
 	glVertex2d(-rcmd->x / 3.0f, -rcmd->y / 3.0f);
 	glVertex2d(rcmd->x / 3.0f, rcmd->y / 3.0f);
-
 	glEnd();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
+
+	/* FIXME! */
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, rcmd->tex->hwtexs[0]);
+	glPolygonMode(GL_FRONT, GL_FILL);
 	glBegin(GL_POLYGON);
-	glVertex2d(0.3, 0.3);
-	glVertex2d(0.5, 0.3);
-	glVertex2d(0.5, 0.5);
+	glTexCoord2f(0.0, 0.0);
+	glVertex2d(-0.4, -0.4);
+	glTexCoord2f(0.0, 1.0);
+	glVertex2d(-0.4, 0.4);
+	glTexCoord2f(1.0, 1.0);
+	glVertex2d(0.4, 0.4);
+	glTexCoord2f(1.0, 0.0);
+	glVertex2d(0.4, -0.4);
+	static int ttt = 0;
+	if (ttt > 2)
+		glEnd();
+	ttt ++;
+
+
+	/* FIXME! */
+	glBindTexture(GL_TEXTURE_2D, rcmd->tex2->hwtexs[0]);
+	glPolygonMode(GL_FRONT, GL_FILL);
+	glBegin(GL_POLYGON);
+	glTexCoord2f(0.0, 0.0);
+	glVertex2d(-0.4, -0.4);
+	glTexCoord2f(0.0, 1.0);
+	glVertex2d(-0.4, 0.4);
+	glTexCoord2f(1.0, 1.0);
+	glVertex2d(0.4, 0.4);
+	glTexCoord2f(1.0, 0.0);
+	glVertex2d(0.4, -0.4);
+	glEnd();
+
 #if 0
 	glVertex2d(-1, 0);
 	glVertex2d( 1, 0);
 	glVertex2d(0, -1);
 	glVertex2d(0, 1);
 #endif
-	glEnd();
 	return RENDER_OK;
 }
 
@@ -76,6 +110,8 @@ draw_line_remove(struct render_command * __rcmd,
 	
 	struct rcmd_draw_line * rcmd =
 		container_of(__rcmd, struct rcmd_draw_line, base);
+	TEXGL_RELEASE(rcmd->tex);
+	TEXGL_RELEASE(rcmd->tex2);
 	VERBOSE(VIDEO, "Remove drawline cmd\n");
 	free(rcmd);
 	return 0;
@@ -100,6 +136,23 @@ struct render_command * alloc_draw_line(struct video_context * ctx,
 	cmd->x = x;
 	cmd->y = y;
 	cmd->total_time = 0;
+
+	res_id_t texres;
+	char * fn = "common/rgb.png";
+	char * fn2 = "common/rgba.png";
+	texres = (uint64_t)(uint32_t)fn;
+	struct rectangle rect = {
+		0,0,4096,4096
+	};
+
+	cmd->tex = texgl_create(texres, rect, NULL, NULL);
+	TEXGL_GRAB(cmd->tex);
+
+	texres = (uint64_t)(uint32_t)fn2;
+	cmd->tex2 = texgl_create(texres, rect, NULL, NULL);
+	TEXGL_GRAB(cmd->tex2);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	return &(cmd->base);
 }
 
@@ -180,10 +233,10 @@ rotate_render_l(struct render_command * __rcmd, dtick_t delta_ticks)
 #if 1
 	glColor3f(0.0, 1.0, 0.0);
 	glBegin(GL_LINES);
-	glVertex2d(-0.1, 0);
-	glVertex2d(0.1, 0);
-	glVertex2d(0, -0.1);
-	glVertex2d(0, 0.1);
+	glVertex2d(-0.4, 0);
+	glVertex2d(0.4, 0);
+	glVertex2d(0, -0.4);
+	glVertex2d(0, 0.4);
 	glEnd();
 #endif
 	return 0;
@@ -197,7 +250,7 @@ rotate_render_r(struct render_command * __rcmd, dtick_t delta_ticks)
 	glPopMatrix();
 
 #if 1
-	glColor3f(0.3, 0.4, 0.5);
+	glColor3f(1.0, 1.0, 0.0);
 	glBegin(GL_LINES);
 	glVertex2d(0.4, 0.5);
 	glVertex2d(0.6, 0.5);

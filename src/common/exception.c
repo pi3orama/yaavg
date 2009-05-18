@@ -168,9 +168,14 @@ catcher_pop(void)
 	struct catcher * old_catcher = current_catcher;
 	if (old_catcher == NULL)
 		INTERNAL_ERROR(SYSTEM, "catcher_pop outside catche block\n");
-	current_catcher = old_catcher->prev;
 	/* do the cleanup */
 	do_cleanup();
+
+	/* We have to reset current_catcher after do_cleanup done,
+	 * because the funcs in do_cleanup may use try_catch. if we
+	 * reset current_catcher too early, the current_catcher and
+	 * current_cleanup_chain may become inconsistent.*/
+	current_catcher = old_catcher->prev;
 	/* restore cleanup chain */
 	current_cleanup_chain = old_catcher->saved_cleanup_chain;
 	if (current_catcher != NULL)
@@ -263,7 +268,7 @@ fatal_cleanup(void)
 		catcher_pop();
 	/* cleanup the default cleanup chain */
 	do_cleanup();
-	exit(0);
+	exit(-1);
 }
 
 // vim:tabstop=4:shiftwidth=4
