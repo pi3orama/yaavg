@@ -57,16 +57,18 @@ draw_line_render(struct render_command * __rcmd, dtick_t delta_ticks)
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, rcmd->tex->hwtexs[0]);
 	glPolygonMode(GL_FRONT, GL_FILL);
-	glPolygonMode(GL_BACK, GL_LINE);
+	glPolygonMode(GL_BACK, GL_FILL);
 	glBegin(GL_POLYGON);
-	glTexCoord2f(0.0, 0.5);
-	glVertex2d(-0.4, -0.4);
-	glTexCoord2f(0.0, 1.0);
-	glVertex2d(-0.4, 0.0);
+
 	glTexCoord2f(1.0, 1.0);
 	glVertex2d(0.0, 0.0);
+	glTexCoord2f(0.0, 1.0);
+	glVertex2d(-0.4, 0.0);
+	glTexCoord2f(0.0, 0.0);
+	glVertex2d(-0.4, -0.4);
 	glTexCoord2f(1.0, 0.0);
 	glVertex2d(0.0, -0.4);
+
 	static int ttt = 0;
 
 #if 0

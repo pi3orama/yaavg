@@ -185,10 +185,12 @@ check_extension(const char * conf_key, ...)
 
 	bool_t retval = FALSE;
 
-	retval = conf_get_bool(conf_key, TRUE);
-	/* conf set this feature to FALSE */
-	if (!retval)
-		return FALSE;
+	if (conf_key != NULL) {
+		retval = conf_get_bool(conf_key, TRUE);
+		/* conf set this feature to FALSE */
+		if (!retval)
+			return FALSE;
+	}
 
 	retval = FALSE;
 
@@ -237,6 +239,8 @@ replace_func_ptr(struct func_table * t)
 	}
 }
 #endif
+
+#define MKGLVER(a, b)	((a) * 100 + (b))
 
 static void
 check_features(void)
@@ -297,6 +301,15 @@ check_features(void)
 	}
 #endif
 
+	/* check compactability */
+	if (gl_ctx->full_version >= MKGLVER(3, 1)) {
+		/* check for GL_ARB_compatibility  */
+		if (!check_extension(NULL,
+					"GL_ARB_compatibility",
+					NULL));
+		WARNING(OPENGL,
+			   	"You have a very high version of OpenGL, and doesn't have GL_ARB_compatibility. Good luck...\n");
+	}
 
 #undef VERBOSE_FEATURE
 }
@@ -329,7 +342,6 @@ update_version(void)
 	sscanf(s, "%d.%d", &maj, &min);
 
 	TRACE(OPENGL, "OpenGL API version: %d.%d\n", maj, min);
-#define MKGLVER(a, b)	((a) * 100 + (b))
 	gl_ctx->major_version = maj;
 	gl_ctx->minor_version = min;
 	gl_ctx->full_version = MKGLVER(maj, min);
@@ -368,27 +380,33 @@ init_gl_driver(void)
 	/* Set other OpenGL properties */
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glEnable(GL_BLEND);
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	glEnable(GL_TEXTURE_1D);
 	glEnable(GL_TEXTURE_2D);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+	gl_check_error();
+
 	/* set all avaliable hints to NISTEST */
 	/* FIXME */
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+	/* deprecated in 3.0 */
+	if (gl_ctx->full_version < MKGLVER(3, 0))
+		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	if (gl_ctx->full_version < MKGLVER(3, 0))
+		glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-	glHint(GL_FOG_HINT, GL_NICEST);
+	if (gl_ctx->full_version < MKGLVER(3, 0))
+		glHint(GL_FOG_HINT, GL_NICEST);
 
 	if (gl_ctx->full_version >= MKGLVER(1, 3))
 		glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
 	if (gl_ctx->full_version >= MKGLVER(1, 4))
-		glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+			if (gl_ctx->full_version < MKGLVER(3, 0))
+				glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
 	if (gl_ctx->full_version >= MKGLVER(2, 0))
 		glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
 
-	gl_check_error();
+	GL_POP_ERROR();
 }
 
 void
@@ -430,7 +448,7 @@ video_reshape(int w, int h)
 	/* revert y axis */
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, 1, 1, 0, -1, 1);
+	glOrtho(0, 1, 0, 1, -1, 1);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
