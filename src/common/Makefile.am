@@ -12,6 +12,7 @@ libcommon_la_SOURCES=debug.c \
 		     exception.h \
 		     defs.h \
 		     mm.h \
+		     math.h \
 		     list.h
 
 libcommon_la_LIBADD=$(SDL_LIBS) $(LIBPNG_LIBS)

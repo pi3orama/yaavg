@@ -26,6 +26,7 @@
 #define YAAVG_DEBUG_C /* Debug masks */
 #include "common/debug.h"
 
+
 static FILE * fdebug_out = NULL;
 static int colorful_terminal = 0;
 static inline void print_backtrace(FILE * fp);
@@ -33,10 +34,12 @@ static inline void print_backtrace(FILE * fp);
 static void
 debug_malloc_stats(int signum)
 {
+#ifndef YAAVG_DEBUG_OFF
 	enum debug_level level_save = get_comp_level(MEMORY);
 	set_comp_level(MEMORY, VERBOSE);
 	show_mem_info();
 	set_comp_level(MEMORY, level_save);
+#endif
 }
 
 static void
@@ -151,22 +154,29 @@ get_comp_name(enum debug_component comp)
 static const char *
 get_level_name(enum debug_level level)
 {
-	if (level == SILENT)
-		return "S";
-	if (level == FORCE)
-		return "FORCE";
-	if (level == VERBOSE)
-		return "V";
-	if (level == TRACE)
-		return "T";
-	if (level == WARNING)
-		return "WW";
-	if (level == ERROR)
-		return "EE";
-	if (level == FATAL)
-		return "FF";
-	return "unknown";
-
+	static char * debug_level_names[NR_DEBUG_LEVELS] = {
+#ifdef YAAVG_DEBUG_OFF
+		[SILENT] 	= "SILENT",
+		[TRACE]		= "TRACE",
+		[VERBOSE]	= "VERBOSE",
+		[WARNING]	= "WARNING",
+		[ERROR]		= "ERROR",
+		[FATAL]		= "FATAL",
+		[FORCE]		= "FORCE",
+#else
+		[SILENT] 	= "S",
+		[TRACE]		= "T",
+		[VERBOSE]	= "V",
+		[WARNING]	= "WW",
+		[ERROR]		= "EW",
+		[FATAL]		= "FW",
+		[FORCE]		= "FORCE",
+#endif
+	};
+	if ((level >= 0) && (level < NR_DEBUG_LEVELS))
+		return debug_level_names[level];
+	else
+		return "Unknown";
 }
 
 static void
@@ -203,7 +213,6 @@ vdebug_out(int prefix, enum debug_level level, enum debug_component comp,
 	       const char * func_name, int line_no,
        	       const char * fmt, va_list ap)
 {
-	
 	/* output to stderr even if haven't init */
 	if (fdebug_out == NULL)
 		fdebug_out = stderr;
@@ -281,7 +290,7 @@ static int strdup_times = 0;
 #define MEM_MSG(str...) DEBUG_MSG(VERBOSE, MEMORY, str)
 #define MEM_TRACE(str...) DEBUG_MSG(TRACE, MEMORY, str)
 
-
+#ifndef show_mem_info
 void show_mem_info()
 {
 	MEM_MSG("malloc times:\t %d\n", malloc_times);
@@ -314,6 +323,7 @@ void show_mem_info()
 #endif
 	return;
 }
+#endif /* show_mem_info */
 
 void * yaavg_malloc(size_t size)
 {
@@ -354,5 +364,34 @@ char * yaavg_strdup(const char * S)
 	strdup_times ++;
 	return res;
 }
+
+#ifdef YAAVG_DEBUG_OFF
+static void
+vmessage_out(enum debug_level l, enum debug_component c, char * fmt, va_list ap)
+{
+	/* output to stdout if haven't init */
+	if (fdebug_out == NULL)
+		fdebug_out = stdout;
+	if (l >= WARNING)
+		turn_red();
+
+	fprintf(fdebug_out, "%s: ", get_level_name(l));
+	vfprintf(fdebug_out, fmt, ap);
+
+	if (l >= WARNING)
+		turn_normal();
+	fflush(fdebug_out);
+}
+
+void
+message_out(enum debug_level l, enum debug_component c, char * fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	vmessage_out(l, c, fmt, ap);
+	va_end(ap);
+}
+#endif
+
 // vim:tabstop=4:shiftwidth=4
 

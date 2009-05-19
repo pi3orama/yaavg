@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <common/math.h>
 #include <common/debug.h>
 #include <common/exception.h>
 #include <common/utils.h>
@@ -54,17 +55,18 @@ draw_line_render(struct render_command * __rcmd, dtick_t delta_ticks)
 
 	/* FIXME! */
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, rcmd->tex2->hwtexs[0]);
+	glBindTexture(GL_TEXTURE_2D, rcmd->tex->hwtexs[0]);
 	glPolygonMode(GL_FRONT, GL_FILL);
+	glPolygonMode(GL_BACK, GL_LINE);
 	glBegin(GL_POLYGON);
-	glTexCoord2f(0.0, 0.0);
+	glTexCoord2f(0.0, 0.5);
 	glVertex2d(-0.4, -0.4);
 	glTexCoord2f(0.0, 1.0);
-	glVertex2d(-0.4, 0.4);
+	glVertex2d(-0.4, 0.0);
 	glTexCoord2f(1.0, 1.0);
-	glVertex2d(0.4, 0.4);
+	glVertex2d(0.0, 0.0);
 	glTexCoord2f(1.0, 0.0);
-	glVertex2d(0.4, -0.4);
+	glVertex2d(0.0, -0.4);
 	static int ttt = 0;
 
 #if 0
@@ -73,11 +75,10 @@ draw_line_render(struct render_command * __rcmd, dtick_t delta_ticks)
 #endif
 		glEnd();
 	ttt ++;
-
+#if 0
 
 	/* FIXME! */
-	glBindTexture(GL_TEXTURE_2D, rcmd->tex->hwtexs[0]);
-	glPolygonMode(GL_FRONT, GL_FILL);
+	glBindTexture(GL_TEXTURE_2D, rcmd->tex2->hwtexs[0]);
 	glBegin(GL_POLYGON);
 	glTexCoord2f(0.0, 0.0);
 	glVertex2d(-0.4, -0.4);
@@ -88,7 +89,7 @@ draw_line_render(struct render_command * __rcmd, dtick_t delta_ticks)
 	glTexCoord2f(1.0, 0.0);
 	glVertex2d(0.4, -0.4);
 	glEnd();
-
+#endif
 #if 0
 	glVertex2d(-1, 0);
 	glVertex2d( 1, 0);
@@ -151,12 +152,18 @@ struct render_command * alloc_draw_line(struct video_context * ctx,
 		0,0,4096,4096
 	};
 
+
+	GL_POP_ERROR();
 	cmd->tex = texgl_create(texres, rect, NULL, NULL);
 	TEXGL_GRAB(cmd->tex);
 
+
+	GL_POP_ERROR();
+#if 0
 	texres = (uint64_t)(uint32_t)fn2;
 	cmd->tex2 = texgl_create(texres, rect, NULL, NULL);
 	TEXGL_GRAB(cmd->tex2);
+#endif
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return &(cmd->base);
@@ -218,12 +225,13 @@ static int
 rotate_render(struct render_command * __rcmd, dtick_t delta_ticks)
 {
 	struct rcmd_rotate * base = container_of(__rcmd, struct rcmd_rotate, base);
-	base->angle += (float)delta_ticks / 10000.0f * 360.0f;
+	base->angle += (float)delta_ticks / 1000.0f;
+#if 0
 	if (base->angle >= 360.0f)
 		base->angle = 0.0f;
 	if (base->angle <= -360.0f)
 		base->angle = 0.0f;
-
+#endif
 	return 0;
 }
 
@@ -235,7 +243,7 @@ rotate_render_l(struct render_command * __rcmd, dtick_t delta_ticks)
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glTranslatef(0.5, 0.5, 0.0);
-	glRotatef(rcmd->angle, 0,0,1);
+	glRotatef(sinf((float)rcmd->angle) * (10.0f), 0,0,1);
 #if 1
 	glColor3f(0.0, 1.0, 0.0);
 	glBegin(GL_LINES);

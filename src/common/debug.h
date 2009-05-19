@@ -10,15 +10,14 @@
 
 __BEGIN_DECLS
 
-
 enum debug_level {
-	TRACE = 0,
+	SILENT = 0,
+	TRACE,
 	VERBOSE,
 	WARNING,
 	ERROR,
 	FATAL,
 	FORCE,
-	SILENT,
 	NR_DEBUG_LEVELS
 };
 
@@ -59,18 +58,17 @@ static enum debug_level debug_levels[NR_COMPONENTS] = {
 };
 #endif
 
-#ifndef YAAVG_DEBUG_OFF
 extern void debug_init(const char * filename);
+#ifndef YAAVG_DEBUG_OFF
 extern void debug_out(int prefix, enum debug_level level, enum debug_component comp,
 	       const char * func_name, int line_no,
 	       const char * fmt, ...);
 extern void set_comp_level(enum debug_component comp, enum debug_level level);
 extern enum debug_level get_comp_level(enum debug_component comp);
 #else
-# define debug_init(a, b) do{} while(0)
 # define debug_out(z, a, b, c, d, e,...) do{} while(0)
 # define set_comp_level(a, b)   do {} while(0)
-# define get_comp_level(a, b)   do {} while(0)
+# define get_comp_level(a)   ({SILENT;})
 #endif
 
 #define DEBUG_INIT(file)	do { debug_init(file);} while(0)
@@ -79,17 +77,23 @@ extern enum debug_level get_comp_level(enum debug_component comp);
 #define DEBUG_MSG_CONT(level, comp, str...) do{ debug_out(0, level, comp, __FUNCTION__, __LINE__, str); } while(0)
 #define DEBUG_SET_COMP_LEVEL(mask, level) do { set_comp_level(mask, level); } while(0)
 
+/* XXX */
+/* Below definition won't distrub the debug level, because 
+ * they are all func-like macro */
 #define TRACE(comp, str...) DEBUG_MSG(TRACE, comp, str)
-#define VERBOSE(comp, str...) DEBUG_MSG(VERBOSE, comp, str)
 #ifndef YAAVG_DEBUG_OFF
+# define VERBOSE(comp, str...) DEBUG_MSG(VERBOSE, comp, str)
 # define WARNING(comp, str...) DEBUG_MSG(WARNING, comp, str)
 # define ERROR(comp, str...) DEBUG_MSG(ERROR, comp, str)
 # define FATAL(comp, str...) DEBUG_MSG(FATAL, comp, str)
 # define FORCE(comp, str...) DEBUG_MSG(FORCE, comp, str)
 #else
-extern void WARNING(enum debug_component, char * fmt, ...);
-extern void ERROR(enum debug_component, char * fmt, ...);
-extern void FATAL(enum debug_component, char * fmt, ...);
+extern void message_out(enum debug_level, enum debug_component, char * fmt, ...);
+# define VERBOSE(c, s...)	message_out(VERBOSE, c, s)
+# define WARNING(c, s...)	message_out(WARNING, c, s)
+# define ERROR(c, s...)		message_out(ERROR, c, s)
+# define FATAL(c, s...)		message_out(FATAL, c, s)
+# define FORCE(c, s...)		message_out(FORCE, c, s)
 #endif
 
 
@@ -148,6 +152,8 @@ extern void show_mem_info();
 # endif
 # define calloc(C, S)	yaavg_calloc(C, S)
 #endif
+#else	/* YAAVG_DEBUG_OFF */
+#define show_mem_info()	do {} while(0)
 #endif
 
 __END_DECLS

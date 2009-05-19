@@ -28,8 +28,8 @@ static struct conf_entry entries[] = {
 //	{"video.resizable", TypeBool, vcast(TRUE)},
 	{"video.resizable", TypeBool, vcast(FALSE)},
 //	{"video.opengl.driver.gllibrary", TypeString, vcast((const char*)"/home/wn/src/Mesa-7.0.1/lib/libGL.so")},
-//	{"video.opengl.driver.gllibrary", TypeString, vcast((const char*)NULL)},
-	{"video.opengl.driver.gllibrary", TypeString, vcast((const char*)"/usr/local/lib/libGL.so")},
+	{"video.opengl.driver.gllibrary", TypeString, vcast((const char*)NULL)},
+//	{"video.opengl.driver.gllibrary", TypeString, vcast((const char*)"/usr/local/lib/libGL.so")},
 	{"video.opengl.driver.bpp", TypeInteger, vcast(32)},
 	{"video.opengl.driver.vsync", TypeBool, vcast(FALSE)},
 //	{"video.opengl.driver.vsync", TypeBool, vcast(TRUE)},
@@ -44,8 +44,8 @@ static struct conf_entry entries[] = {
 	{"sys.mem.threshold",	TypeInteger, vcast(1048576)},	/* in Kbs, no use now */
 	{"video.opengl.texture.totalhwsize", TypeInteger, vcast(0)},	/* in Kbs, no use now, 0 means don't care */
 	/* 0 means use max avaliable size */	
-	{"video.opengl.texture.maxsize", TypeInteger, vcast(63)},
-	{"video.opengl.texture.enableCOMPRESSION", TypeBool, vcast(FALSE)},
+	{"video.opengl.texture.maxsize", TypeInteger, vcast(0)},
+	{"video.opengl.texture.enableCOMPRESSION", TypeBool, vcast(TRUE)},
 	{"video.opengl.texture.enableNPOT", TypeBool, vcast(TRUE)},
 	{"video.opengl.texture.enableRECT", TypeBool, vcast(TRUE)},
 	{NULL, TypeNone, vcast(0)},

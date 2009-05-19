@@ -62,9 +62,6 @@ glerrno_to_desc(GLenum errno)
 	return ptr->desc;
 }
 
-
-
-
 static void __driver_close(struct cleanup * str);
 static struct cleanup driver_cleanup_str = {
 	.function = __driver_close,
@@ -538,16 +535,24 @@ driver_end_frame(void)
 }
 
 void
-gl_check_error(void)
+#ifdef YAAVG_DEBUG_OFF
+gl_check_error_nodebug(void)
+#else
+gl_check_error_debug(const char * file, const char * func, int line)
+#endif
 {
 
 	GLenum err;
 	err = glGetError();
 	if (err == GL_NO_ERROR)
 		return;
-
-	VERBOSE(OPENGL, "glGetError() returns \"%s\" (0x%x)\n",
+#ifndef YAAVG_DEBUG_OFF
+	WARNING(OPENGL, "glGetError() returns \"%s\" (0x%x) at %s:%s:%d\n",
+			glerrno_to_desc(err), err, file, func, line);
+#else
+	WARNING(OPENGL, "glGetError() returns \"%s\" (0x%x)\n",
 			glerrno_to_desc(err), err);
+#endif
 	THROW_VAL(EXCEPTION_RENDER_ERROR, "OpenGL error", err);
 	return;
 }

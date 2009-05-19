@@ -401,7 +401,6 @@ load_hwtexs(struct texture_gl * tex)
 
 		/* generate texture objects */
 		glGenTextures(tex->nr_hwtexs, tex->hwtexs);
-
 		TRY_CLEANUP(gl_check_error, free_hwtexs(tex));
 	}
 
@@ -412,8 +411,6 @@ load_hwtexs(struct texture_gl * tex)
 		WARNING(OPENGL, "3D texture hasn't implemented\n");
 		return;
 	}
-
-	GL_POP_ERROR();
 
 	/* create the texture */
 	GLint internalformat;
@@ -529,8 +526,12 @@ load_hwtexs(struct texture_gl * tex)
 						target, 0, GL_TEXTURE_COMPRESSED, &c);
 				glGetTexLevelParameteriv(
 						target, 0, GL_TEXTURE_INTERNAL_FORMAT, &f);
-				glGetTexLevelParameteriv(
-						target, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &s);
+				if (c)
+					glGetTexLevelParameteriv(
+							target, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &s);
+				else
+					s = get_tile_width(tex, x, y)
+						* get_tile_height(tex, x, y) * 4;
 				TRACE(OPENGL,
 						"result: compressed=%d, internal format=0x%x, size=%d\n",
 						c, f, s);

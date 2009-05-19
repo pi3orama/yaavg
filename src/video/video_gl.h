@@ -65,10 +65,17 @@ gl_close(void);
 
 
 /* for OpenGL command use */
+#ifdef YAAVG_DEBUG_OFF
 extern void
-gl_check_error(void) THROWS(all);
-
-#define GL_POP_ERROR()	NOTHROW(gl_check_error)
+gl_check_error_nodebug(void) THROWS(all);
+# define GL_POP_ERROR()	NOTHROW(gl_check_error_nodebug)
+# define gl_check_error()	gl_check_error_nodebug()
+#else
+extern void
+gl_check_error_debug(const char * file, const char * func, int line) THROWS(all);
+# define GL_POP_ERROR()	NOTHROW(gl_check_error_debug, __FILE__, __FUNCTION__, __LINE__)
+# define gl_check_error() gl_check_error_debug(__FILE__, __FUNCTION__, __LINE__)
+#endif
 
 /* OpenGL definition fixup */
 #ifndef GL_INVALID_FRAMEBUFFER_OPERATION
