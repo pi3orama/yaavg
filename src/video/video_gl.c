@@ -24,6 +24,8 @@
 #include <stdarg.h>
 #include <regex.h>
 
+#ifdef OPENGL_ENGINE
+
 struct gl_context * gl_ctx = NULL;
 
 static void
@@ -164,6 +166,7 @@ init_glfunc(void)
 #undef INIT_GL_FUNC_LIST
 	struct glfunc_init_item * item = &gl_func_init_list[0];
 	while (item->name != NULL) {
+		TRACE(OPENGL, "init gl func %s\n", item->name);
 		*(item->func) = (void*)gl_get_proc_address(item->name);
 		if (*item->func == NULL)
 			WARNING(OPENGL, "gl function %s not found\n", item->name);
@@ -590,5 +593,7 @@ VideoSetCaption(const char * caption);
 extern void
 VideoSetIcon(const icon_t icon);
 #endif
+
+#endif	/* OPENGL_ENGINE */
 
 // vim:tabstop=4:shiftwidth=4

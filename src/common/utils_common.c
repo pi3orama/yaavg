@@ -11,6 +11,8 @@
 #include <time.h>
 #include <errno.h>
 
+#ifndef HAVE_SDL
+
 tick_t
 get_ticks(void)
 {
@@ -65,5 +67,6 @@ delay(tick_t ms)
 	} while(was_error && (errno == EINTR));
 }
 
+#endif
 // vim:tabstop=4:shiftwidth=4
 

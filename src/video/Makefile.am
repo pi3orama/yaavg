@@ -10,6 +10,7 @@ libvideo_la_SOURCES=rlist.c rcommand.c \
 		    rlist.h rcommand.h \
 		    video.h video_gl.c video.c \
 		    video_gl.h video_gl_sdl.c \
+		    video_gl_glx.c	\
 		    video.h texture.h texture.c texture_gl.c \
 		    video_screenshot.c
 libvideo_la_LIBADD=$(SDL_LIBS) $(GL_LIBS) $(LIBPNG_LIBS)

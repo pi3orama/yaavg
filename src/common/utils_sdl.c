@@ -10,7 +10,7 @@
 /* 
  * Use SDL implentment utils.h
  */
-
+#ifdef HAVE_SDL
 void
 delay(tick_t ms)
 {
@@ -25,4 +25,5 @@ get_ticks(void)
 {
 	return (tick_t)SDL_GetTicks();
 }
+#endif
 

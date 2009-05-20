@@ -3,6 +3,7 @@ noinst_LTLIBRARIES=libcommon.la
 libcommon_la_SOURCES=debug.c \
 		     exception.c \
 		     utils.c \
+		     utils_sdl.c \
 		     utils_common.c \
 		     utils_png.c \
 		     utils_linux.c \

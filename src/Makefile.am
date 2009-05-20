@@ -1,3 +1,5 @@
+AM_CPPFLAGS= -I$(top_srcdir)/src $(GL_CFLAGS) $(SDL_CFLAGS) $(LIBPNG_CFLAGS)
+
 SUBDIRS = common econfig resource video event spikes
 
 bin_PROGRAMS = test_video test_read_pngfile

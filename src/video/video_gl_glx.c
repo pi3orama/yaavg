@@ -14,6 +14,8 @@
 #include <video/video_driver.h>
 #include <video/video_gl.h>
 
+#ifdef OPENGL_GLX_DRIVER
+
 static struct glx_context {
 	struct gl_context base;
 
@@ -67,6 +69,8 @@ video_set_icon(const icon_t icon)
 	THROW(EXCEPTION_FATAL, "glx set icom not implented\n");
 	return;
 }
+
+#endif	/* OPENGL_GLX_DRIVER */
 
 // vim:tabstop=4:shiftwidth=4
 

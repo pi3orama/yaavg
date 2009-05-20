@@ -18,6 +18,8 @@
 #include <video/video_gl.h>
 
 
+#ifdef OPENGL_SDL_DRIVER
+
 static struct sdl_context {
 	struct gl_context base;
 	int bpp;
@@ -250,5 +252,7 @@ video_set_icon(const icon_t icon)
 	WARNING(SDL, "Video has not implentmented\n");
 	return;
 }
+
+#endif	/* OPENGL_SDL_DRIVER */
 
 // vim:tabstop=4:shiftwidth=4
