@@ -3,7 +3,7 @@
 #include <resource/bitmap.h>
 int main()
 {
-	struct bitmap * bitmapA, * bitmapB;
+	struct bitmap * bitmapA = NULL, * bitmapB = NULL;
 	DEBUG_INIT(NULL);
 
 	volatile struct exception exp;

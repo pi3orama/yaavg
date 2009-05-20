@@ -99,6 +99,7 @@ load_bitmap(struct texture_gl * tex)
 	struct bitmap * b;
 	if (TEXGL_BITMAP(tex) != NULL) {
 		if (TEXGL_DUMMY_BITMAP(tex) == NULL) {
+			b = TEXGL_BITMAP(tex);
 			memcpy(&tex->__dummy_bitmap, b, sizeof(*b));
 			tex->dummy_bitmap = &tex->__dummy_bitmap;
 		}
