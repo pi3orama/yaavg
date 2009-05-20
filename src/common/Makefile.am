@@ -3,7 +3,7 @@ noinst_LTLIBRARIES=libcommon.la
 libcommon_la_SOURCES=debug.c \
 		     exception.c \
 		     utils.c \
-		     utils_sdl.c \
+		     utils_common.c \
 		     utils_png.c \
 		     utils_linux.c \
 		     mm.c \
@@ -15,7 +15,7 @@ libcommon_la_SOURCES=debug.c \
 		     math.h \
 		     list.h
 
-libcommon_la_LIBADD=$(SDL_LIBS) $(LIBPNG_LIBS)
+libcommon_la_LIBADD= -lrt $(SDL_LIBS) $(LIBPNG_LIBS) 
 
 
 noinst_PROGRAMS = test_debug test_debug2 test_exception test_exception2 \

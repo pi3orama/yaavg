@@ -29,6 +29,7 @@ enum debug_component {
 	MEMORY,
 	OPENGL,
 	SDL,
+	GLX,
 	RESOURCE,
 	NR_COMPONENTS
 };
@@ -42,6 +43,7 @@ static const char * debug_comp_name[NR_COMPONENTS] = {
 	[MEMORY] = "MEM ",
 	[OPENGL] = "GL  ",
 	[SDL] = "SDL ",
+	[GLX] = "GLX ",
 	[VIDEO]="VID ",
 	[RESOURCE]="RES "
 };

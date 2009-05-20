@@ -43,8 +43,8 @@ AC_ARG_ENABLE([debug], [AC_HELP_STRING(--enable-debug, [set CFLAGS to "-g -O0". 
 # Checks for libraries.
 
 
-AC_CHECK_FUNCS(sigaction)
-
+AC_CHECK_FUNCS(sigaction select nanosleep)
+AC_FUNC_SELECT_ARGTYPES
 
 dnl Check if we have malloc_stats. see debug.c/h
 AC_CHECK_FUNC([malloc_stats], [have_malloc_stats=yes])
@@ -59,6 +59,12 @@ if test "x${have_mallinfo}" = "xyes"; then
    AC_DEFINE(HAVE_MALLINFO, 1, [define if found mallinfo])
 fi
 AC_SUBST(HAVE_MALLINFO)
+
+have_clock_gettime=no
+AC_CHECK_LIB(rt, clock_gettime, have_clock_gettime=yes)
+if test "x$have_clock_gettime" = "xyes"; then
+	AC_DEFINE(HAVE_CLOCK_GETTIME, [], [librt have clock_gettime()])
+fi
 
 AC_FUNC_ALLOCA
 
@@ -136,13 +142,16 @@ fi
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_STDBOOL
-AC_CHECK_HEADERS([malloc.h memory.h stdint.h stdlib.h string.h unistd.h setjmp.h])
+AC_CHECK_HEADERS([malloc.h memory.h stdint.h stdlib.h string.h unistd.h \
+		  setjmp.h sys/time.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
+AC_HEADER_STDBOOL
 AC_C_CONST
 AC_C_INLINE
 AC_TYPE_INT32_T
 AC_TYPE_SIZE_T
+AC_HEADER_TIME
 AC_STRUCT_TM
 AC_TYPE_UINT64_T
 AC_TYPE_UINT32_T
@@ -157,7 +166,7 @@ AC_TYPE_SIGNAL
 AC_FUNC_STAT
 AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS([atexit localtime_r memset strdup strerror])
+AC_CHECK_FUNCS([atexit gettimeofday localtime_r memset regcomp strdup strerror])
 
 
 # Check if sigsetjmp is available.  Using AC_CHECK_FUNCS won't do
