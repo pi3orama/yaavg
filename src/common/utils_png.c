@@ -207,7 +207,7 @@ do_png_read_cleanup(struct cleanup * str)
 	}
 
 #ifndef HAVE_ALLOCA
-	GC_TRIVAL_FREE(pcleanup->row_pointers);
+	GC_FREE_BLOCK_SET(pcleanup->row_pointers);
 #endif
 
 	GC_TRIVAL_FREE(pcleanup);
@@ -390,7 +390,7 @@ png_read(struct png_reader reader)
 #ifdef HAVE_ALLOCA
 	row_pointers = (png_bytep*)alloca(sizeof(png_bytep)*height);
 #else
-	row_pointers = (png_bytep*)GC_TRIVAL_MALLOC(sizeof(png_bytep)*height);
+	row_pointers = (png_bytep*)GC_MALLOC_BLOCK(sizeof(png_bytep)*height);
 	pcleanup->row_pointers = row_pointers;
 #endif
 	assert(row_pointers != NULL);
@@ -402,7 +402,7 @@ png_read(struct png_reader reader)
 	png_read_image(read_ptr, row_pointers);
 	/* read over */
 #ifndef HAVE_ALLOCA
-	GC_TRIVAL_FREE(row_pointers);
+	GC_FREE_BLOCK_SET(row_pointers);
 	pcleanup->row_pointers = NULL;
 #endif
 	VERBOSE(SYSTEM, "png stream read OK\n");

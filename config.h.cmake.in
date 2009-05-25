@@ -9,5 +9,10 @@
 #cmakedefine HAVE_SETJMP_H	1
 #cmakedefine HAVE_CLOCK_GETTIME	1
 #cmakedefine HAVE_SDL		1
+#cmakedefine ENABLE_SCREENSHOT	1
+#cmakedefine STATIC_OPENGL	1
 
+#ifdef NDEBUG
+# define YAAVG_DEBUG_OFF
+#endif
 

@@ -11,15 +11,35 @@ IF (${YAAVG_BINARY_DIR} STREQUAL ${YAAVG_SOURCE_DIR})
 	MESSAGE(FATAL_ERROR "In-tree-compile is not prefered.")
 ENDIF (${YAAVG_BINARY_DIR} STREQUAL ${YAAVG_SOURCE_DIR})
 
-OPTION(ENABLE_SCREENSHOT "Enable screenshot" ON)
+IF (NOT CMAKE_COMPILER_IS_GNUCC)
+	MESSAGE(FATAL_ERROR "Only accept GCC now")
+ENDIF (NOT CMAKE_COMPILER_IS_GNUCC)
 
+
+# Build type
+SET(CMAKE_C_FLAGS "-g -O2")
+SET(CMAKE_C_FLAGS_DEBUG "-g -O0")
+SET(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG")
+
+SET(BUILD_TESTS OFF CACHE BOOL
+	"Whether to build tests")
+IF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+	SET(BUILD_TESTS ON CACHE BOOL
+		"Whether to build tests" FORCE)
+ENDIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
 
 # Options
+OPTION(ENABLE_SCREENSHOT "Enable screenshot" ON)
+OPTION(STATIC_OPENGL
+	"OpenGL linkage, if ON, statically load libGL.so. Affect GLX linkage" OFF)
+
 SET(VIDEO_ENGINE "OpenGL" CACHE STRING
 	"Video engine, can be OpenGL or SDL")
 SET(VIDEO_DRIVER "SDL" CACHE STRING
 	"Video driver, can be GLX or SDL for OpenGL")
+
+
 
 # Match driver and engine
 IF (${VIDEO_ENGINE} STREQUAL "OpenGL")
@@ -38,39 +58,38 @@ IF (video_setting MATCHES "^video_setting$")
 	MESSAGE(FATAL_ERROR "Video engine and driver setting (${VIDEO_ENGINE}/${VIDEO_DRIVER}) is not supported")
 ENDIF(video_setting MATCHES "^video_setting$")
 
-# find SDL for utils
 MESSAGE(STATUS "Look for SDL")
-FIND_PACKAGE(SDL "1.2.12")
+FIND_PACKAGE(SDL)
+MESSAGE(STATUS "Look for OpenGL")
+FIND_PACKAGE(OpenGL)
+MESSAGE(STATUS "Look for libpng12")
+FIND_PACKAGE(PNG)
+
 # Check for SDL options
 IF (video_setting MATCHES "SDL")
-
 	IF (NOT SDL_FOUND)
 		MESSAGE(FATAL_ERROR "SDL not found")
 	ENDIF (NOT SDL_FOUND)
-
-	MESSAGE(STATUS "SDL found")
-	MESSAGE(STATUS "${SDL_LIBRARY}")
-	MESSAGE(STATUS "${SDL_INCLUDE_DIR}")
+	#	MESSAGE(STATUS "${SDL_LIBRARY}")
+	#	MESSAGE(STATUS "${SDL_INCLUDE_DIR}")
 ENDIF (video_setting MATCHES "SDL")
 
 
 IF (video_setting MATCHES "OpenGL")
-	MESSAGE(STATUS "Look for OpenGL")
-	FIND_PACKAGE(OpenGL)
-
 	IF ((NOT OPENGL_FOUND) OR (NOT OPENGL_GLU_FOUND))
 		MESSAGE(FATAL_ERROR "OpenGL not found")
 	ENDIF ((NOT OPENGL_FOUND) OR (NOT OPENGL_GLU_FOUND))
-
-	MESSAGE(STATUS "OpenGL found")
-	MESSAGE(STATUS "${OPENGL_LIBRARIES}")
-	MESSAGE(STATUS "${OPENGL_INCLUDE_DIR}")
-
+	#	MESSAGE(STATUS "OpenGL found")
+	#	MESSAGE(STATUS "${OPENGL_LIBRARIES}")
+	#	MESSAGE(STATUS "${OPENGL_INCLUDE_DIR}")
 ENDIF (video_setting MATCHES "OpenGL")
 
-
-
-
+IF (ENABLE_SCREENSHOT)
+	IF (NOT PNG_FOUND)
+		MESSAGE(STATUS "Libpng not found, disable screenshot")
+		SET(ENABLE_SCREENSHOT OFF  CACHE BOOL "Enable screenshot" FORCE)
+	ENDIF(NOT PNG_FOUND)
+ENDIF (ENABLE_SCREENSHOT)
 
 # System check
 CHECK_INCLUDE_FILES(malloc.h HAVE_MALLOC_H)
@@ -96,8 +115,6 @@ ENDIF(SDL_FOUND)
 CONFIGURE_FILE(config.h.cmake.in config.h)
 
 ADD_SUBDIRECTORY(src)
-
-
 
 # vim:tabstop=4:shiftwidth=4
 
