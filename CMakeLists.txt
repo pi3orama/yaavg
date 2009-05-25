@@ -38,10 +38,11 @@ IF (video_setting MATCHES "^video_setting$")
 	MESSAGE(FATAL_ERROR "Video engine and driver setting (${VIDEO_ENGINE}/${VIDEO_DRIVER}) is not supported")
 ENDIF(video_setting MATCHES "^video_setting$")
 
+# find SDL for utils
+MESSAGE(STATUS "Look for SDL")
+FIND_PACKAGE(SDL "1.2.12")
 # Check for SDL options
 IF (video_setting MATCHES "SDL")
-	MESSAGE(STATUS "Look for SDL")
-	FIND_PACKAGE(SDL "1.2.12")
 
 	IF (NOT SDL_FOUND)
 		MESSAGE(FATAL_ERROR "SDL not found")
