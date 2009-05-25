@@ -11,6 +11,10 @@
 #cmakedefine HAVE_SDL		1
 #cmakedefine ENABLE_SCREENSHOT	1
 #cmakedefine STATIC_OPENGL	1
+#cmakedefine VIDEO_OPENGL_ENGINE	1
+#cmakedefine VIDEO_OPENGL_SDL_DRIVER	1
+#cmakedefine VIDEO_OPENGL_GLX_DRIVER	1
+#cmakedefine VIDEO_SDL_ENGINE		1
 
 #ifdef NDEBUG
 # define YAAVG_DEBUG_OFF

@@ -103,12 +103,16 @@ gc_free(struct gc_tag * tag);
 	GC_XALLOC_BLOCK(s, gc_calloc)
 #define GC_FREE_BLOCK_RVAL(p) \
 	do {	\
+		if (p == NULL)	\
+			break;		\
 		struct gc_tag * tag = container_of((void*)(p), struct gc_tag, data);	\
 		gc_free(tag); \
 	} while(0)
 
 #define GC_FREE_BLOCK_SET(p) \
 do {	\
+	if (p == NULL)	\
+		break;		\
 	struct gc_tag * tag = container_of((void*)(p), struct gc_tag, data);	\
 	gc_free(tag); \
 	(p) = NULL;\

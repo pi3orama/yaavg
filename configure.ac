@@ -84,20 +84,20 @@ if test "x$VIDEO_ENGINE" = "xOpenGL"; then
 	if test "x$have_opengl" != "xyes"; then
 		AC_MSG_ERROR(   *** Selected engine OpenGL doesn't exist)
 	fi
-	AC_DEFINE(OPENGL_ENGINE, 1, [Define to 1 to use OpenGL engine])
+	AC_DEFINE(VIDEO_OPENGL_ENGINE, 1, [Define to 1 to use OpenGL engine])
 # driver can be SDL or GLX
 	if test "x$VIDEO_DRIVER" = "xSDL"; then
 		CheckSDL
 		if test "x$have_sdl" != "xyes"; then
 			AC_MSG_ERROR(   *** Selected driver SDL doesn't exist)
 		fi
-		AC_DEFINE(OPENGL_SDL_DRIVER, 1, [Define to 1 to use SDL support OpenGL])
+		AC_DEFINE(VIDEO_OPENGL_SDL_DRIVER, 1, [Define to 1 to use SDL support OpenGL])
 	elif test "x$VIDEO_DRIVER" = "xGLX"; then
 		CheckGLX
 		if test "x$have_glx" != "xyes"; then
 			AC_MSG_ERROR(   *** Selected driver GLX doesn't exist)
 		fi
-		AC_DEFINE(OPENGL_GLX_DRIVER, 1, [Define to 1 to use GLX support OpenGL])
+		AC_DEFINE(VIDEO_OPENGL_GLX_DRIVER, 1, [Define to 1 to use GLX support OpenGL])
 	else
 		AC_MSG_ERROR([   *** We don't support video driver $VIDEO_DRIVER])
 	fi

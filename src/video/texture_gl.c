@@ -17,7 +17,7 @@
 
 #include <common/utils.h>
 
-#ifdef OPENGL_ENGINE
+#ifdef VIDEO_OPENGL_ENGINE
 
 #define FREE_HWMEM(n)	do {} while(0)
 #define ALLOC_HWMEM(n)	do {} while(0)
@@ -631,7 +631,7 @@ texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
 	return tex;
 }
 
-#endif	/* OPENGL_ENGINE */
+#endif	/* VIDEO_OPENGL_ENGINE */
 
 // vim:tabstop=4:shiftwidth=4
 

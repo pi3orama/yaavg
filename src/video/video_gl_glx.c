@@ -14,7 +14,7 @@
 #include <video/video_driver.h>
 #include <video/video_gl.h>
 
-#ifdef OPENGL_GLX_DRIVER
+#ifdef VIDEO_OPENGL_GLX_DRIVER
 
 static struct glx_context {
 	struct gl_context base;
@@ -23,7 +23,7 @@ static struct glx_context {
 
 static struct glx_context * glx_ctx = NULL;
 
-static gl_context *
+struct gl_context *
 gl_init(void)
 {
 	if (glx_ctx != NULL) {
@@ -70,7 +70,7 @@ video_set_icon(const icon_t icon)
 	return;
 }
 
-#endif	/* OPENGL_GLX_DRIVER */
+#endif	/* VIDEO_OPENGL_GLX_DRIVER */
 
 // vim:tabstop=4:shiftwidth=4
 

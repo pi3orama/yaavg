@@ -24,7 +24,7 @@
 #include <stdarg.h>
 #include <regex.h>
 
-#ifdef OPENGL_ENGINE
+#ifdef VIDEO_OPENGL_ENGINE
 
 struct gl_context * gl_ctx = NULL;
 
@@ -594,6 +594,6 @@ extern void
 VideoSetIcon(const icon_t icon);
 #endif
 
-#endif	/* OPENGL_ENGINE */
+#endif	/* VIDEO_OPENGL_ENGINE */
 
 // vim:tabstop=4:shiftwidth=4

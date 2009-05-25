@@ -1,4 +1,5 @@
-INCLUDE_DIRECTORIES(${YAAVG_BINARY_DIR} ${YAAVG_SOURCE_DIR}/src)
+INCLUDE_DIRECTORIES(${YAAVG_BINARY_DIR}/src
+	${YAAVG_BINARY_DIR} ${YAAVG_SOURCE_DIR}/src)
 
 MACRO(build_tests testlist libs)
 IF (BUILD_TESTS)
@@ -12,10 +13,17 @@ ENDIF(BUILD_TESTS)
 ENDMACRO(build_tests testlist libs)
 
 
+
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(econfig)
 ADD_SUBDIRECTORY(event)
 ADD_SUBDIRECTORY(resource)
+ADD_SUBDIRECTORY(video)
+
+
+SET(tests test_read_pngfile test_video)
+build_tests("${tests}" "event;common;resource;video")
+
 
 # vim:tabstop=4:shiftwidth=4
 

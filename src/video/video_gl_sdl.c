@@ -18,7 +18,7 @@
 #include <video/video_gl.h>
 
 
-#ifdef OPENGL_SDL_DRIVER
+#ifdef VIDEO_OPENGL_SDL_DRIVER
 
 static struct sdl_context {
 	struct gl_context base;
@@ -253,6 +253,6 @@ video_set_icon(const icon_t icon)
 	return;
 }
 
-#endif	/* OPENGL_SDL_DRIVER */
+#endif	/* VIDEO_OPENGL_SDL_DRIVER */
 
 // vim:tabstop=4:shiftwidth=4
