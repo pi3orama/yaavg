@@ -1,5 +1,5 @@
 /* 
- * video_driver.h
+ * video_engine.h
  * by WN @ Mar. 08, 2009
  *
  * data structure needed in opengl level
@@ -14,37 +14,37 @@
 __BEGIN_DECLS
 
 extern struct video_context *
-driver_init(void);
+engine_init(void);
 
 extern void
-driver_reinit(void);
+engine_reinit(void);
 
 /* 
- * the same as video_close, we don't really need a driver_close.
+ * the same as video_close, we don't really need a engine_close.
  */
 extern void
-driver_close(void);
+engine_close(void);
 
 /* 
  * reset some vars. for examplem in opengl,
  * begin_frame should reload ModelView matrix
  */
 extern void
-driver_begin_frame(void);
+engine_begin_frame(void);
 
 /* 
  * after all render cmds finish.
  * in opengl, end_frame check glError
  */
 extern void
-driver_end_frame(void);
+engine_end_frame(void);
 
 extern void
-driver_read_pixels_rgb(uint8_t * buffer, struct view_port vp)
+engine_read_pixels_rgb(uint8_t * buffer, struct view_port vp)
 	THROWS(CONTINUE, FATAL);
 
 extern void
-driver_read_pixels_rgba(uint8_t * buffer, struct view_port vp)
+engine_read_pixels_rgba(uint8_t * buffer, struct view_port vp)
 	THROWS(CONTINUE, FATAL);
 
 __END_DECLS

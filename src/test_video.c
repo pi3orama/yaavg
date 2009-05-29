@@ -429,7 +429,7 @@ entry:
 					conf_set_integer("video.resolution.h", 800);
 					conf_set_bool("video.fullscreen", TRUE);
 				}
-				conf_set_string("video.opengl.driver.gllibrary", NULL);
+				conf_set_string("video.opengl.gllibrary", NULL);
 				THROW(EXCEPTION_SYS_REINIT, "normal reinit");
 			}
 			if (event == 3)

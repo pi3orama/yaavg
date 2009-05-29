@@ -10,7 +10,7 @@
 
 #include <econfig/econfig.h>
 #include <video/video.h>
-#include <video/video_driver.h>
+#include <video/video_engine.h>
 
 
 #include <time.h>
@@ -106,7 +106,7 @@ __video_screen_shot(void)
 	assert(buffer != NULL);
 	pcleanup->buffer = buffer;
 
-	driver_read_pixels_rgb(buffer, vp);
+	engine_read_pixels_rgb(buffer, vp);
 
 	write_to_pngfile_rgb(fullname, buffer, vp.w, vp.h);
 }

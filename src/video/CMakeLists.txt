@@ -1,6 +1,7 @@
 SET(SRC rlist.c rcommand.c 
         rlist.h rcommand.h
         video.h video_gl.c video.c 
+		video_engine.h
         video_gl.h video_gl_sdl.c 
         video_gl_glx.c	
         video.h texture.h texture.c texture_gl.c

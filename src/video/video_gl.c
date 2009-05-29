@@ -16,7 +16,7 @@
 
 #include <econfig/econfig.h>
 
-#include <video/video_driver.h>
+#include <video/video_engine.h>
 /* video_gl.h includes gl.h */
 #include <video/video_gl.h>
 #include <video/video.h>
@@ -29,7 +29,7 @@
 struct gl_context * gl_ctx = NULL;
 
 static void
-init_gl_driver(void);
+init_gl_engine(void);
 
 static void
 init_glfunc(void);
@@ -64,16 +64,16 @@ glerrno_to_desc(GLenum errno)
 	return ptr->desc;
 }
 
-static void __driver_close(struct cleanup * str);
-static struct cleanup driver_cleanup_str = {
-	.function = __driver_close,
+static void __engine_close(struct cleanup * str);
+static struct cleanup engine_cleanup_str = {
+	.function = __engine_close,
 	.list = {NULL, NULL},
 };
 
 static void
-__driver_close(struct cleanup * str)
+__engine_close(struct cleanup * str)
 {
-	assert(str == &driver_cleanup_str);
+	assert(str == &engine_cleanup_str);
 	remove_cleanup(str);
 	if (gl_ctx != NULL) {
 		gl_close();
@@ -84,17 +84,17 @@ __driver_close(struct cleanup * str)
 
 
 void
-driver_close(void)
+engine_close(void)
 {
-	__driver_close(&driver_cleanup_str);
+	__engine_close(&engine_cleanup_str);
 }
 
 
 struct video_context *
-driver_init(void)
+engine_init(void)
 {
 	if (gl_ctx != NULL) {
-		WARNING(OPENGL, "multi driver_init\n");
+		WARNING(OPENGL, "multi engine_init\n");
 		return &gl_ctx->base;
 	}
 	gl_ctx = gl_init();
@@ -103,8 +103,8 @@ driver_init(void)
 		ERROR(OPENGL, "gl_init failed\n");
 		THROW(EXCEPTION_FATAL, "gl_init failed");
 	} else {
-		make_cleanup(&driver_cleanup_str);
-		init_gl_driver();
+		make_cleanup(&engine_cleanup_str);
+		init_gl_engine();
 		return &gl_ctx->base;
 	}
 }
@@ -146,10 +146,10 @@ exec_reinit_hooks(void)
 }
 
 void
-driver_reinit(void)
+engine_reinit(void)
 {
 	gl_reinit();
-	init_gl_driver();
+	init_gl_engine();
 	exec_reinit_hooks();
 	return;
 }
@@ -353,9 +353,9 @@ update_version(void)
 
 
 static void
-init_gl_driver(void)
+init_gl_engine(void)
 {
-	gl_ctx->base.driver_name = "OpenGL";
+	gl_ctx->base.engine_name = "OpenGL";
 
 	/* Init OpenGL */
 	/* first, get opengl func pointers */
@@ -367,11 +367,20 @@ init_gl_driver(void)
 	update_version();
 	gl_ctx->extensions = glGetString(GL_EXTENSIONS);
 
-	VERBOSE(OPENGL, "GL driver info:\n");
+	VERBOSE(OPENGL, "GL engine info:\n");
 	VERBOSE(OPENGL, "Vendor     : %s\n", gl_ctx->vendor);
 	VERBOSE(OPENGL, "Renderer   : %s\n", gl_ctx->renderer);
 	VERBOSE(OPENGL, "Version    : %s\n", gl_ctx->version);
 	VERBOSE(OPENGL, "Extensions : %s\n", gl_ctx->extensions);
+	/* Antialiasing settings */
+	int x;
+	glGetIntegerv(GL_SAMPLES, &x);
+	VERBOSE(OPENGL, "Samples : %d\n", x);
+	glGetIntegerv(GL_SAMPLE_BUFFERS, &x);
+	VERBOSE(OPENGL, "Sample buffers : %d\n", x);
+	if (x > 0)
+		glEnable(GL_MULTISAMPLE);
+	GL_POP_ERROR();
 
 	/* init opengl environment: */
 
@@ -497,19 +506,19 @@ read_pixels(uint8_t * buffer, int x, int y, int w, int h, GLenum format)
 }
 
 void
-driver_read_pixels_rgb(uint8_t * buffer, struct view_port vp)
+engine_read_pixels_rgb(uint8_t * buffer, struct view_port vp)
 {
 	read_pixels(buffer, vp.x, vp.y, vp.w, vp.h, GL_RGB);
 }
 
 void
-driver_read_pixels_rgba(uint8_t * buffer, struct view_port vp)
+engine_read_pixels_rgba(uint8_t * buffer, struct view_port vp)
 {
 	read_pixels(buffer, vp.x, vp.y, vp.w, vp.h, GL_RGBA);
 }
 
 void
-driver_begin_frame(void)
+engine_begin_frame(void)
 {
 	int err;
 
@@ -521,7 +530,7 @@ driver_begin_frame(void)
 
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
-		ERROR(OPENGL, "driver_begin_frame failed: \"%s\" (0x%x)\n",
+		ERROR(OPENGL, "engine_begin_frame failed: \"%s\" (0x%x)\n",
 				glerrno_to_desc(err), err);
 		throw_reinit_exception(&reinited, &last_time,
 				EXCEPTION_SUBSYS_RERUN, "frame error, try rerender",
@@ -534,7 +543,7 @@ driver_begin_frame(void)
 }
 
 void
-driver_end_frame(void)
+engine_end_frame(void)
 {
 	int err;
 

@@ -11,17 +11,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <video/video_driver.h>
+#include <video/video_engine.h>
 #include <video/video_gl.h>
+
+
+#include <X11/Xlib.h>
 
 #ifdef VIDEO_OPENGL_GLX_DRIVER
 
 static struct glx_context {
 	struct gl_context base;
-
 } _glx_ctx;
 
+
 static struct glx_context * glx_ctx = NULL;
+
+
+
+
+
 
 struct gl_context *
 gl_init(void)
@@ -31,8 +39,8 @@ gl_init(void)
 		return &glx_ctx->base;
 	}
 
-	init_glx();
-	glx_ctx = &_glx_ctx;
+	/* first: load libGL library */
+
 	make_cleanup(&glx_cleanup_str);
 	return &glx_ctx->base;
 }

@@ -14,7 +14,7 @@
 __BEGIN_DECLS
 
 struct video_context {
-	const char * driver_name;
+	const char * engine_name;
 	int width, height;
 	struct view_port {
 		int x, y, w, h;

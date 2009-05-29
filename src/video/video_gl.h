@@ -8,7 +8,7 @@
 
 #include <common/defs.h>
 #include <video/video.h>
-#include <video/video_driver.h>
+#include <video/video_engine.h>
 
 /* Below is opengl functions definitions */
 /* define struct gl_funcs  */
@@ -59,7 +59,7 @@ gl_init(void);
 extern void
 gl_reinit(void);
 
-/* Like video_close and driver_close, we don't really need a gl_close */
+/* Like video_close and engine_close, we don't really need a gl_close */
 extern void
 gl_close(void);
 

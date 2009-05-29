@@ -9,7 +9,7 @@
 #include <common/exception.h>
 
 #include <video/video.h>
-#include <video/video_driver.h>
+#include <video/video_engine.h>
 
 #include <video/rcommand.h>
 #include <video/rlist.h>
@@ -37,10 +37,10 @@ __video_close(struct cleanup * str)
 	assert(str == &video_cleanup_str);
 	if (video_ctx != NULL) {
 		rlist_clear(&video_ctx->render_list);
-		/* NOTICE: driver_close should be made idempotent.
-		 * if a internel exception is thrown, the driver_close
+		/* NOTICE: engine_close should be made idempotent.
+		 * if a internel exception is thrown, the engine_close
 		 * may be called before. */
-		driver_close();
+		engine_close();
 		video_ctx = NULL;
 	}
 }
@@ -60,9 +60,9 @@ video_init(void)
 		return video_ctx;
 	}
 
-	video_ctx = driver_init();
+	video_ctx = engine_init();
 	if (video_ctx == NULL) {
-		/* We shouldn't be here, driver should have
+		/* We shouldn't be here, engine should have
 		 * throw an exception */
 		THROW(EXCEPTION_FATAL, "Driver init failed");
 	}
@@ -78,7 +78,7 @@ video_init(void)
 void
 video_reinit(void)
 {
-	driver_reinit();
+	engine_reinit();
 }
 
 int
@@ -87,7 +87,7 @@ video_render(dtick_t delta_time)
 	struct render_command * cmd, * n;
 	game_ticks += delta_time;
 
-	driver_begin_frame();
+	engine_begin_frame();
 	rlist_for_each_rcmd_safe(cmd, n, &(video_ctx->render_list)) {
 		int flags = 0;
 		dtick_t t = delta_time;
@@ -129,7 +129,7 @@ video_render(dtick_t delta_time)
 		if (flags & RENDER_STOP)
 			break;
 	}
-	driver_end_frame();
+	engine_end_frame();
 	return 0;
 }
 

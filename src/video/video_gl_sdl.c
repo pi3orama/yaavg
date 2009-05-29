@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <video/video_driver.h>
+#include <video/video_engine.h>
 #include <video/video_gl.h>
 
 
@@ -123,7 +123,7 @@ init_sdl(void)
 	/* ... */
 	sdl_ctx = &_sdl_ctx;
 
-	library_name = conf_get_string("video.opengl.driver.gllibrary", NULL);
+	library_name = conf_get_string("video.opengl.gllibrary", NULL);
 	if (library_name != NULL)
 		VERBOSE(SDL, "Desire OpenGL library: %s\n", library_name);
 	else
@@ -139,7 +139,7 @@ init_sdl(void)
 	sdl_ctx->gllibrary = library_name;
 	
 	/* check vsync */
-	if (conf_get_bool("video.opengl.driver.vsync", FALSE)) {
+	if (conf_get_bool("video.opengl.vsync", FALSE)) {
 		err = SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 1);
 		VERBOSE(SDL, "Turn vsync on\n");
 	} else {
@@ -150,7 +150,7 @@ init_sdl(void)
 	if (err != 0)
 		WARNING(SDL, "Set vsync failed.\n");
 
-	if ((samples = conf_get_integer("video.opengl.driver.multisample", 0)) != 0) {
+	if ((samples = conf_get_integer("video.opengl.multisample", 0)) != 0) {
 		SDL_GL_SetAttribute (SDL_GL_MULTISAMPLEBUFFERS, 1);
 		err = SDL_GL_SetAttribute (SDL_GL_MULTISAMPLESAMPLES, samples);
 		VERBOSE(SDL, "Set multisampling: %d\n", samples);
@@ -159,7 +159,7 @@ init_sdl(void)
 	}
 	sdl_ctx->samples = samples;
 
-	bpp = conf_get_integer("video.opengl.driver.bpp", 16);
+	bpp = conf_get_integer("video.opengl.bpp", 16);
 
 	if (bpp >= 32) {
 		SDL_GL_SetAttribute (SDL_GL_RED_SIZE, 8);
