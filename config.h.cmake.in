@@ -1,5 +1,6 @@
 #cmakedefine HAVE_MALLOC_H	1
 #cmakedefine HAVE_ALLOCA_H	1
+#cmakedefine HAVE_ALLOCA	1
 #cmakedefine HAVE_ATEXIT	1
 #cmakedefine HAVE_SIGACTION	1
 #cmakedefine HAVE_EXECINFO_H	1
@@ -15,6 +16,7 @@
 #cmakedefine VIDEO_OPENGL_SDL_DRIVER	1
 #cmakedefine VIDEO_OPENGL_GLX_DRIVER	1
 #cmakedefine VIDEO_SDL_ENGINE		1
+#cmakedefine X11_DEBUG			1
 
 #ifdef NDEBUG
 # define YAAVG_DEBUG_OFF

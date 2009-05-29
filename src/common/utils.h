@@ -9,7 +9,6 @@
 #include <common/exception.h>
 #include <stdint.h>
 
-
 /* Some utils needed to be implentmented */
 __BEGIN_DECLS
 /* 
@@ -99,6 +98,8 @@ pow2rounddown (int x)
 	return pow2roundup(x) >> 1;
 }
 
+bool_t
+match_word(const char * word, const char * string);
 
 __END_DECLS
 

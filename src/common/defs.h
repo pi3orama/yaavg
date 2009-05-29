@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #endif
 
-
 __BEGIN_DECLS
 #ifdef HAVE_STDBOOL_H
 typedef	bool bool_t;

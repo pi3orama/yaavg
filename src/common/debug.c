@@ -367,7 +367,7 @@ char * yaavg_strdup(const char * S)
 
 #ifdef YAAVG_DEBUG_OFF
 static void
-vmessage_out(enum debug_level l, enum debug_component c, char * fmt, va_list ap)
+vmessage_out(int prefix, enum debug_level l, enum debug_component c, char * fmt, va_list ap)
 {
 	/* output to stdout if haven't init */
 	if (fdebug_out == NULL)
@@ -375,7 +375,8 @@ vmessage_out(enum debug_level l, enum debug_component c, char * fmt, va_list ap)
 	if (l >= WARNING)
 		turn_red();
 
-	fprintf(fdebug_out, "%s: ", get_level_name(l));
+	if (prefix)
+		fprintf(fdebug_out, "%s: ", get_level_name(l));
 	vfprintf(fdebug_out, fmt, ap);
 
 	if (l >= WARNING)
@@ -384,11 +385,11 @@ vmessage_out(enum debug_level l, enum debug_component c, char * fmt, va_list ap)
 }
 
 void
-message_out(enum debug_level l, enum debug_component c, char * fmt, ...)
+message_out(int prefix, enum debug_level l, enum debug_component c, char * fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	vmessage_out(l, c, fmt, ap);
+	vmessage_out(prefix, l, c, fmt, ap);
 	va_end(ap);
 }
 #endif

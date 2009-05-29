@@ -5,6 +5,8 @@
 #include <econfig/econfig.h>
 #include <SDL/SDL.h>
 
+#ifdef VIDEO_OPENGL_SDL_DRIVER
+
 void event_init(void)
 {
 	/* SDL_VIDEO MUST inited! */
@@ -45,4 +47,6 @@ int event_poll(void)
 	 }
 	 return 0;
 }
+
+#endif
 

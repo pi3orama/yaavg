@@ -4,7 +4,12 @@
 #include <common/debug.h>
 #include <common/exception.h>
 #include <common/utils.h>
+#include <regex.h>
+#include <stdio.h>
 
+#ifdef HAVE_ALLOCA_H
+# include <alloca.h>
+#endif
 
 void throw_reinit_exception(
 		int * reinited,
@@ -35,4 +40,40 @@ void throw_reinit_exception(
 		}
 	}
 }
+
+bool_t
+match_word(const char * word, const char * string)
+{
+	int err;
+	regex_t reg;
+	char * rs = NULL;
+
+	if (word == NULL)
+		return TRUE;
+	if (string == NULL)
+		return FALSE;
+
+#ifdef HAVE_ALLOCA
+	rs = alloca(strlen(word) + 5);
+#else
+	rs = malloc(strlen(word) + 5);
+#endif
+
+	assert(rs != NULL);
+	sprintf(rs, "\\<%s\\>", word);
+
+	err = regcomp(&reg, rs, REG_NOSUB);
+	assert(err == 0);
+
+	err = regexec(&reg, string, 0, NULL, 0);
+	regfree(&reg);
+
+#ifndef HAVE_ALLOCA
+	free(rs);
+#endif
+	if (err == 0)
+		return TRUE;
+	return FALSE;
+}
+// vim:tabstop=4:shiftwidth=4
 

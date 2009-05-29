@@ -6,22 +6,34 @@ SET(SRC rlist.c rcommand.c
         video_gl_glx.c	
         video.h texture.h texture.c texture_gl.c
         video_screenshot.c
-		gl_funcs.h)
-
-ADD_CUSTOM_COMMAND(OUTPUT gl_funcs.h
-	COMMAND	python ./generate_gl_funcs.py ./gl_funcs_list > ${YAAVG_BINARY_DIR}/src/video/gl_funcs.h
-	DEPENDS generate_gl_funcs.py gl_funcs_list
-	WORKING_DIRECTORY	${YAAVG_SOURCE_DIR}/src/video
-	VERBATIM)
+		utils_x11.c
+		utils_x11.h
+		gl_funcs.h
+		glx_funcs.h)
 
 ADD_LIBRARY(video STATIC ${SRC})
 
 IF(${VIDEO_ENGINE} STREQUAL "OpenGL")
+	ADD_CUSTOM_COMMAND(OUTPUT gl_funcs.h
+		COMMAND	python ./generate_gl_funcs.py ./gl_funcs_list > ${YAAVG_BINARY_DIR}/src/video/gl_funcs.h
+		DEPENDS generate_gl_funcs.py gl_funcs_list
+		WORKING_DIRECTORY	${YAAVG_SOURCE_DIR}/src/video
+		VERBATIM)
 	INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR})
 	IF(STATIC_OPENGL)
 		TARGET_LINK_LIBRARIES(video ${OPENGL_LIBRARIES})
 	ENDIF(STATIC_OPENGL)
 ENDIF(${VIDEO_ENGINE} STREQUAL "OpenGL")
+
+IF(${VIDEO_DRIVER} STREQUAL "GLX")
+	ADD_CUSTOM_COMMAND(OUTPUT glx_funcs.h
+		COMMAND	python ./generate_gl_funcs.py ./glx_funcs_list glx > ${YAAVG_BINARY_DIR}/src/video/glx_funcs.h
+		DEPENDS generate_gl_funcs.py glx_funcs_list
+		WORKING_DIRECTORY	${YAAVG_SOURCE_DIR}/src/video
+		VERBATIM)
+	INCLUDE_DIRECTORIES(${X11_INCLUDE_DIR})
+	TARGET_LINK_LIBRARIES(video ${X11_LIBRARIES})
+ENDIF(${VIDEO_DRIVER} STREQUAL "GLX")
 
 IF (${video_setting} MATCHES "SDL")
 	INCLUDE_DIRECTORIES(${SDL_INCLUDE_DIR})
@@ -37,6 +49,6 @@ ENDIF (ENABLE_SCREENSHOT)
 
 TARGET_LINK_LIBRARIES(video common resource econfig)
 
-
+OPTION(X11_DEBUG	"Enable X11 Synchronize")
 # vim:tabstop=4:shiftwidth=4
 

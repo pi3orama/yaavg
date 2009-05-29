@@ -52,6 +52,7 @@ static void
 __gl_close(struct cleanup * str)
 {
 	assert(str == &gl_cleanup_str);
+	remove_cleanup(str);
 	if (sdl_ctx != NULL) {
 		TRACE(SDL, "sdl close\n");
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -108,6 +109,8 @@ init_sdl(void)
 		ERROR(SDL, "sdl has already inited\n");
 		THROW(EXCEPTION_FATAL, "sdl has already inited");
 	}
+
+	memset(&_sdl_ctx, 0, sizeof(_sdl_ctx));
 
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
 		FATAL(SDL, "Failed to init SDL video subsystem, SDL report: \"%s\", "
@@ -166,12 +169,13 @@ init_sdl(void)
 		SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 8);
 		SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE, 8);
 		SDL_GL_SetAttribute (SDL_GL_ALPHA_SIZE, 8);
-		SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE, 24);
+		SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE, 16);
 		SDL_GL_SetAttribute (SDL_GL_STENCIL_SIZE, 8);
 	} else {
 		SDL_GL_SetAttribute (SDL_GL_RED_SIZE, 5);
 		SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 5);
 		SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE, 5);
+		/* FIXME Why no alpha_size? */
 		SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE, 16);
 	}
 	sdl_ctx->bpp = bpp;

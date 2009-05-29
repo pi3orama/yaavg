@@ -24,6 +24,10 @@
 #include <stdarg.h>
 #include <regex.h>
 
+#ifdef HAVE_ALLOCA_H
+# include <alloca.h>
+#endif
+
 #ifdef VIDEO_OPENGL_ENGINE
 
 struct gl_context * gl_ctx = NULL;
@@ -204,18 +208,7 @@ check_extension(const char * conf_key, ...)
 		assert(strlen(f) < 64);
 
 		TRACE(OPENGL, "check for feature %s\n", f);
-
-		char nf[64];
-		snprintf(nf, 64, "\\<%s\\>", f);
-
-		regex_t reg;
-		err = regcomp(&reg, nf, REG_NOSUB);
-		assert(err == 0);
-
-		err = regexec(&reg, e, 0, NULL, 0);
-		regfree(&reg);
-
-		if (err == 0) {
+		if (match_word(f, e)) {
 			TRACE(OPENGL, "found feature %s\n", f);
 			va_end(args);
 			return TRUE;
