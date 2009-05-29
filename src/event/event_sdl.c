@@ -15,7 +15,10 @@ void event_init(void)
 int event_poll(void)
 {
 	SDL_Event event;
-	 while (SDL_PollEvent (&event)) {
+	while (SDL_PollEvent (&event)) {
+		/* We'd better unselect all event here? */
+		/* or at least we don't catch mouse move action, and
+		 * query mouse position in each frame? */
 	 	switch (event.type) {
 			case SDL_KEYDOWN:
 				if (event.key.keysym.sym == SDLK_q)

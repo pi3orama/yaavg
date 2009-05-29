@@ -56,6 +56,11 @@ static struct glx_context {
 	Display * display;
 	XVisualInfo * visinfo;
 	Colormap colormap;
+	/* SDL use 3 windows. I don't know why,
+	 * just copy its code */
+	Window wm_win;
+	Window fs_win;
+	Window main_win;
 	int screen;
 	struct glx_funcs funcs;
 } _glx_ctx;

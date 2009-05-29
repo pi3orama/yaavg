@@ -13,6 +13,7 @@ void event_init(void)
 
 int event_poll(void)
 {
+	/* We'd better unselect all event here? */
 	 return 0;
 }
 

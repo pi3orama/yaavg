@@ -10,29 +10,29 @@
 
 #include <stdio.h>
 /* Copy from XLibInt.c of Xlib's code */
-#define BUFSIZ	(2048)
+#define XBUFSIZ	(2048)
 
 void
 XPrintDefaultError(Display * dpy, XErrorEvent * event)
 {
 
-	char buffer[BUFSIZ];
-	char mesg[BUFSIZ];
+	char buffer[XBUFSIZ];
+	char mesg[XBUFSIZ];
 	char number[32];
 	char *mtype = "XlibMessage";
 
 
-	XGetErrorText(dpy, event->error_code, buffer, BUFSIZ);
-	XGetErrorDatabaseText(dpy, mtype, "XError", "X Error", mesg, BUFSIZ);
+	XGetErrorText(dpy, event->error_code, buffer, XBUFSIZ);
+	XGetErrorDatabaseText(dpy, mtype, "XError", "X Error", mesg, XBUFSIZ);
 	WARNING(VIDEO, "%s:  %s\n", mesg, buffer);
 
 	XGetErrorDatabaseText(dpy, mtype, "MajorCode", "Request Major code %d", 
-			mesg, BUFSIZ);
+			mesg, XBUFSIZ);
 	WARNING(VIDEO, mesg, event->request_code);
 
 	if (event->request_code < 128) {
 		sprintf(number, "%d", event->request_code);
-		XGetErrorDatabaseText(dpy, "XRequest", number, "", buffer, BUFSIZ);
+		XGetErrorDatabaseText(dpy, "XRequest", number, "", buffer, XBUFSIZ);
 	} else {
 		const char str[] = "Extension error\n";
 		strncpy(buffer, str, sizeof(str));
@@ -43,7 +43,7 @@ XPrintDefaultError(Display * dpy, XErrorEvent * event)
 
 	if (event->request_code >= 128) {
 		XGetErrorDatabaseText(dpy, mtype, "MinorCode", "Request Minor code %d",
-				mesg, BUFSIZ);
+				mesg, XBUFSIZ);
 		WARNING(VIDEO, "  ");
 		WARNING_CONT(VIDEO, mesg, event->minor_code);
 		WARNING_CONT(VIDEO, "\n");
@@ -61,25 +61,44 @@ XPrintDefaultError(Display * dpy, XErrorEvent * event)
 			(event->error_code == BadAtom)) {
 		if (event->error_code == BadValue)
 			XGetErrorDatabaseText(dpy, mtype, "Value", "Value 0x%x",
-					mesg, BUFSIZ);
+					mesg, XBUFSIZ);
 		else if (event->error_code == BadAtom)
 			XGetErrorDatabaseText(dpy, mtype, "AtomID", "AtomID 0x%x",
-					mesg, BUFSIZ);
+					mesg, XBUFSIZ);
 		else
 			XGetErrorDatabaseText(dpy, mtype, "ResourceID", "ResourceID 0x%x",
-					mesg, BUFSIZ);
+					mesg, XBUFSIZ);
 		WARNING(VIDEO, "  ");
 		WARNING_CONT(VIDEO, mesg, event->resourceid);
 		WARNING_CONT(VIDEO, "\n");
 	}
 
 	XGetErrorDatabaseText(dpy, mtype, "ErrorSerial", "Error Serial #%d", 
-			mesg, BUFSIZ);
+			mesg, XBUFSIZ);
 	WARNING(VIDEO, "  ");
 	WARNING_CONT(VIDEO, mesg, event->serial);
 	WARNING_CONT(VIDEO, "\n");
 	return;
 }
+
+void
+XWaitMapped(Display * dpy, Window win)
+{
+    XEvent event;
+    do {
+        XMaskEvent(dpy, StructureNotifyMask, &event);
+    } while ( (event.type != MapNotify) || (event.xmap.event != win) );
+}
+
+void
+XWaitUnmapped(Display * dpy, Window win)
+{
+    XEvent event;
+    do {
+        XMaskEvent(dpy, StructureNotifyMask, &event);
+    } while ( (event.type != UnmapNotify) || (event.xmap.event != win) );
+}
+
 
 // vim:tabstop=4:shiftwidth=4
 

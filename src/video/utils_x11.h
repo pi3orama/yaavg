@@ -14,6 +14,12 @@
 void
 XPrintDefaultError(Display * dpy, XErrorEvent * event);
 
+void
+XWaitMapped(Display * dpy, Window win);
+
+void
+XWaitUnmapped(Display * dpy, Window win);
+
 #endif
 #endif	/* VIDEO_OPENGL_GLX_DRIVER */
 // vim:tabstop=4:shiftwidth=4
