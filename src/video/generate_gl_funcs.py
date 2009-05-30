@@ -84,6 +84,7 @@ elif gl_or_glx == "glx":
 	print "#define GLX_GLXEXT_PROTOTYPES"
 	print "#include <GL/glx.h>"
 	print "#include <GL/glxext.h>"
+	print "#include <video/mesa_fix.h>"
 	print ""
 	print "struct glx_funcs {"
 

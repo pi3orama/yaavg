@@ -142,9 +142,11 @@ init_sdl(void)
 	sdl_ctx->gllibrary = library_name;
 	
 	/* check vsync */
-	if (conf_get_bool("video.opengl.vsync", FALSE)) {
-		err = SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 1);
-		VERBOSE(SDL, "Turn vsync on\n");
+	int swapcontrol;
+	if ((swapcontrol = conf_get_integer("video.opengl.swapcontrol", 0))) {
+		err = SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, swapcontrol);
+		VERBOSE(SDL, "Turn vsync on, set swap control %d\n",
+				swapcontrol);
 	} else {
 		err = SDL_GL_SetAttribute (SDL_GL_SWAP_CONTROL, 0);
 		VERBOSE(SDL, "Turn vsync off\n");

@@ -3,6 +3,7 @@
 *.so
 
 gl_funcs.h
+glx_funcs.h
 tags
 TAGS
 *.aux

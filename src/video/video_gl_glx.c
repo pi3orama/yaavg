@@ -13,9 +13,9 @@
 #include <signal.h>
 #include <video/video_engine.h>
 #include <video/video_gl.h>
-#include <video/utils_x11.h>
 
 #ifdef VIDEO_OPENGL_GLX_DRIVER
+#include <video/utils_x11.h>
 
 #include <X11/Xlib.h>
 #include <X11/extensions/Xext.h>
@@ -61,6 +61,7 @@ static struct glx_context {
 	Window wm_win;
 	Window fs_win;
 	Window main_win;
+	GLXContext glx_context;
 	int screen;
 	struct glx_funcs funcs;
 } _glx_ctx;
@@ -104,6 +105,8 @@ glx_cleanup(struct cleanup * str)
 		old_x_io_err_handler = NULL;
 	}
 
+
+
 	if (_glx_ctx.visinfo) {
 		TRACE(GLX, "XFree visinfo\n");
 		XFree(_glx_ctx.visinfo);
@@ -112,10 +115,46 @@ glx_cleanup(struct cleanup * str)
 
 	if (_glx_ctx.display) {
 		Display * d = _glx_ctx.display;
+
+		if (_glx_ctx.glx_context) {
+			GLXContext ctx = _glx_ctx.glx_context;
+			TRACE(GLX, "GLX destroy context %p\n", ctx);
+			glXMakeCurrent(d, None, NULL);
+			glXDestroyContext(d, ctx);
+			_glx_ctx.glx_context = NULL;
+			XCheckError();
+		}
+
+		Window main_win = _glx_ctx.main_win;
+		Window fs_win = _glx_ctx.fs_win;
+		Window wm_win = _glx_ctx.wm_win;
+		if (main_win) {
+			TRACE(GLX, "Destory main_win 0x%x\n", main_win);
+			XDestroyWindow(d, main_win);
+			_glx_ctx.main_win = 0;
+			XCheckError();
+		}
+
+		if (fs_win) {
+			TRACE(GLX, "Destory fs_win 0x%x\n", fs_win);
+			XDestroyWindow(d, fs_win);
+			_glx_ctx.fs_win = 0;
+			XCheckError();
+		}
+
+		if (wm_win) {
+			TRACE(GLX, "Destory fs_win 0x%x\n", wm_win);
+			XDestroyWindow(d, wm_win);
+			_glx_ctx.wm_win = 0;
+			XCheckError();
+		}
+
+
 		if (_glx_ctx.colormap != 0) {
 			TRACE(GLX, "Free colormap %d\n", _glx_ctx.colormap);
 			XFreeColormap(d, _glx_ctx.colormap);
 			_glx_ctx.colormap = 0;
+			XCheckError();
 		}
 		TRACE(GLX, "Close display %p\n", _glx_ctx.display);
 		XCloseDisplay(_glx_ctx.display);
@@ -137,8 +176,8 @@ static void
 load_gl_library(void)
 {
 #ifndef STATIC_OPENGL
-	
-	TRACE(GLX, "begin to load glx library\n");
+
+	TRACE(GLX, "Begin to load glx library\n");
 
 	/* Check conf */
 	const char * library_name = NULL;
@@ -170,6 +209,20 @@ load_gl_library(void)
 		if (*item->func == NULL)
 			WARNING(GLX, "glx function %s not found\n", item->name);
 		item ++;
+	}
+
+	/* check the existence of some important functions */
+
+	if ( (glXChooseVisual == NULL) || 
+			(glXCreateContext == NULL) ||
+			(glXDestroyContext == NULL) ||
+			(glXMakeCurrent == NULL) ||
+			(glXSwapBuffers == NULL) ||
+			(glXGetConfig == NULL) ||
+			(glXQueryExtensionsString == NULL)) {
+		FATAL(GLX, "glx library doesn't have some important functnins, "
+				"check for your configuration\n");
+		THROW(EXCEPTION_FATAL, "GLX load library error");
 	}
 #endif
 
@@ -276,7 +329,236 @@ fill_visual_attrs(int * attrs)
 	return;
 }
 
-void
+static inline void
+check_destroy_window(Display * d, Window * win)
+{
+	if (*win) {
+		WARNING(GLX, "Window 0x%x has not been destroied\n",
+				*win);
+		XDestroyWindow(d, *win);
+		XCheckError();
+		*win = 0;
+	}
+}
+
+static void
+create_aux_windows(void)
+{
+	Display * d = _glx_ctx.display;
+	assert(d != NULL);
+	int s = _glx_ctx.screen;
+	Colormap cm = _glx_ctx.colormap;
+	Window fs_win, wm_win;
+	XVisualInfo * visinfo = _glx_ctx.visinfo;
+
+	check_destroy_window(d, &_glx_ctx.fs_win);
+	check_destroy_window(d, &_glx_ctx.wm_win);
+
+	bool_t def_vis = (visinfo->visual ==
+			DefaultVisual(d, s));
+
+	XSetWindowAttributes xattr;
+	xattr.override_redirect = True;
+	xattr.background_pixel = def_vis ? BlackPixel(d, s) : 0;
+	xattr.border_pixel = 0;
+	xattr.colormap = cm;
+
+	fs_win = XCreateWindow(d, _glx_ctx.root_win,
+			0, 0, 32, 32, 0,
+			visinfo->depth, InputOutput, visinfo->visual,
+			CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWColormap,
+			&xattr);
+	XCheckError();
+	TRACE(GLX, "Create fs_win = 0x%x\n", fs_win);
+	XSelectInput(d, fs_win, StructureNotifyMask);
+	_glx_ctx.fs_win = fs_win;
+
+	/* Copy from SDL code */
+	{
+		/* Tell KDE to keep the fullscreen window on top */
+		XEvent ev;
+		long mask;
+
+		memset(&ev, 0, sizeof(ev));
+		ev.xclient.type = ClientMessage;
+		ev.xclient.window = _glx_ctx.root_win;
+		ev.xclient.message_type = XInternAtom(d,
+				"KWM_KEEP_ON_TOP", False);
+		ev.xclient.format = 32;
+		ev.xclient.data.l[0] = fs_win;
+		ev.xclient.data.l[1] = CurrentTime;
+		mask = SubstructureRedirectMask;
+		XSendEvent(d, _glx_ctx.root_win, False, mask, &ev);
+	}
+	
+	wm_win = XCreateWindow(d, _glx_ctx.root_win,
+			0, 0, 32, 32, 0,
+			visinfo->depth, InputOutput, visinfo->visual,
+			CWBackPixel | CWBorderPixel | CWColormap,
+			&xattr);
+	XCheckError();
+	TRACE(GLX, "Create wm_win = 0x%x\n", wm_win);
+	_glx_ctx.wm_win = wm_win;
+
+	/* Set WMHints */
+	XWMHints * hints = NULL;
+	hints = XAllocWMHints();
+	assert(hints != NULL);
+	hints->input = True;
+	hints->flags = InputHint;
+	XSetWMHints(d, wm_win, hints);
+	XFree(hints);
+	XCheckError();
+
+    XSelectInput(d, wm_win,
+			FocusChangeMask |
+			KeyPressMask |
+			KeyReleaseMask |
+			PropertyChangeMask |
+			StructureNotifyMask |
+			KeymapStateMask);
+	XCheckError();
+
+	/* Set class hint */
+	XClassHint * class_hint = NULL;
+	class_hint = XAllocClassHint();
+	assert(class_hint);
+	class_hint->res_name = "YAAVG_APP";
+	class_hint->res_class = "YAAVG_APP";
+	XSetClassHint(d, wm_win, class_hint);
+	XFree(class_hint);
+	XCheckError();
+	return;
+}
+
+static void
+set_size_hints(int w, int h, bool_t full_screen, bool_t resizable)
+{
+	Display * d = _glx_ctx.display;
+	assert(d != NULL);
+
+	Window wm_win = _glx_ctx.wm_win;
+
+	XSizeHints *hints;
+	hints = XAllocSizeHints();
+	assert(hints != NULL);
+
+	if (resizable) {
+		hints->min_width = 32;
+		hints->min_height = 32;
+		hints->max_height = 4096;
+		hints->max_width = 4096;
+	} else {
+		hints->min_width = hints->max_width = w;
+		hints->min_height = hints->max_height = h;
+	}
+
+	hints->flags = PMaxSize | PMinSize;
+	if (full_screen) {
+		hints->x = 0;
+		hints->y = 0;
+		hints->flags |= USPosition;
+	}
+	XSetWMNormalHints(d, wm_win, hints);
+	XFree(hints);
+	XCheckError();
+
+	/* then, the window manager */
+	/* Copy code from SDL */
+	bool_t set;
+	Atom WM_HINTS;
+
+	/* We haven't modified the window manager hints yet */
+	set = FALSE;
+
+	/* First try to unset MWM hints */
+	WM_HINTS = XInternAtom(d, "_MOTIF_WM_HINTS", True);
+	if (WM_HINTS != None) {
+		XDeleteProperty(d, wm_win, WM_HINTS);
+		set = TRUE;
+	}
+	/* Now try to unset KWM hints */
+	WM_HINTS = XInternAtom(d, "KWM_WIN_DECORATION", True);
+	if (WM_HINTS != None) {
+		XDeleteProperty(d, wm_win, WM_HINTS);
+		set = TRUE;
+	}
+	/* Now try to unset GNOME hints */
+	WM_HINTS = XInternAtom(d, "_WIN_HINTS", True);
+	if (WM_HINTS != None) {
+		XDeleteProperty(d, wm_win, WM_HINTS);
+		set = TRUE;
+	}
+	/* Finally unset the transient hints if necessary */
+	if (!set) {
+		/* NOTE: Does this work? */
+		XSetTransientForHint(d, wm_win, None);
+	}
+
+	/* resize window */
+	XResizeWindow(d, wm_win, w, h);
+}
+
+static void
+glx_create_context(void)
+{
+	Display * d = _glx_ctx.display;
+	Window w = _glx_ctx.main_win;
+	XVisualInfo * visinfo = _glx_ctx.visinfo;
+	GLXContext context = NULL;
+	bool_t err;
+
+	assert(d != NULL);
+	assert(visinfo != NULL);
+	assert(w != 0);
+
+	TRACE(GLX, "Begin to create glx context\n");
+	XSync(d, False);
+	context = glXCreateContext(d, visinfo,
+			NULL,	/* Shared list */
+			True	/* Direct render */
+			);
+
+	if (context == NULL) {
+		ERROR(GLX, "glx create context failed, check your configuration\n");
+		XCheckError();
+	}
+
+	TRACE(GLX, "GLX context created: %p\n", context);
+	_glx_ctx.glx_context = context;
+
+	err = glXMakeCurrent(d, w, context);
+	XSync(d, False);
+	XCheckError();
+	if (!err) {
+		ERROR(GLX, "bind context %p to window 0x%x failed, check your configuration\n",
+				context, w);
+		THROW(EXCEPTION_FATAL, "glx bind context failed");
+	}
+
+	/* set swap control */
+	int swapcontrol = conf_get_integer("video.opengl.swapcontrol", 0);
+	if (swapcontrol < 0)
+		swapcontrol = 0;
+
+	/* select func */
+	if (swapcontrol > 0) {
+		TRACE(GLX, "Set swapcontrol to %d\n", swapcontrol);
+		if (glXSwapIntervalMESA) {
+			TRACE(GLX, "\tuse glXSwapIntervalMESA\n");
+			glXSwapIntervalMESA(swapcontrol);
+		} else if (glXSwapIntervalSGI) {
+			TRACE(GLX, "\tuse glXSwapIntervalSGI\n");
+			glXSwapIntervalSGI(swapcontrol);
+		} else {
+			WARNING(GLX, "Ignore configuration setting of swapcontrol (%d)\n", swapcontrol);
+		}
+		XSync(d, False);
+		XCheckError();
+	}
+}
+
+static void
 make_window(void)
 {
 	Display * d = _glx_ctx.display;
@@ -287,6 +569,9 @@ make_window(void)
 	int s = _glx_ctx.screen;
 
 	assert(d != NULL);
+
+	check_destroy_window(d, &_glx_ctx.main_win);
+
 	root = RootWindow(d, s);
 	_glx_ctx.root_win = root;
 
@@ -307,13 +592,12 @@ make_window(void)
 	_glx_ctx.colormap = cm;
 
 	int black =
-		visinfo->visual == DefaultVisual(d, s) ? BlackPixel(d, s) : 0;
+		(visinfo->visual == DefaultVisual(d, s)) ? BlackPixel(d, s) : 0;
 
 	win_attrs.background_pixel = black;
 	win_attrs.border_pixel = black;
 	win_attrs.colormap = cm;
 	int mask = CWBackPixel | CWBorderPixel | CWColormap;
-
 
 	int w, h;
 	bool_t full_screen, resizable;
@@ -329,21 +613,72 @@ make_window(void)
 	TRACE(GLX, "\t full_screen = %d\n", full_screen);
 	TRACE(GLX, "\t resizable = %d\n", resizable);
 
-	/* ?? Why SDL use a WMWindow? */
-	win = XCreateWindow(d, root,
+	create_aux_windows();
+
+	/* Copy code from SDL, don't know why */
+	XSetWindowBackground(d, _glx_ctx.fs_win, 0);
+	XClearWindow(d, _glx_ctx.fs_win);
+
+	_glx_ctx.base.base.width = w;
+	_glx_ctx.base.base.height = h;
+	_glx_ctx.base.base.full_screen = full_screen;
+
+	set_size_hints(w, h, full_screen, resizable);
+
+	if (full_screen) {
+		FATAL(GLX, "Create full screen window is not supported now\n");
+		THROW(EXCEPTION_FATAL, "doesn't support full screen");
+	}
+
+	win = XCreateWindow(d, _glx_ctx.wm_win,
 			0, 0, w, h, 0, visinfo->depth,
 			InputOutput, visinfo->visual,
 			mask, &win_attrs);
 	XCheckError();
-	TRACE(GLX, "Window 0x%x created\n", win);
+	TRACE(GLX, "Main window 0x%x created\n", win);
+	_glx_ctx.main_win = win;
 
 
-#if 0
-		XSelectInput(SDL_Display, SDL_Window,
-					( EnterWindowMask | LeaveWindowMask
-					| ButtonPressMask | ButtonReleaseMask
-					| PointerMotionMask | ExposureMask ));
-#endif
+	XSelectInput(d, win,
+			( EnterWindowMask | LeaveWindowMask
+			  | ButtonPressMask | ButtonReleaseMask
+			  | PointerMotionMask | ExposureMask ));
+
+	glx_create_context();
+
+	/* Backing store settings */
+	/* Cache the window in the server, when possible */
+	{
+		Screen *xscreen;
+		XSetWindowAttributes a;
+
+		xscreen = ScreenOfDisplay(d, _glx_ctx.screen);
+		a.backing_store = DoesBackingStore(xscreen);
+		if ( a.backing_store != NotUseful ) {
+			TRACE(GLX, "make window backing store\n");
+			XChangeWindowAttributes(d, win, CWBackingStore, &a);
+		}
+	}
+}
+
+static void
+map_window(void)
+{
+	Display * d = _glx_ctx.display;
+	Window main_win = _glx_ctx.main_win;
+	Window wm_win = _glx_ctx.wm_win;
+	assert(d != NULL);
+	assert(main_win != 0);
+	assert(wm_win != 0);
+
+	XMapWindow(d, main_win);
+	XCheckError();
+	XMapWindow(d, wm_win);
+	XCheckError();
+
+	XWaitMapped(d, wm_win);
+	XCheckError();
+	TRACE(GLX, "wm window mapped\n");
 }
 
 struct gl_context *
@@ -394,48 +729,52 @@ gl_init(void)
 	_glx_ctx.extensions = extensions;
 	/* Open Window */
 	make_window();
+
+	map_window();
+
+	glx_ctx = &_glx_ctx;
 	
 
-	return NULL;
-//	return &glx_ctx->base;
+//	return NULL;
+	return &glx_ctx->base;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 void
 gl_close(void)
 {
-	THROW(EXCEPTION_FATAL, "glx close not implentmented");
+	glx_cleanup(&glx_cleanup_str);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void
 gl_reinit(void)
@@ -446,20 +785,30 @@ gl_reinit(void)
 void *
 gl_get_proc_address(const char * name)
 {
-	THROW(EXCEPTION_FATAL, "glx get_proc_address not implentmented");
-	return NULL;
+	if (glx_ctx == NULL) {
+		ERROR(GLX, "Try to get proc before glx inited\n");
+		THROW(EXCEPTION_FATAL, "Impossiable bug");
+	}
+	return (dlsym)(glx_ctx->dlhandle, name);
 }
 
 void
 video_swap_buffers(void)
 {
-	THROW(EXCEPTION_FATAL, "glx swap buffer not impled\n");
+	if ((glx_ctx == NULL) ||
+			(_glx_ctx.display == NULL) ||
+			(_glx_ctx.main_win == 0))
+	{
+		FATAL(GLX, "Call swap buffers before init glx");
+		THROW(EXCEPTION_FATAL, "internal error");
+	}
+	glXSwapBuffers(glx_ctx->display, glx_ctx->main_win);
 }
 
 void
 video_set_caption(const char * caption)
 {
-	THROW(EXCEPTION_FATAL, "glx set caption not implented\n");
+//	THROW(EXCEPTION_FATAL, "glx set caption not implented\n");
 	return;
 }
 

@@ -184,7 +184,6 @@ static bool_t
 check_extension(const char * conf_key, ...)
 {
 	va_list args;
-	int err;
 	const char * f, * e;
 
 	e = (const char *)(gl_ctx->extensions);
