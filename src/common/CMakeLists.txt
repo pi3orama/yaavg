@@ -25,7 +25,13 @@ ENDIF(HAVE_SDL)
 #TARGET_LINK_LIBRARIES(common resource})
 
 
-SET(tests test_debug test_debug2 test_exception test_exception2 test_geom)
+SET(tests
+	test_debug
+	test_debug2
+	test_exception
+	test_exception2
+	test_exception3
+	test_geom)
 build_tests("${tests}" "common")
 
 

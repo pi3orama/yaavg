@@ -253,8 +253,14 @@ exceptions_state_mc(enum catcher_action action)
 					/* We should not be here */
 					return 0;
 				}
+				case CATCH_THROWING: {
+					WARNING(SYSTEM, "Throw exception in cleanup\n");
+					catcher_pop();
+					return 0;
+				}
 				default:
-					INTERNAL_ERROR(SYSTEM, "inner exception processing\n");
+					INTERNAL_ERROR(SYSTEM, "inner exception processing: action %d when aborting\n",
+							action);
 			}
 		default:
 			INTERNAL_ERROR(SYSTEM, "bad switch");

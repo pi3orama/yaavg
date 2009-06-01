@@ -265,7 +265,6 @@ x_io_err_handler(Display * d)
 	if (_glx_ctx.display) {
 		_glx_ctx.display = NULL;
 	}
-
 	if (old_x_io_err_handler)
 		return old_x_io_err_handler(d);
 	return 0;

@@ -272,7 +272,8 @@ internal_error(enum debug_component comp,
 {
 	va_list ap;
 	va_start(ap, fmt);
-	vdebug_out(1, FATAL, comp, func_name, line_no, fmt, ap);
+	vdebug_out(1, FATAL, comp, func_name, line_no, "INTERNAL ERROR ", ap);
+	vdebug_out(0, FATAL, comp, func_name, line_no, fmt, ap);
 	va_end(ap);
 	raise(SIGABRT);
 	/* We shouldn't be here! */
