@@ -106,6 +106,9 @@ exceptions_state_mc_init(
 	exception->level = EXCEPTION_NO_ERROR;
 	exception->message = NULL;
 	exception->val = 0;
+	exception->func = "";
+	exception->file = "";
+	exception->line = 0;
 
 	catcher->exception = exception;
 	catcher->mask = mask;
@@ -133,9 +136,22 @@ exceptions_state_mc_action_iter_1 (void)
 	return exceptions_state_mc(CATCH_ITER_1);
 }
 
+void
+print_exception(enum debug_level l, enum debug_component c,
+		struct exception exp)
+{
+	DEBUG_MSG(l, c, "exception happend at func %s, line %d:\n",
+			exp.func, exp.line);
+	DEBUG_MSG(l, c, "\tmessage: \"%s\", with value: %d\n",
+			exp.message, exp.val);
+	return;
+}
+
+
 NORETURN void
 throw_exception (enum exception_level level,
-		const char * message, uintptr_t val)
+		const char * message, uintptr_t val,
+		const char * file, const char * func, int line)
 {
 	if (current_catcher == NULL) {
 		/* We are not in a catch block. do all cleanup then
@@ -154,6 +170,9 @@ throw_exception (enum exception_level level,
 	current_catcher->exception->level = level;
 	current_catcher->exception->message = message;
 	current_catcher->exception->val = val;
+	current_catcher->exception->file = file;
+	current_catcher->exception->func = func;
+	current_catcher->exception->line = line;
 
 	exceptions_state_mc(CATCH_THROWING);
 	/* do the longjmp! */
@@ -255,7 +274,10 @@ exceptions_state_mc(enum catcher_action action)
 				}
 				case CATCH_THROWING: {
 					WARNING(SYSTEM, "Throw exception in cleanup\n");
+					struct exception exception =
+						*current_catcher->exception;
 					catcher_pop();
+					RETHROW(exception);
 					return 0;
 				}
 				default:

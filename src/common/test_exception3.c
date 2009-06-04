@@ -74,7 +74,7 @@ int main()
 	DEBUG_INIT(NULL);
 
 	volatile struct exception exp;
-	TRY_CATCH(exp, MASK_NONFATAL) {
+	TRY_CATCH(exp, MASK_ALL) {
 		FORCE(SYSTEM, "In outmost try-catch block\n");
 		make_cleanup(&cu_outmost1);
 		make_cleanup(&cu_outmost2);
@@ -93,7 +93,10 @@ int main()
 		END_TRY;
 		FORCE(SYSTEM, "Finish inner try-catch block\n");
 	}
-	END_TRY;
+	CATCH(exp) {
+		default:
+			print_exception(FATAL, SYSTEM, exp);
+	}
 
 	do_cleanup();
 	return 0;

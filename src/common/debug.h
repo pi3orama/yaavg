@@ -67,38 +67,31 @@ extern void debug_out(int prefix, enum debug_level level, enum debug_component c
 	       const char * fmt, ...);
 extern void set_comp_level(enum debug_component comp, enum debug_level level);
 extern enum debug_level get_comp_level(enum debug_component comp);
+# define DEBUG_MSG(level, comp, str...) do{ debug_out(1, level, comp, __FUNCTION__, __LINE__, str); } while(0)
+# define DEBUG_MSG_CONT(level, comp, str...) do{ debug_out(0, level, comp, __FUNCTION__, __LINE__, str); } while(0)
 #else
 # define debug_out(z, a, b, c, d, e,...) do{} while(0)
 # define set_comp_level(a, b)   do {} while(0)
 # define get_comp_level(a)   ({SILENT;})
+extern void message_out(int prefix, enum debug_level, enum debug_component, char * fmt, ...);
+# define DEBUG_MSG(level, comp, str...) do{ message_out(1, level, comp, str); } while(0)
+# define DEBUG_MSG_CONT(level, comp, str...) do{ message_out(0, level, comp, str); } while(0)
 #endif
 
 #define DEBUG_INIT(file)	do { debug_init(file);} while(0)
-#define DEBUG_MSG(level, comp, str...) do{ debug_out(1, level, comp, __FUNCTION__, __LINE__, str); } while(0)
 /*  Don't output prefix */
-#define DEBUG_MSG_CONT(level, comp, str...) do{ debug_out(0, level, comp, __FUNCTION__, __LINE__, str); } while(0)
 #define DEBUG_SET_COMP_LEVEL(mask, level) do { set_comp_level(mask, level); } while(0)
 
 /* XXX */
 /* Below definition won't distrub the debug level, because 
  * they are all func-like macro */
 #define TRACE(comp, str...) DEBUG_MSG(TRACE, comp, str)
-#ifndef YAAVG_DEBUG_OFF
-# define VERBOSE(comp, str...) DEBUG_MSG(VERBOSE, comp, str)
-# define WARNING(comp, str...) DEBUG_MSG(WARNING, comp, str)
-# define WARNING_CONT(comp, str...) DEBUG_MSG_CONT(WARNING, comp, str)
-# define ERROR(comp, str...) DEBUG_MSG(ERROR, comp, str)
-# define FATAL(comp, str...) DEBUG_MSG(FATAL, comp, str)
-# define FORCE(comp, str...) DEBUG_MSG(FORCE, comp, str)
-#else
-extern void message_out(int prefix, enum debug_level, enum debug_component, char * fmt, ...);
-# define VERBOSE(c, s...)	message_out(1, VERBOSE, c, s)
-# define WARNING(c, s...)	message_out(1, WARNING, c, s)
-# define WARNING_CONT(c, s...)	message_out(0, WARNING, c, s)
-# define ERROR(c, s...)		message_out(1, ERROR, c, s)
-# define FATAL(c, s...)		message_out(1, FATAL, c, s)
-# define FORCE(c, s...)		message_out(1, FORCE, c, s)
-#endif
+#define VERBOSE(comp, str...) DEBUG_MSG(VERBOSE, comp, str)
+#define WARNING(comp, str...) DEBUG_MSG(WARNING, comp, str)
+#define WARNING_CONT(comp, str...) DEBUG_MSG_CONT(WARNING, comp, str)
+#define ERROR(comp, str...) DEBUG_MSG(ERROR, comp, str)
+#define FATAL(comp, str...) DEBUG_MSG(FATAL, comp, str)
+#define FORCE(comp, str...) DEBUG_MSG(FORCE, comp, str)
 
 
 /* internal_error: raise a SIGABRT. */

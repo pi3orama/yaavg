@@ -464,6 +464,7 @@ entry:
 				video_reinit();
 				break;
 			default:
+				print_exception(FATAL, SYSTEM, exp);
 				INTERNAL_ERROR(SYSTEM, "@!#!@$%\n");
 				break;
 		}

@@ -67,6 +67,9 @@ struct exception {
 	const char * message;
 	/* helper ptr */
 	uintptr_t val;
+	const char * file;
+	const char * func;
+	int line;
 };
 
 #if defined(HAVE_SIGSETJMP)
@@ -177,14 +180,20 @@ exceptions_state_mc_action_iter(void);
 int
 exceptions_state_mc_action_iter_1(void);
 
+void
+print_exception(enum debug_level l, enum debug_component c,
+		struct exception exp);
+
 
 NORETURN void
 throw_exception(enum exception_level, const char * message,
-		uintptr_t val) ATTR_NORETURN;
+		uintptr_t val, const char * file, const char * func,
+		int line) ATTR_NORETURN;
 
-#define THROW(l, m)			throw_exception(l, m, 0)
-#define THROW_VAL(l, m, v)	throw_exception(l, m, v)
-#define RETHROW(e)			throw_exception((e).level, (e).message, (e).val)
+#define THROW(l, m)			throw_exception(l, m, 0, __FILE__, __FUNCTION__, __LINE__)
+#define THROW_VAL(l, m, v)	throw_exception(l, m, v, __FILE__, __FUNCTION__, __LINE__)
+#define RETHROW(e)			throw_exception((e).level, (e).message, (e).val, \
+		(e).file, (e).func, (e).line)
 
 #define NOTHROW(fn, ...)	do {		\
 	volatile struct exception exp;		\
