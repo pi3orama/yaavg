@@ -326,7 +326,7 @@ void show_mem_info()
 }
 #endif /* show_mem_info */
 
-void * yaavg_malloc(size_t size)
+void * __wrap_malloc(size_t size)
 {
 	void * res;
 	res = malloc(size);
@@ -337,7 +337,7 @@ void * yaavg_malloc(size_t size)
 }
 
 
-void yaavg_free(void * ptr)
+void __wrap_free(void * ptr)
 {
 	MEM_TRACE("free %p\n", ptr);
 	free(ptr);
@@ -345,7 +345,7 @@ void yaavg_free(void * ptr)
 	return;
 }
 
-void * yaavg_calloc(size_t count, size_t eltsize)
+void * __wrap_calloc(size_t count, size_t eltsize)
 {
 	void * res = NULL;
 	res = calloc (count, eltsize);
@@ -356,7 +356,7 @@ void * yaavg_calloc(size_t count, size_t eltsize)
 	return res;
 }
 
-char * yaavg_strdup(const char * S)
+char * __wrap_strdup(const char * S)
 {
 	char * res = NULL;
 	res = strdup (S);

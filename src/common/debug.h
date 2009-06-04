@@ -130,31 +130,31 @@ extern void __bug_on(const char * __assertion, const char * __file,
 
 #ifndef YAAVG_DEBUG_OFF
 /* memory leak detection */
-extern void * yaavg_malloc(size_t size);
-extern void yaavg_free(void * ptr);
-extern char * yaavg_strdup(const char * S);
-extern void * yaavg_calloc(size_t count, size_t eltsize);
+extern void * __wrap_malloc(size_t size);
+extern void __wrap_free(void * ptr);
+extern char * __wrap_strdup(const char * S);
+extern void * __wrap_calloc(size_t count, size_t eltsize);
 extern void show_mem_info();
 #ifndef YAAVG_DEBUG_C
 # ifdef malloc
 #  undef malloc
 # endif
-# define malloc(s)	yaavg_malloc(s)
+# define malloc(s)	__wrap_malloc(s)
 
 # ifdef free
 #  undef free
 # endif
-# define free(p)	yaavg_free(p)
+# define free(p)	__wrap_free(p)
 
 # ifdef strdup
 #  undef strdup
 # endif
-# define strdup(S)	yaavg_strdup(S)
+# define strdup(S)	__wrap_strdup(S)
 
 # ifdef calloc
 #  undef calloc
 # endif
-# define calloc(C, S)	yaavg_calloc(C, S)
+# define calloc(C, S)	__wrap_calloc(C, S)
 #endif
 #else	/* YAAVG_DEBUG_OFF */
 #define show_mem_info()	do {} while(0)
