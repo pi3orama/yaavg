@@ -31,7 +31,7 @@ cleanup_inner2(struct cleanup * clup)
 	remove_cleanup(clup);
 	FORCE(SYSTEM, "cleanup inner 2\n");
 	FATAL(SYSTEM, "Trigger another exception in cleanup code\n");
-	THROW(EXCEPTION_FATAL, "Fatal in cleanup code");
+	THROW(EXCEPTION_FATAL, "Fatal in cleanup code %d", 1212);
 	return;
 }
 

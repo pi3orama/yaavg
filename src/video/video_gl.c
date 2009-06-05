@@ -575,7 +575,7 @@ gl_check_error_debug(const char * file, const char * func, int line)
 	WARNING(OPENGL, "glGetError() returns \"%s\" (0x%x)\n",
 			glerrno_to_desc(err), err);
 #endif
-	THROW_VAL(EXCEPTION_RENDER_ERROR, "OpenGL error", err);
+	THROW(EXCEPTION_RENDER_ERROR, "OpenGL error: 0x%x", err);
 	return;
 }
 

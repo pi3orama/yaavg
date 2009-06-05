@@ -130,9 +130,8 @@ load_bitmap(struct texture_gl * tex)
 		default:
 			FATAL(OPENGL, "Unknown texture format here: %d\n",
 					TEXGL_DUMMY_BITMAP(tex)->format);
-			THROW_VAL(EXCEPTION_FATAL,
-					"Unknown texture format",
-					TEXGL_DUMMY_BITMAP(tex)->format);
+			THROW(EXCEPTION_FATAL,
+					"Unknown texture format: 0x%x\n", TEXGL_DUMMY_BITMAP(tex)->format);
 	}
 
 }
@@ -516,8 +515,8 @@ load_hwtexs(struct texture_gl * tex)
 					break;
 				default:
 					FATAL(OPENGL, "Unknown texture target here: %d\n", target);
-					THROW_VAL(EXCEPTION_FATAL,
-							"Unknown texture target", target);
+					THROW(EXCEPTION_FATAL,
+							"Unknown texture target: 0x%x", target);
 			}
 			gl_check_error();
 
