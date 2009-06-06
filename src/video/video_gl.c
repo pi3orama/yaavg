@@ -170,7 +170,6 @@ init_glfunc(void)
 #undef INIT_GL_FUNC_LIST
 	struct glfunc_init_item * item = &gl_func_init_list[0];
 	while (item->name != NULL) {
-		TRACE(OPENGL, "init gl func %s\n", item->name);
 		*(item->func) = (void*)gl_get_proc_address(item->name);
 		if (*item->func == NULL)
 			WARNING(OPENGL, "gl function %s not found\n", item->name);
@@ -382,7 +381,7 @@ init_gl_engine(void)
 	video_reshape(gl_ctx->base.width, gl_ctx->base.height);
 
 	/* Set other OpenGL properties */
-	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glClearColor(0.1, 0.2, 0.3, 0.0);
 	glEnable(GL_BLEND);
 	glEnable(GL_TEXTURE_1D);
 	glEnable(GL_TEXTURE_2D);

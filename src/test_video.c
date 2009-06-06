@@ -12,9 +12,7 @@
 
 #include <video/video.h>
 #include <video/video_gl.h>
-
 #include <video/texture_gl.h>
-
 #include <event/event.h>
 
 /* Define 2 rcommands: 1. draw a line; 2. rotate */
@@ -485,6 +483,7 @@ entry:
 int main(int argc, char * argv[])
 {
 	DEBUG_INIT(NULL);
+//	DEBUG_INIT("/tmp/debug");
 	VERBOSE(SYSTEM, "Start!!!\n");
 
 	struct video_context * video_ctx = NULL;
@@ -545,7 +544,7 @@ int main(int argc, char * argv[])
 			VERBOSE(SYSTEM, "User quit: %s\n", exp.message);
 			break;
 		default:
-			ERROR(SYSTEM, "Error out: %s\n", exp.message);
+			print_exception(ERROR, SYSTEM, exp);
 	}
 
 	do_cleanup();

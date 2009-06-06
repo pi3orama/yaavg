@@ -11,23 +11,32 @@
 #include <signal.h>
 #include <stdlib.h>
 
+bool_t sigpipe_arised = FALSE;
+
 static void ATTR_NORETURN
 cleanup(int signum)
 {
 	FATAL(SYSTEM, "receive signal %d\n", signum);
+	switch (signum) {
+		case SIGPIPE:
+			sigpipe_arised = TRUE;
+			break;
+		default:
+			break;
+	}
 	fatal_cleanup();
 }
 
 void
-unblock_sigint(void)
+intercept_signal(int signum)
 {
 #ifdef HAVE_SIGACTION
 	struct sigaction action;
-	sigaction(SIGINT, NULL, &action);
+	sigaction(signum, NULL, &action);
 	action.sa_handler = cleanup;
-	sigaction(SIGINT, &action, NULL);
+	sigaction(signum, &action, NULL);
 #else
-	signal(SIGINT, cleanup);
+	signal(signum, cleanup);
 #endif
 }
 

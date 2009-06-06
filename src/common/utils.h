@@ -7,6 +7,7 @@
 
 #include <common/defs.h>
 #include <common/exception.h>
+#include <signal.h>
 #include <stdint.h>
 
 /* Some utils needed to be implentmented */
@@ -17,8 +18,11 @@ __BEGIN_DECLS
 void delay(tick_t ms);
 tick_t get_ticks(void);
 
+/* specially used for GLX */
+extern bool_t sigpipe_arised;
+
 /* for posix system, unlock SIGINT with this func */
-void unblock_sigint(void);
+void intercept_signal(int signum);
 
 /* solve multi reinit problem */
 /* I put this func here, not in exception.h, because

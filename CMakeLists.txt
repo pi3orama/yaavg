@@ -93,6 +93,12 @@ ENDIF (${video_setting} MATCHES "OpenGL")
 IF (${video_setting} MATCHES "GLX")
 	IF (NOT X11_FOUND)
 		MESSAGE(FATAL_ERROR "X11 development environment not found")
+	ELSE (NOT X11_FOUND)
+		# find the Xxf86mv
+		IF (X11_Xxf86vm_LIB MATCHES "^X11_Xxf86vm_LIB$")
+			MESSAGE(STATUS "X11_Xxf86vm_LIB not set, this is a cmake BUG. Search for it")
+			FIND_LIBRARY(X11_Xxf86vm_LIB Xxf86vm ${X11_LIB_SEARCH_PATH})
+		ENDIF(X11_Xxf86vm_LIB MATCHES "^X11_Xxf86vm_LIB$")
 	ENDIF (NOT X11_FOUND)
 ENDIF (${video_setting} MATCHES "GLX")
 

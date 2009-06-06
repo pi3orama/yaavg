@@ -120,7 +120,7 @@ init_sdl(void)
 	}
 
 	if (!conf_get_bool("video.sdl.blocksigint", TRUE)) {
-		unblock_sigint();
+		intercept_signal(SIGINT);
 	}
 
 	/* ... */

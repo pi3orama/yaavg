@@ -30,6 +30,7 @@ enum debug_component {
 	OPENGL,
 	SDL,
 	GLX,
+	EVENT,
 	RESOURCE,
 	NR_COMPONENTS
 };
@@ -44,6 +45,7 @@ static const char * debug_comp_name[NR_COMPONENTS] = {
 	[OPENGL] = "GL  ",
 	[SDL] = "SDL ",
 	[GLX] = "GLX ",
+	[EVENT] = "EVT ",
 	[VIDEO]="VID ",
 	[RESOURCE]="RES "
 };
@@ -55,6 +57,8 @@ static enum debug_level debug_levels[NR_COMPONENTS] = {
 	[SYSTEM] = VERBOSE,
 	[OPENGL] = TRACE,
 	[SDL] = WARNING,
+	[GLX] = TRACE,
+	[EVENT] = TRACE,
 	[VIDEO] = TRACE,
 	[RESOURCE] = TRACE,
 };

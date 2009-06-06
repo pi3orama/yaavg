@@ -23,13 +23,21 @@ static struct conf_entry entries[] = {
 	{"video.mspf.fallback", TypeInteger, vcast(100)},
 //	{"video.mspf", TypeInteger, vcast(0)},
 	{"video.mspf", TypeInteger, vcast(17)},	/* 17ms: 60fps */
-//	{"video.fullscreen", TypeBool, vcast(TRUE)},
-	{"video.fullscreen", TypeBool, vcast(FALSE)},
+//	{"video.fullscreen", TypeBool, vcast(FALSE)},
+	{"video.fullscreen", TypeBool, vcast(TRUE)},
+	/* full screen engine,
+	 * 0 is default,
+	 * 1 is XVID,
+	 * 2 is XME,
+	 * 3 is XRANDR
+	 * 4 is trival */
+	{"video.gl.glx.fullscreen.engine", TypeInteger, vcast(0)},
+//	{"video.fullscreen", TypeBool, vcast(FALSE)},
 //	{"video.resizable", TypeBool, vcast(TRUE)},
 	{"video.resizable", TypeBool, vcast(FALSE)},
-//	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/home/wn/src/Mesa-7.0.1/lib/libGL.so")},
+	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/home/wn/src/Mesa-7.0.1/lib/libGL.so")},
 //	{"video.opengl.gllibrary", TypeString, vcast((const char*)NULL)},
-	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/usr/local/lib/libGL.so")},
+//	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/usr/local/lib/libGL.so")},
 	{"video.opengl.bpp", TypeInteger, vcast(32)},
 	/* vsync related */
 	{"video.opengl.swapcontrol", TypeInteger, vcast(0)},
@@ -48,6 +56,10 @@ static struct conf_entry entries[] = {
 	{"video.opengl.texture.enableCOMPRESSION", TypeBool, vcast(TRUE)},
 	{"video.opengl.texture.enableNPOT", TypeBool, vcast(TRUE)},
 	{"video.opengl.texture.enableRECT", TypeBool, vcast(TRUE)},
+	{"video.opengl.glx.confinemouse", TypeBool, vcast(FALSE)},
+//	{"video.opengl.glx.confinemouse", TypeBool, vcast(TRUE)},
+	/* Don't set it to TRUE unless you're sure what you're doing */
+	{"video.opengl.glx.grabkeyboard", TypeBool, vcast(FALSE)},
 	{NULL, TypeNone, vcast(0)},
 };
 

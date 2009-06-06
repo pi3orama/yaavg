@@ -15,10 +15,16 @@
 #include <video/video_gl.h>
 
 #ifdef VIDEO_OPENGL_GLX_DRIVER
+
+/* event needs some infos */
+#include <video/x_common.h>
+
 #include <video/utils_x11.h>
 
 #include <X11/Xlib.h>
 #include <X11/extensions/Xext.h>
+#include <X11/Xatom.h>
+#include <X11/extensions/xf86vmode.h>
 
 #include <errno.h>
 #include <string.h>
@@ -37,14 +43,7 @@
  * find whether there's an error or not by their return
  * values. When their failed, default behavior is call
  * exit(). However, we want to free some resource.  */
-static bool_t x_failed = FALSE;
-
-#define XCheckError()	do {			\
-	if (x_failed)	{					\
-		FATAL(GLX, "X11 error\n");	\
-		THROW(EXCEPTION_FATAL, "X11 error");\
-	}									\
-} while(0)
+bool_t x_failed = FALSE;
 
 static struct glx_context {
 	struct gl_context base;
@@ -80,6 +79,8 @@ static int (*old_x_err_handler)(Display *, XErrorEvent *)  = NULL;
 static int (*old_x_ext_err_handler)(Display *, char *, char *) = NULL;
 static int (*old_x_io_err_handler)(Display *)  = NULL;
 
+static struct cleanup * restore_fullscreen_cleanup = NULL;
+
 static void
 glx_cleanup(struct cleanup * str)
 {
@@ -105,23 +106,33 @@ glx_cleanup(struct cleanup * str)
 		old_x_io_err_handler = NULL;
 	}
 
-
-
 	if (_glx_ctx.visinfo) {
 		TRACE(GLX, "XFree visinfo\n");
 		XFree(_glx_ctx.visinfo);
 		_glx_ctx.visinfo = NULL;
 	}
+	if (sigpipe_arised) {
+		_glx_ctx.display = NULL;
+		_glx_ctx.glx_context = NULL;
+		_glx_ctx.main_win = 0;
+		_glx_ctx.wm_win = 0;
+		_glx_ctx.fs_win = 0;
+		_glx_ctx.colormap = 0;
+	}
 
 	if (_glx_ctx.display) {
 		Display * d = _glx_ctx.display;
+
+		if (restore_fullscreen_cleanup) {
+			CLEANUP(restore_fullscreen_cleanup);
+			restore_fullscreen_cleanup = NULL;
+		}
 
 		if (_glx_ctx.glx_context) {
 			GLXContext ctx = _glx_ctx.glx_context;
 			TRACE(GLX, "GLX destroy context %p\n", ctx);
 			glXMakeCurrent(d, None, NULL);
 			glXDestroyContext(d, ctx);
-			_glx_ctx.glx_context = NULL;
 			XCheckError();
 		}
 
@@ -160,6 +171,8 @@ glx_cleanup(struct cleanup * str)
 		XCloseDisplay(_glx_ctx.display);
 		_glx_ctx.display = NULL;
 	}
+
+
 
 	if (_glx_ctx.dlhandle) {
 		TRACE(GLX, "free library\n");
@@ -204,7 +217,6 @@ load_gl_library(void)
 #undef INIT_GLX_FUNC_LIST
 	struct glfunc_init_item * item = &gl_func_init_list[0];
 	while (item->name != NULL) {
-		TRACE(GLX, "init GLX func %s\n", item->name);
 		*(item->func) = (void*)dlsym(handle, item->name);
 		if (*item->func == NULL)
 			WARNING(GLX, "glx function %s not found\n", item->name);
@@ -265,8 +277,9 @@ x_io_err_handler(Display * d)
 	if (_glx_ctx.display) {
 		_glx_ctx.display = NULL;
 	}
-	if (old_x_io_err_handler)
-		return old_x_io_err_handler(d);
+
+	sigpipe_arised = TRUE;
+	fatal_cleanup();
 	return 0;
 }
 
@@ -315,7 +328,6 @@ fill_visual_attrs(int * attrs)
 		}
 	}
 	_glx_ctx.samples = samples;
-
 
 	if (match_word("GLX_EXT_visual_rating", _glx_ctx.extensions)) {
 		setkv(GLX_VISUAL_CAVEAT_EXT, GLX_NONE_EXT);
@@ -626,7 +638,6 @@ make_window(void)
 
 	if (full_screen) {
 		FATAL(GLX, "Create full screen window is not supported now\n");
-		THROW(EXCEPTION_FATAL, "doesn't support full screen");
 	}
 
 	win = XCreateWindow(d, _glx_ctx.wm_win,
@@ -636,7 +647,6 @@ make_window(void)
 	XCheckError();
 	TRACE(GLX, "Main window 0x%x created\n", win);
 	_glx_ctx.main_win = win;
-
 
 	XSelectInput(d, win,
 			( EnterWindowMask | LeaveWindowMask
@@ -660,6 +670,200 @@ make_window(void)
 	}
 }
 
+
+static void xvid_cleanup(struct cleanup * _str)
+{
+	Display * d = _glx_ctx.display;
+	int s = _glx_ctx.screen;
+
+	XF86VidModeLockModeSwitch(d, s, False);
+}
+
+static bool_t
+xvid_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
+{
+
+	static XF86VidModeModeLine saved_mode;
+	static XF86VidModeModeLine * psaved_mode = NULL;
+
+	/* some static values, used in cleanup */
+	static struct cleanup fs_cleanup = {
+		.function	= xvid_cleanup,
+	};
+
+	TRACE(GLX, "Try xvid fullscreen\n");
+	int s = _glx_ctx.screen;
+	int unused;
+
+	make_cleanup(&fs_cleanup);
+	restore_fullscreen_cleanup = &fs_cleanup;
+
+	/* Save mode */
+	XF86VidModeGetModeLine(d, s, &unused, &saved_mode);
+	/* don't set psaved_mode, untile we are sure we need to change vidmode */
+
+
+	XF86VidModeLockModeSwitch(d, s, True);
+
+	return FALSE;
+}
+
+static bool_t
+xme_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
+{
+	TRACE(GLX, "Try xme fullscreen\n");
+	return FALSE;
+}
+
+static bool_t
+xrandr_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
+{
+	TRACE(GLX, "Try xrandr fullscreen\n");
+	return FALSE;
+}
+
+static void
+map_window(void);
+
+static bool_t
+trival_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
+{
+	TRACE(GLX, "Try trival fullscreen\n");
+	/* FIXME */
+	/* Copy from gtk's code, it may be only used in gnome based WM? */
+	/* I've tested a lot of method, this is the only one works prefect.
+	 * Other method, such as reparent to fswin, and/or set override_redirect, 
+	 * sometimes work, but occasionally (often) meet such problem:
+	 *
+	 * 1. freeze, only mouse move. from gdb attached debug, I believe there's
+	 *    an race condition between printf (onto my gnome-terminal) and GrabInput
+	 * 2. cannot receive input. only mouse motion and button can be intercepted,
+	 *    kbd inputs go to gnome-terminal or my IM (fcitx)
+	 * */
+	Atom atom[2];
+	atom[0] = XInternAtom(d, "_NET_WM_STATE", True);
+	atom[1] = XInternAtom(d, "_NET_WM_STATE_FULLSCREEN", True);
+	XChangeProperty(d, wm_win, atom[0],
+			XA_ATOM, 32, PropModeReplace,
+			(unsigned char *)(&atom[1]), 1);
+
+	/* detect the W and H of the screen */
+	int screen_w = DisplayWidth(d, _glx_ctx.screen);
+	int screen_h = DisplayHeight(d, _glx_ctx.screen);
+	int w = _glx_ctx.base.base.width;
+	int h = _glx_ctx.base.base.height;
+
+	w = w > screen_w ? screen_w : w;
+	h = h > screen_w ? screen_w : h;
+
+	XMoveWindow(d, main_win,
+			(screen_w - w) / 2,
+			(screen_h - h) / 2);
+	XCheckError();
+	XSync(d, False);
+	map_window();
+	restore_fullscreen_cleanup = NULL;
+	return TRUE;
+
+#if 0
+	XSync(d, False);
+
+	Atom WM_HINTS;
+	WM_HINTS = XInternAtom(d, "_MOTIF_WM_HINTS", True);
+	if (WM_HINTS == None) {
+		WARNING(GLX, "remove window frame failed\n");
+		return FALSE;
+	}
+
+	/* Hints used by Motif compliant window managers */
+	struct {
+		unsigned long flags;
+		unsigned long functions;
+		unsigned long decorations;
+		long input_mode;
+		unsigned long status;
+	} MWMHints = { (1L << 1), 0, 0, 0, 0 };
+
+	XChangeProperty(d, wm_win,
+			WM_HINTS, WM_HINTS, 32,
+			PropModeReplace,
+			(unsigned char *)&MWMHints,
+			sizeof(MWMHints)/sizeof(long));
+
+	XMoveResizeWindow(d, wm_win, 0, 0, 1280, 800);
+	XMoveResizeWindow(d, main_win, 240, 100, 800, 600);
+	map_window();
+
+	XRaiseWindow(d, wm_win);
+	XCheckError();
+	XSetInputFocus(d, wm_win, RevertToParent, CurrentTime);
+	XSync(d, False);
+#endif
+#if 0
+	XSync(d, False);
+
+	XMoveResizeWindow(d, fs_win, 0, 0, 1280, 800);
+	XReparentWindow(d, main_win, fs_win, 0, 0);
+	XMoveResizeWindow(d, main_win, 240, 100, 800, 600);
+
+#if 1
+	XWMHints * hints = NULL;
+	hints = XAllocWMHints();
+	assert(hints != NULL);
+	hints->input = True;
+	hints->flags = InputHint;
+	XSetWMHints(d, fs_win, hints);
+	XFree(hints);
+	XCheckError();
+#endif
+
+	XMapWindow(d, main_win);
+	XCheckError();
+	XMapWindow(d, fs_win);
+	XCheckError();
+	XWaitMapped(d, fs_win);
+
+	XRaiseWindow(d, fs_win);
+	XSelectInput(d, fs_win, StructureNotifyMask |
+			KeyPressMask | KeyReleaseMask);
+
+	XSetInputFocus(d, fs_win, RevertToParent, CurrentTime);
+	XSync(d, False);
+#endif
+	return TRUE;
+}
+
+static bool_t
+enter_fullscreen(void)
+{
+	Display * d = _glx_ctx.display;
+	Window main_win = _glx_ctx.main_win;
+	Window wm_win = _glx_ctx.wm_win;
+	Window fs_win = _glx_ctx.fs_win;
+	bool_t succ;
+
+	int fsengine = conf_get_integer("video.gl.glx.fullscreen.engine", 0);
+	switch (fsengine) {
+		case 0:
+		case 1:
+			succ = xvid_fullscreen(d, main_win, wm_win, fs_win);
+			if (succ)
+				return TRUE;
+		case 2:
+			succ = xme_fullscreen(d, main_win, wm_win, fs_win);
+			if (succ)
+				return TRUE;
+		case 3:
+			succ = xrandr_fullscreen(d, main_win, wm_win, fs_win);
+			if (succ)
+				return TRUE;
+		default:
+			return trival_fullscreen(d, main_win, wm_win, fs_win);
+	}
+
+	return FALSE;
+}
+
 static void
 map_window(void)
 {
@@ -678,11 +882,36 @@ map_window(void)
 	XWaitMapped(d, wm_win);
 	XCheckError();
 	TRACE(GLX, "wm window mapped\n");
+
+	bool_t confine = conf_get_bool("video.opengl.glx.confinemouse", FALSE);
+	if (confine) {
+		TRACE(GLX, "confine the mouse to main window\n");
+		int err;
+		err = XGrabPointer(d, main_win, True, 0,
+				GrabModeAsync, GrabModeAsync, main_win,
+				None, CurrentTime);
+		if (err != GrabSuccess)
+			WARNING(GLX, "Grab pointer failed\n");
+		XRaiseWindow(d, wm_win);
+		XCheckError();
+	}
+
+	bool_t grabkbd = conf_get_bool("video.opengl.glx.grabkbd", FALSE);
+	if (grabkbd) {
+		int err;
+		WARNING(GLX, "Trying to grab keyborad, all WM hotkeys are disabled, including M-F4\n");
+		err = XGrabKeyboard(d, wm_win, True,
+				GrabModeAsync, GrabModeAsync, CurrentTime);
+		if (err != GrabSuccess)
+			WARNING(GLX, "Grab kbd failed\n");
+		XCheckError();
+	}
 }
 
 struct gl_context *
 gl_init(void)
 {
+
 	if (glx_ctx != NULL) {
 		WARNING(GLX, "multi init OpenGL\n");
 		return &glx_ctx->base;
@@ -704,6 +933,8 @@ gl_init(void)
 		FATAL(GLX, "GLX open display failed\n");
 		THROW(EXCEPTION_FATAL, "GLX open display failed\n");
 	}
+
+	intercept_signal(SIGPIPE);
 
 	TRACE(GLX, "X11 display: %p\n", display);
 	_glx_ctx.display = display;
@@ -729,12 +960,22 @@ gl_init(void)
 	/* Open Window */
 	make_window();
 
-	map_window();
+	int succ = TRUE;
+	/* if enter_fullscreen failed, it should restore everything */
+	if (_glx_ctx.base.base.full_screen)
+		succ = enter_fullscreen();
+
+	if (!succ) {
+		_glx_ctx.base.base.full_screen = FALSE;
+		WARNING(GLX, "enter fullscreen failed, try window mode\n");
+	}
+
+	if (!_glx_ctx.base.base.full_screen)
+		map_window();
 
 	glx_ctx = &_glx_ctx;
 	
 
-//	return NULL;
 	return &glx_ctx->base;
 }
 
@@ -744,9 +985,19 @@ gl_close(void)
 	glx_cleanup(&glx_cleanup_str);
 }
 
+Display *
+x_get_display(void)
+{
+	assert(glx_ctx);
+	return _glx_ctx.display;
+}
 
-
-
+Window
+x_get_main_window(void)
+{
+	assert(glx_ctx);
+	return _glx_ctx.main_win;
+}
 
 
 
@@ -817,6 +1068,8 @@ video_set_icon(const icon_t icon)
 	THROW(EXCEPTION_FATAL, "glx set icom not implented\n");
 	return;
 }
+
+
 
 #endif	/* VIDEO_OPENGL_GLX_DRIVER */
 
