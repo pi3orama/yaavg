@@ -676,6 +676,11 @@ static void xvid_cleanup(struct cleanup * _str)
 	Display * d = _glx_ctx.display;
 	int s = _glx_ctx.screen;
 
+	remove_cleanup(_str);
+
+	if (d == NULL)
+		return;
+	TRACE(GLX, "restore from VID fullscreen\n");
 	XF86VidModeLockModeSwitch(d, s, False);
 }
 
@@ -699,12 +704,46 @@ xvid_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 	restore_fullscreen_cleanup = &fs_cleanup;
 
 	/* Save mode */
-	XF86VidModeGetModeLine(d, s, &unused, &saved_mode);
+	Bool res;
+	res = XF86VidModeGetModeLine(d, s, &unused, &saved_mode);
+	if (!res) {
+		ERROR(GLX, "XF86 cannot get modeline\n");
+		goto restore;
+	}
 	/* don't set psaved_mode, untile we are sure we need to change vidmode */
 
+	res = XF86VidModeLockModeSwitch(d, s, True);
+	if (!res) {
+		ERROR(GLX, "XF86VidModeLockModeSwitch failed\n");
+		goto restore;
+	}
 
-	XF86VidModeLockModeSwitch(d, s, True);
+	XF86VidModeModeInfo ** modes = NULL;
+	int nmodes;
+	res = XF86VidModeGetAllModeLines(d, s, &nmodes, &modes);
+	if (!res) {
+		ERROR(GLX, "XF86VidModeGetAllModeLines failed\n");
+		goto unlock_mode_switch;
+	}
 
+	/* iterator all modes */
+	FORCE(GLX, "Iterate over all modes\n");
+	for (int i = 0; i < nmodes; i++) {
+		FORCE(GLX, "mode %d:\n", i);
+		FORCE(GLX, "\tmodes[i]->hdisplay=%d\n", modes[i]->hdisplay);
+		FORCE(GLX, "\tmodes[i]->vdisplay=%d\n", modes[i]->vdisplay);
+	}
+
+	goto free_modes;
+//	return TRUE;
+
+free_modes:
+	if (modes != NULL)
+		XFree(modes);
+unlock_mode_switch:
+	XF86VidModeLockModeSwitch(d, s, False);
+restore:
+	THROW(EXCEPTION_USER_QUIT, "XXXXX");
 	return FALSE;
 }
 
