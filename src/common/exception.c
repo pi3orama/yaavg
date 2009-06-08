@@ -320,6 +320,7 @@ fatal_cleanup(void)
 		catcher_pop();
 	/* cleanup the default cleanup chain */
 	do_cleanup();
+	FORCE(SYSTEM, "Cleanup over\n");
 	exit(-1);
 }
 

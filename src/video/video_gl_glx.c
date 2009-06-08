@@ -90,7 +90,6 @@ static struct cleanup * restore_fullscreen_cleanup = NULL;
 static void
 glx_cleanup(struct cleanup * str)
 {
-	int err;
 	assert(str == &glx_cleanup_str);
 	remove_cleanup(str);
 
@@ -180,15 +179,21 @@ glx_cleanup(struct cleanup * str)
 	}
 
 
-
+	/* don't call dl_close on the library.
+	 * In NV's driver, if the cleanup caused by
+	 * a SIGPIPE (like, user press Alt-F4, or xserver closed),
+	 * remove driver will cause a SIGABRT */
+#if 0
 	if (_glx_ctx.dlhandle) {
+		int err;
 		TRACE(GLX, "free library\n");
 		err = dlclose(_glx_ctx.dlhandle);
+		FORCE(SYSTEM, "gl library has beed removed\n");
 		if (err)
 			WARNING(GLX, "Close dl library error\n");
 		_glx_ctx.dlhandle = NULL;
 	}
-
+#endif
 }
 
 
