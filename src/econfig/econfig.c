@@ -35,9 +35,9 @@ static struct conf_entry entries[] = {
 //	{"video.fullscreen", TypeBool, vcast(FALSE)},
 //	{"video.resizable", TypeBool, vcast(TRUE)},
 	{"video.resizable", TypeBool, vcast(FALSE)},
-	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/home/wn/src/Mesa-7.0.1/lib/libGL.so")},
+//	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/home/wn/src/Mesa-7.0.1/lib/libGL.so")},
 //	{"video.opengl.gllibrary", TypeString, vcast((const char*)NULL)},
-//	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/usr/local/lib/libGL.so")},
+	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/usr/local/lib/libGL.so")},
 	{"video.opengl.bpp", TypeInteger, vcast(32)},
 	/* vsync related */
 	{"video.opengl.swapcontrol", TypeInteger, vcast(0)},

@@ -687,9 +687,10 @@ static void xvid_cleanup(struct cleanup * _str)
 static bool_t
 xvid_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 {
-
+#ifdef HAVE_XF86VMODE
 	static XF86VidModeModeLine saved_mode;
 	static XF86VidModeModeLine * psaved_mode = NULL;
+	bool_t retval = FALSE;
 
 	/* some static values, used in cleanup */
 	static struct cleanup fs_cleanup = {
@@ -710,7 +711,7 @@ xvid_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 		ERROR(GLX, "XF86 cannot get modeline\n");
 		goto restore;
 	}
-	/* don't set psaved_mode, untile we are sure we need to change vidmode */
+	/* don't set psaved_mode, until we are sure we need to change vidmode */
 
 	res = XF86VidModeLockModeSwitch(d, s, True);
 	if (!res) {
@@ -726,25 +727,65 @@ xvid_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 		goto unlock_mode_switch;
 	}
 
-	/* iterator all modes */
-	FORCE(GLX, "Iterate over all modes\n");
+	/* iterator all modes, select a best mode */
+	int best = -1;
+	int w = _glx_ctx.base.base.width;
+	int h = _glx_ctx.base.base.height;
 	for (int i = 0; i < nmodes; i++) {
-		FORCE(GLX, "mode %d:\n", i);
-		FORCE(GLX, "\tmodes[i]->hdisplay=%d\n", modes[i]->hdisplay);
-		FORCE(GLX, "\tmodes[i]->vdisplay=%d\n", modes[i]->vdisplay);
+		if ((modes[i]->hdisplay == w) && (modes[i]->vdisplay == h)) {
+			best = i;
+			break;
+		}
+
+		int mw = modes[i]->hdisplay;
+		int mh = modes[i]->vdisplay;
+
+		if ((mw >= w) && (mh >= h)) {
+			if (best < 0) {
+				best = i;
+			} else {
+				if ((mw <= modes[best]->hdisplay) &&
+						(mh <= modes[best]->vdisplay)) {
+					if (mw != modes[best]->hdisplay)
+						best = i;
+					if (mh != modes[best]->vdisplay)
+						best = i;
+				}
+			}
+		}
 	}
 
+	FORCE(GLX, "best mode: mode %d:");
+#define PELEMENT(s) FORCE(GLX, "\t"#s"=%d\n", modes[best]->s)
+	PELEMENT(hdisplay);
+	PELEMENT(hsyncstart);
+	PELEMENT(hsyncend);
+	PELEMENT(htotal);
+	PELEMENT(hskew);
+	PELEMENT(vdisplay);
+	PELEMENT(vsyncstart);
+	PELEMENT(vsyncend);
+	PELEMENT(vtotal);
+	PELEMENT(flags);
+#undef PELEMENT
+
 	goto free_modes;
-//	return TRUE;
+	//	return TRUE;
 
 free_modes:
-	if (modes != NULL)
-		XFree(modes);
+	if (modes != NULL) {
+		if 
+			XFree(modes);
+		modes = NULL;
+	}
 unlock_mode_switch:
 	XF86VidModeLockModeSwitch(d, s, False);
 restore:
 	THROW(EXCEPTION_USER_QUIT, "XXXXX");
+	return retval;
+#else
 	return FALSE;
+#endif
 }
 
 static bool_t

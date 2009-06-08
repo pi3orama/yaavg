@@ -17,6 +17,7 @@
 #cmakedefine VIDEO_OPENGL_GLX_DRIVER	1
 #cmakedefine VIDEO_SDL_ENGINE		1
 #cmakedefine X11_DEBUG			1
+#cmakedefine HAVE_XF86VMODE		1
 
 #ifdef NDEBUG
 # define YAAVG_DEBUG_OFF
