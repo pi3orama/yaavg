@@ -14,8 +14,8 @@
 static struct conf_entry entries[] = {
 //	{"video.resolution.w", TypeInteger, vcast(1024)},
 //	{"video.resolution.h", TypeInteger, vcast(768)},
-	{"video.resolution.w", TypeInteger, vcast(700)},
-	{"video.resolution.h", TypeInteger, vcast(500)},
+	{"video.resolution.w", TypeInteger, vcast(800)},
+	{"video.resolution.h", TypeInteger, vcast(600)},
 	{"video.viewport.w", TypeInteger, vcast(800)},
 	{"video.viewport.h", TypeInteger, vcast(600)},
 //	{"video.viewport.w", TypeInteger, vcast(1024)},
@@ -24,19 +24,21 @@ static struct conf_entry entries[] = {
 //	{"video.mspf", TypeInteger, vcast(0)},
 	{"video.mspf", TypeInteger, vcast(17)},	/* 17ms: 60fps */
 //	{"video.fullscreen", TypeBool, vcast(FALSE)},
-	{"video.fullscreen", TypeBool, vcast(TRUE)},
+	{"video.fullscreen", TypeBool, vcast(FALSE)},
 	/* full screen engine,
 	 * 0 is default (XRANDR),
 	 * 1 is XRandR
 	 * 2 is XF86VidMode,
 	 * 3 is trival */
-	{"video.gl.glx.fullscreen.engine", TypeInteger, vcast(1)},
+	{"video.gl.glx.fullscreen.engine", TypeInteger, vcast(3)},
 //	{"video.fullscreen", TypeBool, vcast(FALSE)},
 //	{"video.resizable", TypeBool, vcast(TRUE)},
 	{"video.resizable", TypeBool, vcast(FALSE)},
 //	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/home/wn/src/Mesa-7.0.1/lib/libGL.so")},
-//	{"video.opengl.gllibrary", TypeString, vcast((const char*)NULL)},
-	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/usr/local/lib/libGL.so")},
+	{"video.opengl.gllibrary", TypeString, vcast((const char*)NULL)},
+//	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/usr/local/lib/libGL.so")},
+//	{"video.opengl.gl3context", TypeBool, vcast(FALSE)},
+	{"video.opengl.gl3context", TypeBool, vcast(TRUE)},
 	{"video.opengl.bpp", TypeInteger, vcast(32)},
 	/* vsync related */
 	{"video.opengl.swapcontrol", TypeInteger, vcast(0)},

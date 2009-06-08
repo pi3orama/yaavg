@@ -213,7 +213,7 @@ load_gl_library(void)
 	if (handle == NULL) {
 		FATAL(GLX, "Load OpenGL library %s error: %s\n",
 				library_name, strerror(errno));
-		THROW(EXCEPTION_FATAL, "Load OpenGL library failed\n");
+		THROW(EXCEPTION_FATAL, "Load OpenGL library failed");
 	}
 
 	_glx_ctx.dlhandle = handle;
@@ -296,7 +296,6 @@ fill_visual_attrs(int * attrs)
 	int i = 0;
 	int bpp;
 
-	attrs[i++] = GLX_RGBA;
 #define setkv(k, v)	do {\
 	attrs[i++] = k;			\
 	attrs[i++] = v;			\
@@ -305,6 +304,8 @@ fill_visual_attrs(int * attrs)
 #define setk(k)	do {\
 	attrs[i++] = k;			\
 } while(0)
+
+	setk(GLX_RGBA);
 
 	bpp = conf_get_integer("video.opengl.bpp", 16);
 	if (bpp >= 32) {
@@ -321,8 +322,8 @@ fill_visual_attrs(int * attrs)
 		setkv(GLX_DEPTH_SIZE, 16);
 	}
 	_glx_ctx.bpp = bpp;
-
 	setk(GLX_DOUBLEBUFFER);
+
 
 	/* multisample */
 	int samples = conf_get_integer("video.opengl.multisample", 0);
@@ -335,10 +336,6 @@ fill_visual_attrs(int * attrs)
 		}
 	}
 	_glx_ctx.samples = samples;
-
-	if (match_word("GLX_EXT_visual_rating", _glx_ctx.extensions)) {
-		setkv(GLX_VISUAL_CAVEAT_EXT, GLX_NONE_EXT);
-	}
 
 	setk(None);
 
@@ -544,7 +541,6 @@ glx_create_context(void)
 
 	TRACE(GLX, "GLX context created: %p\n", context);
 	_glx_ctx.glx_context = context;
-
 	err = glXMakeCurrent(d, w, context);
 	XSync(d, False);
 	XCheckError();
@@ -598,7 +594,7 @@ make_window(void)
 	XVisualInfo * visinfo = glXChooseVisual(d, s, visual_attrs);
 	if (visinfo == NULL) {
 		FATAL(GLX, "GLX cannot choose visual, check your configuration\n");
-		THROW(EXCEPTION_FATAL, "GLC cannot choose visual");
+		THROW(EXCEPTION_FATAL, "GLX cannot choose visual");
 	}
 	TRACE(GLX, "GLX choose visual: %p\n", visinfo);
 	_glx_ctx.visinfo = visinfo;
@@ -642,10 +638,6 @@ make_window(void)
 	_glx_ctx.base.base.full_screen = full_screen;
 
 	set_size_hints(w, h, full_screen, resizable);
-
-	if (full_screen) {
-		FATAL(GLX, "Create full screen window is not supported now\n");
-	}
 
 	win = XCreateWindow(d, _glx_ctx.wm_win,
 			0, 0, w, h, 0, visinfo->depth,
@@ -1330,6 +1322,57 @@ gl_init(void)
 	glx_ctx = &_glx_ctx;
 	
 
+#if 0
+	/* code copy from 
+	 * http://encelo.netsons.org/blog/2009/01/16/habemus-opengl-30/
+	 * but doesn't work
+	 * */
+	/* Create OpenGL 3.0 context */
+	bool_t gl3ctx = conf_get_bool("video.opengl.gl3context", FALSE);
+	/* I use while only because I want to use break */
+	do {
+		if (!gl3ctx)
+			break;
+
+		TRACE(GLX, "Try to create a gl3 context\n");
+		if (glXCreateContextAttribsARB == NULL) {
+			WARNING(GLX, "no glXCreateContextAttribsARB\n");
+			break;
+		}
+#ifndef GLX_CONTEXT_MAJOR_VERSION_ARB
+# define GLX_CONTEXT_MAJOR_VERSION_ARB (0x2091)
+#endif
+
+#ifndef GLX_CONTEXT_MINOR_VERSION_ARB
+# define GLX_CONTEXT_MINOR_VERSION_ARB (0x2092)
+#endif
+		WARNING(GLX, "Create OpenGL 3 context doesn't support now\n");
+
+Display *dpy;
+GLXDrawable draw, read;
+GLXContext ctx, ctx3;
+GLXFBConfig *cfg;
+int nelements;
+int attribs[]= {
+    GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+    GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+    GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+    0
+};
+
+ctx = glXGetCurrentContext();
+dpy = glXGetCurrentDisplay();
+draw = glXGetCurrentDrawable();
+read = glXGetCurrentReadDrawable();
+cfg = glXGetFBConfigs(dpy, 0, &nelements);
+ctx3 = glXCreateContextAttribsARB(dpy, *cfg, 0, 1, attribs);
+glXMakeContextCurrent(dpy, draw, read, ctx3);
+glXDestroyContext(dpy, ctx);
+XSync(dpy, False);
+XCheckError();
+
+	} while(0);
+#endif
 	return &glx_ctx->base;
 }
 

@@ -34,7 +34,7 @@ XPrintDefaultError(Display * dpy, XErrorEvent * event)
 		sprintf(number, "%d", event->request_code);
 		XGetErrorDatabaseText(dpy, "XRequest", number, "", buffer, XBUFSIZ);
 	} else {
-		const char str[] = "Extension error\n";
+		const char str[] = "Extension error";
 		strncpy(buffer, str, sizeof(str));
 	}
 

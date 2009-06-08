@@ -92,3 +92,4 @@ glXWaitForMscOML
 glXWaitForSbcOML
 glXWaitVideoSyncSGI
 glXSwapIntervalMESA
+glXCreateContextAttribsARB

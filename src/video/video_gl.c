@@ -381,7 +381,7 @@ init_gl_engine(void)
 	video_reshape(gl_ctx->base.width, gl_ctx->base.height);
 
 	/* Set other OpenGL properties */
-	glClearColor(0.1, 0.2, 0.3, 0.0);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glEnable(GL_BLEND);
 	glEnable(GL_TEXTURE_1D);
 	glEnable(GL_TEXTURE_2D);
