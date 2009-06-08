@@ -82,6 +82,11 @@ count_1s_64(uint64_t c1)
 #ifndef min
 # define min(a, b)	(((a) < (b)) ? (a) : (b))
 #endif
+
+#ifndef diff
+# define diff(a, b)	(max((a), (b)) - min((a), (b)))
+#endif
+
 static inline int
 pow2roundup (int x)
 {

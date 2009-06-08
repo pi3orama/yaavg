@@ -13,11 +13,14 @@ __BEGIN_DECLS
 
 /* X11 based video should export some infos for events processing */
 
-Display *
+extern Display *
 x_get_display(void);
 
-Window
+extern Window
 x_get_main_window(void);
+
+extern int
+x_get_screen(void);
 
 bool_t x_failed;
 

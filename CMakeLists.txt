@@ -76,6 +76,10 @@ IF (X11_xf86vmode_FOUND)
 	SET(HAVE_XF86VMODE 1)
 ENDIF(X11_xf86vmode_FOUND)
 
+IF (X11_Xrandr_FOUND)
+	SET(HAVE_XRANDR 1)
+ENDIF(X11_Xrandr_FOUND)
+
 # Check for SDL options
 IF (${video_setting} MATCHES "SDL")
 	IF (NOT SDL_FOUND)

@@ -100,6 +100,12 @@ XWaitUnmapped(Display * dpy, Window win)
 }
 
 
+void
+XMoveCursorTo(Display * d, Window w, int x, int y)
+{
+    XWarpPointer(d, None, w, 0, 0, 0, 0, x, y);
+}
+
 // vim:tabstop=4:shiftwidth=4
 
 #endif /* VIDEO_OPENGL_GLX_DRIVER */

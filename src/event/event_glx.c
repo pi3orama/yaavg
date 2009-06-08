@@ -28,6 +28,7 @@ int event_poll(void)
 
 	/* We'd better unselect all event here? */
 	/* for performance consideration, it may not be a good idea */
+	/* xrand need do process XRRUpdateConfiguration */
 
 	int xxx = 0;
 	while (XPending(display)) {

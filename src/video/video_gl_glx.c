@@ -24,7 +24,13 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xext.h>
 #include <X11/Xatom.h>
-#include <X11/extensions/xf86vmode.h>
+#ifdef HAVE_XF86VMODE
+# include <X11/extensions/xf86vmode.h>
+#endif
+
+#ifdef HAVE_XRANDR
+# include <X11/extensions/Xrandr.h>
+#endif
 
 #include <errno.h>
 #include <string.h>
@@ -120,13 +126,14 @@ glx_cleanup(struct cleanup * str)
 		_glx_ctx.colormap = 0;
 	}
 
+	if (restore_fullscreen_cleanup != NULL) {
+		TRACE(GLX, "restore from fullscreen\n");
+		CLEANUP(restore_fullscreen_cleanup);
+		restore_fullscreen_cleanup = NULL;
+	}
+
 	if (_glx_ctx.display) {
 		Display * d = _glx_ctx.display;
-
-		if (restore_fullscreen_cleanup) {
-			CLEANUP(restore_fullscreen_cleanup);
-			restore_fullscreen_cleanup = NULL;
-		}
 
 		if (_glx_ctx.glx_context) {
 			GLXContext ctx = _glx_ctx.glx_context;
@@ -671,63 +678,182 @@ make_window(void)
 }
 
 
-static void xvid_cleanup(struct cleanup * _str)
+
+static void
+map_window(void);
+
+struct _xvid_state {
+	XF86VidModeModeLine	saved_modeline;
+	int dotclock;
+	int view_x;
+	int view_y;
+	bool_t need_restore;
+};
+
+static struct _xvid_state xvid_saved_state = {
+	.need_restore = FALSE,
+};
+
+
+static void
+map_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win,
+		int x, int y, int real_x, int real_y)
 {
+	/* Map Windows */
+	XMoveResizeWindow(d, fs_win, 0, 0, real_x, real_y);
+	XReparentWindow(d, main_win, fs_win,
+			(real_x - x) / 2,
+			(real_y - y) / 2);
+
+	XMoveCursorTo(d, _glx_ctx.root_win, real_x / 2,
+			real_y / 2);
+
+	/* Install colormap */
+	if (_glx_ctx.colormap != 0)
+		XInstallColormap(d, _glx_ctx.colormap);
+
+	XMapWindow(d, main_win);
+	XCheckError();
+	/* We must map wm_win to receive key input */
+	XMapWindow(d, wm_win);
+	XCheckError();
+	XMapRaised(d, fs_win);
+	XCheckError();
+
+	XWaitMapped(d, fs_win);
+
+	XGrabPointer(d, main_win, True, 0,
+			GrabModeAsync, GrabModeAsync,
+			main_win, None, CurrentTime);
+	XGrabKeyboard(d, wm_win, False,
+			GrabModeAsync, GrabModeAsync, CurrentTime);
+	XSync(d, False);
+	XCheckError();
+}
+static void
+xvid_cleanup(struct cleanup * _str)
+{
+#ifdef HAVE_XF86VMODE
 	Display * d = _glx_ctx.display;
 	int s = _glx_ctx.screen;
 
 	remove_cleanup(_str);
 
-	if (d == NULL)
+	if (!xvid_saved_state.need_restore)
 		return;
-	TRACE(GLX, "restore from VID fullscreen\n");
+	if (d == NULL) {
+		WARNING(GLX, "X11 connection has been destroied, reconnect.\n");
+		d = XOpenDisplay(NULL);
+		if (d == NULL) {
+			FATAL(GLX, "reconnect failed, don't restore video mode\n");
+			return;
+		}
+		s = DefaultScreen(d);
+	}
+
+	TRACE(GLX, "unlock mode switch mode\n");
 	XF86VidModeLockModeSwitch(d, s, False);
+
+	/* restore mode */
+	XF86VidModeModeInfo mode;
+	mode.dotclock = xvid_saved_state.dotclock;
+	memcpy(&(mode.hdisplay), &(xvid_saved_state.saved_modeline),
+			sizeof(XF86VidModeModeLine));
+	TRACE(GLX, "restore from VID fullscreen\n");
+	TRACE(GLX, "restore old mode\n");
+	XF86VidModeSwitchToMode(d, s, &mode);
+
+	TRACE(GLX, "restore viewport\n");
+	int vx = xvid_saved_state.view_x;
+	int vy = xvid_saved_state.view_y;
+	XF86VidModeSetViewPort(d, s, vx, vy);
+
+	if (_glx_ctx.display == NULL)
+		XCloseDisplay(d);
+#endif
 }
+
+static bool_t
+trival_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win);
 
 static bool_t
 xvid_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 {
 #ifdef HAVE_XF86VMODE
-	static XF86VidModeModeLine saved_mode;
-	static XF86VidModeModeLine * psaved_mode = NULL;
-	bool_t retval = FALSE;
-
 	/* some static values, used in cleanup */
 	static struct cleanup fs_cleanup = {
 		.function	= xvid_cleanup,
 	};
 
 	TRACE(GLX, "Try xvid fullscreen\n");
-	int s = _glx_ctx.screen;
-	int unused;
 
-	make_cleanup(&fs_cleanup);
-	restore_fullscreen_cleanup = &fs_cleanup;
+	Bool res;
+	int event_base, error_base, major_ver, minor_ver;
+	res = XF86VidModeQueryExtension(d, &event_base, &error_base);
+	if (!res) {
+		ERROR(GLX, "server doesn't support XF86VidMode\n");
+		return FALSE;
+	}
+	TRACE(GLX, "XF86VidModeQueryExtension: event_base=%d, error_base=%d\n",
+			event_base, error_base);
+
+	res = XF86VidModeQueryVersion(d, &major_ver, &minor_ver);
+	if (!res) {
+		ERROR(GLX, "server doesn't support XF86VidMode\n");
+		return FALSE;
+	}
+	TRACE(GLX, "XF86VidModeQueryVersion: major_ver=%d, minor_ver=%d\n",
+			major_ver, minor_ver);
+
+	int s = _glx_ctx.screen;
+	int dotclock;
+	XF86VidModeModeLine saved_modeline;
 
 	/* Save mode */
-	Bool res;
-	res = XF86VidModeGetModeLine(d, s, &unused, &saved_mode);
+	res = XF86VidModeGetModeLine(d, s, &dotclock, &saved_modeline);
 	if (!res) {
 		ERROR(GLX, "XF86 cannot get modeline\n");
-		goto restore;
+		return FALSE;
 	}
-	/* don't set psaved_mode, until we are sure we need to change vidmode */
 
-	res = XF86VidModeLockModeSwitch(d, s, True);
+	int saved_x, saved_y;
+	res = XF86VidModeGetViewPort(d, s, &saved_x, &saved_y);
 	if (!res) {
-		ERROR(GLX, "XF86VidModeLockModeSwitch failed\n");
-		goto restore;
+		ERROR(GLX, "XF86 cannot get viewport\n");
+		return FALSE;
 	}
 
+	VERBOSE(GLX, "Saved modeline:\n");
+#define PELEMENT(s) VERBOSE(GLX, "\t"#s"=%d\n", saved_modeline.s)
+	PELEMENT(hdisplay);
+	PELEMENT(hsyncstart);
+	PELEMENT(hsyncend);
+	PELEMENT(htotal);
+	PELEMENT(hskew);
+	PELEMENT(vdisplay);
+	PELEMENT(vsyncstart);
+	PELEMENT(vsyncend);
+	PELEMENT(vtotal);
+	PELEMENT(flags);
+#undef PELEMENT
+	VERBOSE(GLX, "Saved viewport: %d x %d\n", saved_x, saved_y);
+
+	/* set cleanup */
+	xvid_saved_state.saved_modeline = saved_modeline;
+	xvid_saved_state.dotclock = dotclock;
+	xvid_saved_state.view_x = saved_x;
+	xvid_saved_state.view_y = saved_y;
+
+	/* find best mode */
 	XF86VidModeModeInfo ** modes = NULL;
 	int nmodes;
 	res = XF86VidModeGetAllModeLines(d, s, &nmodes, &modes);
 	if (!res) {
 		ERROR(GLX, "XF86VidModeGetAllModeLines failed\n");
-		goto unlock_mode_switch;
+		return FALSE;
 	}
 
-	/* iterator all modes, select a best mode */
+	TRACE(GLX, "Find best mode in %d modes\n", nmodes);
 	int best = -1;
 	int w = _glx_ctx.base.base.width;
 	int h = _glx_ctx.base.base.height;
@@ -755,8 +881,14 @@ xvid_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 		}
 	}
 
-	FORCE(GLX, "best mode: mode %d:");
-#define PELEMENT(s) FORCE(GLX, "\t"#s"=%d\n", modes[best]->s)
+	if (best < 0) {
+		ERROR(GLX, "cannot find suitable mode using XF86VidMode\n");
+		XFree(modes);
+		return FALSE;
+	}
+
+	VERBOSE(GLX, "best mode: mode %d:\n");
+#define PELEMENT(s) VERBOSE(GLX, "\t"#s"=%d\n", modes[best]->s)
 	PELEMENT(hdisplay);
 	PELEMENT(hsyncstart);
 	PELEMENT(hsyncend);
@@ -769,41 +901,252 @@ xvid_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 	PELEMENT(flags);
 #undef PELEMENT
 
-	goto free_modes;
-	//	return TRUE;
-
-free_modes:
-	if (modes != NULL) {
-		if 
-			XFree(modes);
-		modes = NULL;
+	if ((modes[best]->hdisplay == saved_modeline.hdisplay) &&
+		(modes[best]->vdisplay == saved_modeline.vdisplay)) {
+		/* We are already in an OK mode */
+		XFree(modes);
+		goto map_fs_window;
 	}
-unlock_mode_switch:
-	XF86VidModeLockModeSwitch(d, s, False);
-restore:
-	THROW(EXCEPTION_USER_QUIT, "XXXXX");
-	return retval;
+
+	/* switch to best mode */
+
+	/* Mouse position is very important */
+	/* ungrab mouse pointer so we can move mouse around */
+	XUngrabPointer(d, CurrentTime);
+	XMoveCursorTo(d, _glx_ctx.root_win, 0, 0);
+
+	res = XF86VidModeSwitchToMode(d, s, modes[best]);
+	if (!res) {
+		ERROR(GLX, "XF86VidModeSwitchToMode to mode %d failed\n", best);
+		XFree(modes);
+		return FALSE;
+	}
+
+	XSync(d, False);
+
+	/* setup cleanup */
+	xvid_saved_state.need_restore = TRUE;
+	make_cleanup(&fs_cleanup);
+	restore_fullscreen_cleanup = &fs_cleanup;
+
+	TRACE(GLX, "XF86VidMode switch mode OK\n");
+	XFree(modes);
+
+	/* Get real resolusion */
+	XF86VidModeModeLine real_mode;
+	int unused;
+
+
+	XMoveCursorTo(d, _glx_ctx.root_win, 0, 0);
+	res = XF86VidModeGetModeLine(d, s, &unused, &real_mode);
+	if (!res) {
+		ERROR(GLX, "XF86VidMode: cannot get real mode after mode switch\n");
+		CLEANUP(&fs_cleanup);
+		return FALSE;
+	}
+
+	TRACE(GLX, "real mode:\n");
+#define PELEMENT(s) VERBOSE(GLX, "\t"#s"=%d\n", real_mode.s)
+	PELEMENT(hdisplay);
+	PELEMENT(hsyncstart);
+	PELEMENT(hsyncend);
+	PELEMENT(htotal);
+	PELEMENT(hskew);
+	PELEMENT(vdisplay);
+	PELEMENT(vsyncstart);
+	PELEMENT(vsyncend);
+	PELEMENT(vtotal);
+	PELEMENT(flags);
+#undef PELEMENT
+
+map_fs_window:
+	map_fullscreen(d, main_win, wm_win, fs_win,
+			w, h, real_mode.hdisplay, real_mode.vdisplay);
+	return TRUE;
 #else
 	return FALSE;
 #endif
 }
 
-static bool_t
-xme_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
+
+struct _xrandr_state {
+	SizeID ori_size;
+	Rotation ori_rotation;
+	bool_t need_restore;
+};
+
+static struct _xrandr_state xrandr_saved_state = {
+	.need_restore = FALSE,
+};
+
+static void
+xrandr_cleanup(struct cleanup * _str)
 {
-	TRACE(GLX, "Try xme fullscreen\n");
-	return FALSE;
+	remove_cleanup(_str);
+	if (!xrandr_saved_state.need_restore)
+		return;
+
+	TRACE(GLX, "xrandr cleanup\n");
+
+	Display * d = _glx_ctx.display;
+
+	if (d == NULL) {
+		WARNING(GLX, "X11 connection has been destroied, reconnect.\n");
+		d = XOpenDisplay(NULL);
+		if (d == NULL) {
+			FATAL(GLX, "reconnect failed, don't restore video mode\n");
+			return;
+		}
+	}
+
+	/* first, get sc */
+	XRRScreenConfiguration * sc;
+	Window root_win = _glx_ctx.root_win;
+	sc = XRRGetScreenInfo (d, root_win);
+
+	/* then, reset size */
+	XRRSetScreenConfig(d, sc, root_win,
+			xrandr_saved_state.ori_size,
+			xrandr_saved_state.ori_rotation,
+			CurrentTime);
+	restore_fullscreen_cleanup = NULL;
+	if (_glx_ctx.display == NULL)
+			XCloseDisplay(d);
+	return;
 }
 
 static bool_t
 xrandr_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 {
+#if HAVE_XRANDR
 	TRACE(GLX, "Try xrandr fullscreen\n");
+	/* Check for xrandr support */
+	Bool res;
+	bool_t retval = FALSE;
+
+	int major_ver, minor_ver;
+	res = XRRQueryVersion(d, &major_ver, &minor_ver);
+	if (!res) {
+		ERROR(GLX, "server doesn't support Xrandr\n");
+		return FALSE;
+	}
+
+	TRACE(GLX, "Server reports RandR version %d.%d\n", major_ver,
+			minor_ver);
+
+	/* save current state */
+	XRRScreenConfiguration * sc;
+	Window root_win = _glx_ctx.root_win;
+	sc = XRRGetScreenInfo (d, root_win);
+	if (sc == NULL) {
+		ERROR(GLX, "xrandr check screen info failed\n");
+		return FALSE;
+	}
+
+	SizeID ori_size;
+	Rotation ori_rotation;
+
+	ori_size = XRRConfigCurrentConfiguration(sc, &ori_rotation);
+
+	TRACE(GLX, "XRandr current setting:\n");
+	TRACE(GLX, "\tsize: %d\n", ori_size);
+	TRACE(GLX, "\trotation: %d\n", ori_rotation);
+
+	XRRScreenSize *sizes;
+	int nsizes;
+	sizes = XRRConfigSizes(sc, &nsizes);
+	if (sizes == NULL) {
+		ERROR(GLX, "XRRConfSizes failed\n");
+		goto free_sc;
+	}
+
+
+	int desired_w, desired_h;
+	desired_w = _glx_ctx.base.base.width;
+	desired_h = _glx_ctx.base.base.height;
+
+	/* iterate over sizes, search the best size */
+	/* copy from xrandr's code */
+	int best_size = -1;
+	int best_w, best_h;
+	TRACE(GLX, " SZ:    Pixels          Physical\n");
+	for (int i = 0; i < nsizes; i++) {
+		int w, h;
+		w = sizes[i].width;
+		h = sizes[i].height;
+		TRACE(GLX, "%c%-2d %5d x %-5d  (%4dmm x%4dmm )\n",
+				i == ori_size ? '*' : ' ',
+				i, w, h,
+				sizes[i].mwidth, sizes[i].mheight);
+
+		if ((w >= desired_w) && (h >= desired_h)) {
+			if (best_size < 0) {
+				best_size = i;
+			} else {
+				if ((w <= sizes[best_size].width) &&
+						(h <= sizes[best_size].height)) {
+					if (w != sizes[best_size].width)
+						best_size = i;
+					if (h != sizes[best_size].height)
+						best_size = i;
+				}
+			}
+		}
+	}
+
+	if (best_size == -1) {
+		ERROR(GLX, "Cannot find best size with Xrandar\n");
+		goto free_sc;
+	}
+	best_w = sizes[best_size].width;
+	best_h = sizes[best_size].height;
+	TRACE(GLX, "best size is %d x %d (number %d)\n",
+			best_w, best_h, best_size);
+
+	/* Check whether we really need switch mode */
+	if (best_size == ori_size) {
+		TRACE(GLX, "best size is current size, needn't switch mode\n");
+		retval = TRUE;
+		goto free_sc;
+	}
+
+
+
+	/* begin mode switch */
+	xrandr_saved_state.ori_size = ori_size;
+	xrandr_saved_state.ori_rotation = ori_rotation;
+	xrandr_saved_state.need_restore = TRUE;
+	static struct cleanup fs_cleanup = {
+		.function = xrandr_cleanup,
+	};
+	make_cleanup(&fs_cleanup);
+	restore_fullscreen_cleanup = &fs_cleanup;
+
+	Status res_stat;
+	res_stat = XRRSetScreenConfig(d, sc, root_win,
+			best_size, ori_rotation, CurrentTime);
+	XSync(d, True);
+	XCheckError();
+	if (res_stat != 0) {
+		ERROR(GLX, "reset size with xrandr failed\n");
+		goto free_sc;
+	}
+	retval = TRUE;
+
+free_sc:
+	XRRFreeScreenConfigInfo(sc);
+	if (!retval)
+		return FALSE;
+
+	/* Map Windows */
+	map_fullscreen(d, main_win, wm_win, fs_win,
+			desired_w, desired_h, best_w, best_h);
+	return TRUE;
+#else
 	return FALSE;
+#endif
 }
 
-static void
-map_window(void);
 
 static bool_t
 trival_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
@@ -842,74 +1185,9 @@ trival_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 	XCheckError();
 	XSync(d, False);
 	map_window();
-	restore_fullscreen_cleanup = NULL;
-	return TRUE;
 
-#if 0
-	XSync(d, False);
-
-	Atom WM_HINTS;
-	WM_HINTS = XInternAtom(d, "_MOTIF_WM_HINTS", True);
-	if (WM_HINTS == None) {
-		WARNING(GLX, "remove window frame failed\n");
-		return FALSE;
-	}
-
-	/* Hints used by Motif compliant window managers */
-	struct {
-		unsigned long flags;
-		unsigned long functions;
-		unsigned long decorations;
-		long input_mode;
-		unsigned long status;
-	} MWMHints = { (1L << 1), 0, 0, 0, 0 };
-
-	XChangeProperty(d, wm_win,
-			WM_HINTS, WM_HINTS, 32,
-			PropModeReplace,
-			(unsigned char *)&MWMHints,
-			sizeof(MWMHints)/sizeof(long));
-
-	XMoveResizeWindow(d, wm_win, 0, 0, 1280, 800);
-	XMoveResizeWindow(d, main_win, 240, 100, 800, 600);
-	map_window();
-
-	XRaiseWindow(d, wm_win);
-	XCheckError();
-	XSetInputFocus(d, wm_win, RevertToParent, CurrentTime);
-	XSync(d, False);
-#endif
-#if 0
-	XSync(d, False);
-
-	XMoveResizeWindow(d, fs_win, 0, 0, 1280, 800);
-	XReparentWindow(d, main_win, fs_win, 0, 0);
-	XMoveResizeWindow(d, main_win, 240, 100, 800, 600);
-
-#if 1
-	XWMHints * hints = NULL;
-	hints = XAllocWMHints();
-	assert(hints != NULL);
-	hints->input = True;
-	hints->flags = InputHint;
-	XSetWMHints(d, fs_win, hints);
-	XFree(hints);
-	XCheckError();
-#endif
-
-	XMapWindow(d, main_win);
-	XCheckError();
-	XMapWindow(d, fs_win);
-	XCheckError();
-	XWaitMapped(d, fs_win);
-
-	XRaiseWindow(d, fs_win);
-	XSelectInput(d, fs_win, StructureNotifyMask |
-			KeyPressMask | KeyReleaseMask);
-
-	XSetInputFocus(d, fs_win, RevertToParent, CurrentTime);
-	XSync(d, False);
-#endif
+	/* don't set restore_fullscreen_cleanup to NULL.
+	 * other fullscreen utils may call me */
 	return TRUE;
 }
 
@@ -926,15 +1204,11 @@ enter_fullscreen(void)
 	switch (fsengine) {
 		case 0:
 		case 1:
-			succ = xvid_fullscreen(d, main_win, wm_win, fs_win);
+			succ = xrandr_fullscreen(d, main_win, wm_win, fs_win);
 			if (succ)
 				return TRUE;
 		case 2:
-			succ = xme_fullscreen(d, main_win, wm_win, fs_win);
-			if (succ)
-				return TRUE;
-		case 3:
-			succ = xrandr_fullscreen(d, main_win, wm_win, fs_win);
+			succ = xvid_fullscreen(d, main_win, wm_win, fs_win);
 			if (succ)
 				return TRUE;
 		default:
@@ -1079,7 +1353,12 @@ x_get_main_window(void)
 	return _glx_ctx.main_win;
 }
 
-
+int
+x_get_screen(void)
+{
+	assert(glx_ctx);
+	return _glx_ctx.screen;
+}
 
 
 

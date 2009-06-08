@@ -20,6 +20,9 @@ XWaitMapped(Display * dpy, Window win);
 void
 XWaitUnmapped(Display * dpy, Window win);
 
+
+void
+XMoveCursorTo(Display * d, Window w, int x, int y);
 #endif
 #endif	/* VIDEO_OPENGL_GLX_DRIVER */
 // vim:tabstop=4:shiftwidth=4

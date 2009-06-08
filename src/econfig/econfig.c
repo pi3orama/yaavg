@@ -12,10 +12,10 @@
 
 #define vcast(x)	(union _conf_value)(x)
 static struct conf_entry entries[] = {
-//	{"video.resolution.w", TypeInteger, vcast(1280)},
-//	{"video.resolution.h", TypeInteger, vcast(800)},
-	{"video.resolution.w", TypeInteger, vcast(800)},
-	{"video.resolution.h", TypeInteger, vcast(600)},
+//	{"video.resolution.w", TypeInteger, vcast(1024)},
+//	{"video.resolution.h", TypeInteger, vcast(768)},
+	{"video.resolution.w", TypeInteger, vcast(700)},
+	{"video.resolution.h", TypeInteger, vcast(500)},
 	{"video.viewport.w", TypeInteger, vcast(800)},
 	{"video.viewport.h", TypeInteger, vcast(600)},
 //	{"video.viewport.w", TypeInteger, vcast(1024)},
@@ -26,12 +26,11 @@ static struct conf_entry entries[] = {
 //	{"video.fullscreen", TypeBool, vcast(FALSE)},
 	{"video.fullscreen", TypeBool, vcast(TRUE)},
 	/* full screen engine,
-	 * 0 is default,
-	 * 1 is XVID,
-	 * 2 is XME,
-	 * 3 is XRANDR
-	 * 4 is trival */
-	{"video.gl.glx.fullscreen.engine", TypeInteger, vcast(0)},
+	 * 0 is default (XRANDR),
+	 * 1 is XRandR
+	 * 2 is XF86VidMode,
+	 * 3 is trival */
+	{"video.gl.glx.fullscreen.engine", TypeInteger, vcast(1)},
 //	{"video.fullscreen", TypeBool, vcast(FALSE)},
 //	{"video.resizable", TypeBool, vcast(TRUE)},
 	{"video.resizable", TypeBool, vcast(FALSE)},

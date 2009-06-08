@@ -90,6 +90,7 @@ extern void message_out(int prefix, enum debug_level, enum debug_component, char
 /* Below definition won't distrub the debug level, because 
  * they are all func-like macro */
 #define TRACE(comp, str...) DEBUG_MSG(TRACE, comp, str)
+#define TRACE_CONT(comp, str...) DEBUG_MSG_CONT(TRACE, comp, str)
 #define VERBOSE(comp, str...) DEBUG_MSG(VERBOSE, comp, str)
 #define WARNING(comp, str...) DEBUG_MSG(WARNING, comp, str)
 #define WARNING_CONT(comp, str...) DEBUG_MSG_CONT(WARNING, comp, str)
