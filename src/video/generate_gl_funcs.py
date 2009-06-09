@@ -92,6 +92,7 @@ elif gl_or_glx == "glx":
 	print "#include <GL/glx.h>"
 	print "#include <GL/glxext.h>"
 	print "#include <video/mesa_fix.h>"
+	print "#include <video/gl3_fix.h>"
 	print ""
 	print "struct glx_funcs {"
 

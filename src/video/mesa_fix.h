@@ -22,3 +22,4 @@ typedef int (*PFNGLXGETSWAPINTERVALMESAPROC)(void);
 #endif /* GLX_MESA_swap_control */
 
 #endif
+
