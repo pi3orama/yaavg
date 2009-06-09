@@ -23,8 +23,6 @@ __BEGIN_DECLS
 #define NR_HWTEX_LMT	(64)
 
 struct texture_gl_params {
-	/* flat texture is treated as bitmap, no hw texture is generated */
-	bool_t flat;
 
 	/* imm texture is load into hw mem immediately */
 	bool_t imm;
@@ -44,7 +42,6 @@ struct texture_gl_params {
 };
 
 #define TEXTURE_GL_PARAM_INIT {	\
-	FALSE,						\
 	TRUE,						\
 	50,							\
 	GL_TEXTURE_2D,				\

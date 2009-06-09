@@ -213,13 +213,6 @@ init_texgl(struct texture_gl * tex)
 
 	load_bitmap(tex);
 
-	if (tex->gl_params.flat) {
-		tex->nr_hwtexs = 0;
-		tex->use_bitmap_data = TRUE;
-		release_bitmap(tex);
-		return;
-	}
-
 	b = tex->base.bitmap;
 	assert(b != NULL);
 	TRACE(OPENGL, "bitmap size: (%d x %d)\n", b->w, b->h);
@@ -296,6 +289,9 @@ init_texgl(struct texture_gl * tex)
 				tex, tex->tile_w, tex->tile_h);
 	}
 
+	/* force release bitmap, don't care whether to use bitmap data.
+	 * If the hwtex needs be built immediately, load_texgl will call
+	 * load_bitmap; else, we need't this bitmap. */
 	release_bitmap(tex);
 	return;
 }
@@ -303,11 +299,11 @@ init_texgl(struct texture_gl * tex)
 
 /* give the tile number(x, y), return:
  * the start ptr in bitmap's data */
+/* before the calling of tile_to_data, caller must guarantee
+ * the bitmap has been loaded. */
 static inline uint8_t *
 tile_to_data(struct texture_gl * tex, int x, int y)
 {
-	load_bitmap(tex);
-
 	struct bitmap * b = TEXGL_BITMAP(tex);
 	struct rectangle * rect = &tex->base.rect;
 	assert(b != NULL);
@@ -381,8 +377,11 @@ build_phybitmap(struct texture_gl * tex)
 			}
 		}
 	}
+	release_bitmap(tex);
 }
 
+/* after load_hwtexs, bitmap will have been released, 
+ * no matter whether directly use bitmap data */
 static void
 load_hwtexs(struct texture_gl * tex)
 {
@@ -390,10 +389,6 @@ load_hwtexs(struct texture_gl * tex)
 	int nr = 0;
 
 	build_phybitmap(tex);
-	if (tex->gl_params.flat) {
-		tex->occupied_hwmem = 0;
-		return;
-	}
 
 	if (tex->hwtexs == NULL) {
 		if (tex->nr_hwtexs < NR_HWTEX_LMT)
@@ -411,6 +406,7 @@ load_hwtexs(struct texture_gl * tex)
 
 	if (tex->gl_params.target == GL_TEXTURE_3D) {
 		WARNING(OPENGL, "3D texture hasn't implemented\n");
+		release_bitmap(tex);
 		return;
 	}
 
@@ -546,23 +542,23 @@ load_hwtexs(struct texture_gl * tex)
 		}
 	}
 
+	release_bitmap(tex);
 	ALLOC_HWMEM(tex->occupied_hwmem);
 
 	return;
 }
 
 /* 
- * after load_texgl, bitmap is released, if not use bitmap data
+ * after load_texgl, bitmap is released
  */
 static void
 load_texgl(struct texture_gl * tex)
 {
-	if (tex->gl_params.flat)
-		return;
 	if (tex->nr_hwtexs == 0) 
 		return;
 	if (tex->hwtexs == NULL)
 		load_hwtexs(tex);
+	release_bitmap(tex);
 }
 
 static void
@@ -625,8 +621,7 @@ texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
 	}
 
 	TEXGL_SHRINK(tex, GC_NORMAL);
-	if (!tex->use_bitmap_data)
-		release_bitmap(tex);
+	release_bitmap(tex);
 	return tex;
 }
 

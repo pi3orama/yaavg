@@ -86,6 +86,7 @@ gl_init(void)
 void
 gl_reinit(void)
 {
+	TRACE(GLX, "reinit gl system\n");
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	sdl_ctx = NULL;
 	init_sdl();

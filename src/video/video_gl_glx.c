@@ -51,7 +51,7 @@
  * exit(). However, we want to free some resource.  */
 bool_t x_failed = FALSE;
 
-static struct glx_context {
+struct glx_context {
 	struct gl_context base;
 	void * dlhandle;
 	const char * extensions;
@@ -69,7 +69,21 @@ static struct glx_context {
 	GLXContext glx_context;
 	int screen;
 	struct glx_funcs funcs;
-} _glx_ctx;
+};
+
+/* Why init dlhandle specially?
+ * in some platform, if the window is closed by a Alt-F4
+ * generated SIGPIPE, dlclose cause a SIGABRT. Therefore
+ * we cannot do dlclose in glx_cleanup. However, if glx
+ * subsys reinit, we need't load gl library again.
+ *
+ * We init dlhandle explicity so we can rely on its value to
+ * determine whether we need load the library or not.
+ * */
+static struct glx_context _glx_ctx = {
+	.dlhandle = NULL,
+};
+
 
 static struct glx_context * glx_ctx = NULL;
 
@@ -196,29 +210,36 @@ glx_cleanup(struct cleanup * str)
 #endif
 }
 
-
+/* 
+ * See comment on _glx_ctx.
+ */
 static void
-load_gl_library(void)
+load_gl_library(void * old_handle)
 {
 #ifndef STATIC_OPENGL
 
 	TRACE(GLX, "Begin to load glx library\n");
 
-	/* Check conf */
-	const char * library_name = NULL;
-	library_name = conf_get_string("video.opengl.gllibrary", NULL);
-	if (library_name == NULL)
-		library_name = "libGL.so";
-
-	TRACE(GLX, "libGL soname: %s\n", library_name);
-
-	/* dlopen */
 	void * handle;
-	handle = dlopen(library_name, (RTLD_NOW|RTLD_GLOBAL));
-	if (handle == NULL) {
-		FATAL(GLX, "Load OpenGL library %s error: %s\n",
-				library_name, strerror(errno));
-		THROW(EXCEPTION_FATAL, "Load OpenGL library failed");
+	if (old_handle != NULL) {
+		TRACE(GLX, "use old dllibrary\n");
+		handle = old_handle;
+	} else {
+		/* Check conf */
+		const char * library_name = NULL;
+		library_name = conf_get_string("video.opengl.gllibrary", NULL);
+		if (library_name == NULL)
+			library_name = "libGL.so";
+
+		TRACE(GLX, "libGL soname: %s\n", library_name);
+
+		/* dlopen */
+		handle = dlopen(library_name, (RTLD_NOW|RTLD_GLOBAL));
+		if (handle == NULL) {
+			FATAL(GLX, "Load OpenGL library %s error: %s\n",
+					library_name, strerror(errno));
+			THROW(EXCEPTION_FATAL, "Load OpenGL library failed");
+		}
 	}
 
 	_glx_ctx.dlhandle = handle;
@@ -1262,18 +1283,18 @@ map_window(void)
 struct gl_context *
 gl_init(void)
 {
-
 	if (glx_ctx != NULL) {
 		WARNING(GLX, "multi init OpenGL\n");
 		return &glx_ctx->base;
 	}
 
+	void * old_dlhandle = _glx_ctx.dlhandle;
 	memset(&_glx_ctx, 0, sizeof(_glx_ctx));
 
 	make_cleanup(&glx_cleanup_str);
 
 	/* first: load libGL library */
-	load_gl_library();
+	load_gl_library(old_dlhandle);
 
 	/* make X connection */
 	TRACE(GLX, "OpenDisplay\n");
@@ -1436,7 +1457,10 @@ x_get_screen(void)
 void
 gl_reinit(void)
 {
-	THROW(EXCEPTION_FATAL, "glx reinit not implentmented");
+	TRACE(GLX, "reinit gl system\n");
+	gl_close();
+	glx_ctx = NULL;
+	gl_init();
 }
 
 void *
