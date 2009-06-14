@@ -120,4 +120,55 @@ glGetCompressedTexImageARB
 
 glGetTexLevelParameteriv
 glGetTexImage
+
+- GL buffer object
+glBindBuffer
+glDeleteBuffers
+glGenBuffers
+glIsBuffer
+glBufferData
+glBufferSubData
+glGetBufferSubData
+glMapBuffer
+glUnmapBuffer
+glGetBufferParameteriv
+glGetBufferPointerv
+
+
+glBindBufferARB
+glDeleteBuffersARB
+glGenBuffersARB
+glIsBufferARB
+glBufferDataARB
+glBufferSubDataARB
+glGetBufferSubDataARB
+glMapBufferARB
+glUnmapBufferARB
+glGetBufferParameterivARB
+glGetBufferPointervARB
+
+glMapBufferRange
+glFlushMappedBufferRange
+- NVIDIA doesn't support GL_ARB_copy_buffer now, even it has been merged into glspec 3.1
+- glCopyBufferSubData
+
+- vertex array object
+glGenVertexArrays
+glDeleteVertexArrays
+
+- Shader
+glCreateShader
+glShaderSource
+glCompileShader
+glDeleteShader
+
+- Program Objects
+glCreateProgram
+glAttachShader
+glDetachShader
+glLinkProgram
+glUseProgram
+glDeleteProgram
+
+
 # 

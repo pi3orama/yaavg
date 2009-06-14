@@ -289,6 +289,18 @@ check_features(void)
 		{(void**)&glCompressedTexSubImage2D, 	(void*)glCompressedTexSubImage2DARB},
 		{(void**)&glCompressedTexSubImage1D, 	(void*)glCompressedTexSubImage1DARB},
 		{(void**)&glGetCompressedTexImage, 		(void*)glGetCompressedTexImageARB},
+
+		{(void**)&glBindBuffer,					(void*)glBindBufferARB},
+		{(void**)&glDeleteBuffers,				(void*)glDeleteBuffersARB},
+		{(void**)&glGenBuffers,					(void*)glGenBuffersARB},
+		{(void**)&glIsBuffer,					(void*)glIsBufferARB},
+		{(void**)&glBufferData,					(void*)glBufferDataARB},
+		{(void**)&glBufferSubData,				(void*)glBufferSubDataARB},
+		{(void**)&glGetBufferSubData,			(void*)glGetBufferSubDataARB},
+		{(void**)&glMapBuffer,					(void*)glMapBufferARB},
+		{(void**)&glUnmapBuffer,				(void*)glUnmapBufferARB},
+		{(void**)&glGetBufferParameteriv,		(void*)glGetBufferParameterivARB},
+		{(void**)&glGetBufferPointerv,			(void*)glGetBufferPointervARB},
 		{NULL, NULL},
 	};
 	replace_func_ptr(t);
@@ -488,6 +500,13 @@ read_pixels(uint8_t * buffer, int x, int y, int w, int h, GLenum format)
 		THROW(EXCEPTION_CONTINUE, "Height out of range");
 	}
 
+	/* gl3.1 spec 4.3, page 190:
+	 * if a pixel pack buffer has bound, the pointer
+	 * param is treated as an offset into the designated
+	 * buffer object.
+	 * */
+	if (glBindBuffer != NULL)
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 	glReadPixels(x, y, w, h, format, GL_UNSIGNED_BYTE, buffer);
 
 	err = glGetError();

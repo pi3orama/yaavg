@@ -27,7 +27,8 @@ struct bitmap {
 	struct resource base;
 	int w, h;
 	bitmap_format_t format;
-	uint8_t data[0];
+	uint8_t * data;
+	uint8_t __data[0];
 };
 
 struct rgba_pixel {
@@ -71,7 +72,7 @@ alloc_bitmap(int width, int height, bitmap_format_t format)
 {
 	struct bitmap * bitmap;
 	bitmap = gc_calloc(sizeof(*bitmap) + 
-			width * height * format,
+			(width * height * format + 15), 	/* pad 15 byte for align use */
 			offsetof(struct bitmap, base.gc_tag),
 			0,
 			bitmap_shrink,
@@ -81,10 +82,16 @@ alloc_bitmap(int width, int height, bitmap_format_t format)
 	bitmap->h = height;
 	bitmap->format = format;
 
-	bitmap->base.data_size = width * height * format;
+	bitmap->base.data_size = width * height * format + 15;
 	bitmap->base.ref_count = 1;
 	bitmap->base.type = RES_BITMAP;
 	bitmap->base.id = 0;
+
+	bitmap->data = 
+		(uint8_t*)(((uint32_t)(bitmap->__data) + 0xf) & 0xfffffff0UL);
+
+	TRACE(RESOURCE, "alloc bitmap: %p, data at %p\n",
+			bitmap, bitmap->data);
 
 	return bitmap;
 }
