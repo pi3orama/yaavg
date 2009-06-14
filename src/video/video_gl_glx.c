@@ -59,6 +59,7 @@ struct glx_context {
 	int samples;
 	Window root_win;
 	Display * display;
+	GLXFBConfig * fbconfig;
 	XVisualInfo * visinfo;
 	Colormap colormap;
 	/* SDL use 3 windows. I don't know why,
@@ -124,12 +125,19 @@ glx_cleanup(struct cleanup * str)
 		XSetIOErrorHandler(old_x_io_err_handler);
 		old_x_io_err_handler = NULL;
 	}
+	
+	if (_glx_ctx.fbconfig) {
+		TRACE(GLX, "XFree framebuffer configs\n");
+		XFree(_glx_ctx.fbconfig);
+		_glx_ctx.fbconfig = NULL;
+	}
 
 	if (_glx_ctx.visinfo) {
 		TRACE(GLX, "XFree visinfo\n");
 		XFree(_glx_ctx.visinfo);
 		_glx_ctx.visinfo = NULL;
 	}
+
 	if (sigpipe_arised) {
 		_glx_ctx.display = NULL;
 		_glx_ctx.glx_context = NULL;
@@ -258,7 +266,9 @@ load_gl_library(void * old_handle)
 
 	/* check the existence of some important functions */
 
-	if ( (glXChooseVisual == NULL) || 
+	if ( (glXChooseVisual == NULL) ||
+		   (glXChooseFBConfig == NULL) ||
+		   (glXGetVisualFromFBConfig == NULL) ||
 			(glXCreateContext == NULL) ||
 			(glXDestroyContext == NULL) ||
 			(glXMakeCurrent == NULL) ||
@@ -317,7 +327,7 @@ x_io_err_handler(Display * d)
 }
 
 static void
-fill_visual_attrs(int * attrs)
+fill_fbconfig_attrs(int * attrs)
 {
 	int i = 0;
 	int bpp;
@@ -331,8 +341,8 @@ fill_visual_attrs(int * attrs)
 	attrs[i++] = k;			\
 } while(0)
 
-	setk(GLX_RGBA);
-
+	setkv(GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT);
+	setkv(GLX_RENDER_TYPE, GLX_RGBA_BIT);
 	bpp = conf_get_integer("video.opengl.bpp", 16);
 	if (bpp >= 32) {
 		setkv(GLX_RED_SIZE, 8);
@@ -348,7 +358,7 @@ fill_visual_attrs(int * attrs)
 		setkv(GLX_DEPTH_SIZE, 16);
 	}
 	_glx_ctx.bpp = bpp;
-	setk(GLX_DOUBLEBUFFER);
+	setkv(GLX_DOUBLEBUFFER, True);
 
 
 	/* multisample */
@@ -555,10 +565,46 @@ glx_create_context(void)
 
 	TRACE(GLX, "Begin to create glx context\n");
 	XSync(d, False);
-	context = glXCreateContext(d, visinfo,
-			NULL,	/* Shared list */
-			True	/* Direct render */
-			);
+
+	/* check whether to use gl3 interface */
+	/* code from
+	 * http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Number=247818 */
+	bool_t use_gl3 = conf_get_bool("video.opengl.gl3context", FALSE);
+	if (use_gl3) {
+		if (!match_word("GLX_ARB_create_context", _glx_ctx.extensions)) {
+			VERBOSE(GLX, "User require gl3 context, but platform doesn't support\n");
+		} else {
+			if (glXCreateContextAttribsARB == NULL) {
+				WARNING(GLX, "User require gl3 interface but glXCreateContextAttribsARB not fount, fall back to gl2\n");
+			} else {
+#ifndef GLX_ARB_create_context
+#define GLX_CONTEXT_DEBUG_BIT_ARB          0x00000001
+#define GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x00000002
+#define GLX_CONTEXT_MAJOR_VERSION_ARB      0x2091
+#define GLX_CONTEXT_MINOR_VERSION_ARB      0x2092
+#define GLX_CONTEXT_FLAGS_ARB              0x2094
+#endif
+				static int context_attribs[] = {
+					GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+					GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+					None
+				};
+				context = glXCreateContextAttribsARB(d,
+						_glx_ctx.fbconfig[0], NULL, True, context_attribs);
+				XSync(d, False);
+				XCheckError();
+				if (context == NULL)
+					WARNING(GLX, "Create gl3 context failed, fall back to gl2\n");
+			}
+		}
+	}
+
+	if (context == NULL) {
+		context = glXCreateContext(d, visinfo,
+				NULL,	/* Shared list */
+				True	/* Direct render */
+				);
+	}
 
 	if (context == NULL) {
 		ERROR(GLX, "glx create context failed, check your configuration\n");
@@ -616,13 +662,22 @@ make_window(void)
 	_glx_ctx.root_win = root;
 
 	/* Choose visual */
-	fill_visual_attrs(visual_attrs);
-	XVisualInfo * visinfo = glXChooseVisual(d, s, visual_attrs);
+	fill_fbconfig_attrs(visual_attrs);
+
+	int n;
+	GLXFBConfig * fbc = glXChooseFBConfig(d, s, visual_attrs, &n);
+	if (fbc == NULL) {
+		FATAL(GLX, "GLX cannot choose framebuffer config\n");
+		THROW(EXCEPTION_FATAL, "GLX cannot choose framebuffer");
+	}
+
+	XVisualInfo * visinfo = glXGetVisualFromFBConfig(d, fbc[0]);
 	if (visinfo == NULL) {
 		FATAL(GLX, "GLX cannot choose visual, check your configuration\n");
 		THROW(EXCEPTION_FATAL, "GLX cannot choose visual");
 	}
 	TRACE(GLX, "GLX choose visual: %p\n", visinfo);
+	_glx_ctx.fbconfig = fbc;
 	_glx_ctx.visinfo = visinfo;
 
 	/* Create Window */
@@ -677,8 +732,6 @@ make_window(void)
 			( EnterWindowMask | LeaveWindowMask
 			  | ButtonPressMask | ButtonReleaseMask
 			  | PointerMotionMask | ExposureMask ));
-
-	glx_create_context();
 
 	/* Backing store settings */
 	/* Cache the window in the server, when possible */
@@ -1332,6 +1385,9 @@ gl_init(void)
 	/* Open Window */
 	make_window();
 
+	/* create context */
+	glx_create_context();
+
 	int succ = TRUE;
 	/* if enter_fullscreen failed, it should restore everything */
 	if (_glx_ctx.base.base.full_screen)
@@ -1346,59 +1402,6 @@ gl_init(void)
 		map_window();
 
 	glx_ctx = &_glx_ctx;
-	
-
-#if 0
-	/* code copy from 
-	 * http://encelo.netsons.org/blog/2009/01/16/habemus-opengl-30/
-	 * but doesn't work
-	 * */
-	/* Create OpenGL 3.0 context */
-	bool_t gl3ctx = conf_get_bool("video.opengl.gl3context", FALSE);
-	/* I use while only because I want to use break */
-	do {
-		if (!gl3ctx)
-			break;
-
-		TRACE(GLX, "Try to create a gl3 context\n");
-		if (glXCreateContextAttribsARB == NULL) {
-			WARNING(GLX, "no glXCreateContextAttribsARB\n");
-			break;
-		}
-#ifndef GLX_CONTEXT_MAJOR_VERSION_ARB
-# define GLX_CONTEXT_MAJOR_VERSION_ARB (0x2091)
-#endif
-
-#ifndef GLX_CONTEXT_MINOR_VERSION_ARB
-# define GLX_CONTEXT_MINOR_VERSION_ARB (0x2092)
-#endif
-		WARNING(GLX, "Create OpenGL 3 context doesn't support now\n");
-
-Display *dpy;
-GLXDrawable draw, read;
-GLXContext ctx, ctx3;
-GLXFBConfig *cfg;
-int nelements;
-int attribs[]= {
-    GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-    GLX_CONTEXT_MINOR_VERSION_ARB, 0,
-    GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-    0
-};
-
-ctx = glXGetCurrentContext();
-dpy = glXGetCurrentDisplay();
-draw = glXGetCurrentDrawable();
-read = glXGetCurrentReadDrawable();
-cfg = glXGetFBConfigs(dpy, 0, &nelements);
-ctx3 = glXCreateContextAttribsARB(dpy, *cfg, 0, 1, attribs);
-glXMakeContextCurrent(dpy, draw, read, ctx3);
-glXDestroyContext(dpy, ctx);
-XSync(dpy, False);
-XCheckError();
-
-	} while(0);
-#endif
 	return &glx_ctx->base;
 }
 

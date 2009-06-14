@@ -356,12 +356,14 @@ init_gl_engine(void)
 	gl_ctx->renderer   = glGetString(GL_RENDERER);
 	gl_ctx->version    = glGetString(GL_VERSION);
 	update_version();
+	gl_ctx->glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
 	gl_ctx->extensions = glGetString(GL_EXTENSIONS);
 
 	VERBOSE(OPENGL, "GL engine info:\n");
 	VERBOSE(OPENGL, "Vendor     : %s\n", gl_ctx->vendor);
 	VERBOSE(OPENGL, "Renderer   : %s\n", gl_ctx->renderer);
 	VERBOSE(OPENGL, "Version    : %s\n", gl_ctx->version);
+	VERBOSE(OPENGL, "GLSL Ver   : %s\n", gl_ctx->glsl_version);
 	VERBOSE(OPENGL, "Extensions : %s\n", gl_ctx->extensions);
 	/* Antialiasing settings */
 	int x;

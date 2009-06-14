@@ -21,7 +21,7 @@ ADD_SUBDIRECTORY(resource)
 ADD_SUBDIRECTORY(video)
 
 
-SET(tests test_read_pngfile test_video)
+SET(tests test_read_pngfile test_video test_opengl)
 build_tests("${tests}" "event;common;resource;video")
 
 
