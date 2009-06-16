@@ -36,6 +36,15 @@ make_cleanup(struct cleanup * cleanup)
 }
 
 void
+make_reinitable_cleanup(struct cleanup * cleanup)
+{
+	if (!is_cleanup_actived(cleanup)) {
+		list_add(&cleanup->list, &default_cleanup_chain);
+		cleanup->chain = &default_cleanup_chain;
+	}
+}
+
+void
 remove_cleanup(struct cleanup * cleanup)
 {
 	assert(cleanup != NULL);

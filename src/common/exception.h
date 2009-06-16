@@ -140,6 +140,15 @@ typedef uint32_t return_mask;
 void
 make_cleanup(struct cleanup * cleanup);
 
+/* 
+ * If we want a subsys to be reinitable, the subsys's cleanup
+ * have to be linked onto the outmost catcher. If not, then
+ * after the subsys reinit in a inner catcher, a innocent throw
+ * will cause incorrect cleanup.
+ */
+void
+make_reinitable_cleanup(struct cleanup * cleanup);
+
 void
 remove_cleanup(struct cleanup * cleanup);
 

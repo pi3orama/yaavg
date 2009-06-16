@@ -26,10 +26,12 @@ draw_render(struct render_command * __rcmd,
 {
 	struct rcmd_draw * rcmd =
 		container_of(__rcmd, struct rcmd_draw, base);
+#if 0
 	glBegin(GL_LINES);
 	glVertex2d(0, 0);
 	glVertex2d(1, 1);
 	glEnd();
+#endif
 	return RENDER_OK;
 }
 
@@ -208,6 +210,7 @@ entry:
 
 int main(int argc, char * argv[])
 {
+//	DEBUG_INIT("/tmp/debug");
 	DEBUG_INIT(NULL);
 	VERBOSE(SYSTEM, "Start!!!\n");
 

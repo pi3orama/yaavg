@@ -170,5 +170,7 @@ glLinkProgram
 glUseProgram
 glDeleteProgram
 
+- gl3 get stringi
+glGetStringi
 
 # 

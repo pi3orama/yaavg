@@ -25,7 +25,7 @@ struct gl_context {
 	const GLubyte * version;
 	const GLubyte * glsl_version;
 	/* a very long string */
-	const GLubyte * extensions;
+	const GLubyte ** extensions;
 	/* Which platform we used? SDL or GLX or WGL... */
 	const char *platform;
 

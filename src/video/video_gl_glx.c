@@ -587,6 +587,8 @@ glx_create_context(void)
 				static int context_attribs[] = {
 					GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
 					GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+					GLX_CONTEXT_FLAGS_ARB,
+					   	GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 					None
 				};
 				context = glXCreateContextAttribsARB(d,
@@ -997,7 +999,7 @@ xvid_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 
 	/* setup cleanup */
 	xvid_saved_state.need_restore = TRUE;
-	make_cleanup(&fs_cleanup);
+	make_reinitable_cleanup(&fs_cleanup);
 	restore_fullscreen_cleanup = &fs_cleanup;
 
 	TRACE(GLX, "XF86VidMode switch mode OK\n");
@@ -1181,8 +1183,6 @@ xrandr_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 		goto free_sc;
 	}
 
-
-
 	/* begin mode switch */
 	xrandr_saved_state.ori_size = ori_size;
 	xrandr_saved_state.ori_rotation = ori_rotation;
@@ -1190,7 +1190,7 @@ xrandr_fullscreen(Display * d, Window main_win, Window wm_win, Window fs_win)
 	static struct cleanup fs_cleanup = {
 		.function = xrandr_cleanup,
 	};
-	make_cleanup(&fs_cleanup);
+	make_reinitable_cleanup(&fs_cleanup);
 	restore_fullscreen_cleanup = &fs_cleanup;
 
 	Status res_stat;
@@ -1344,7 +1344,7 @@ gl_init(void)
 	void * old_dlhandle = _glx_ctx.dlhandle;
 	memset(&_glx_ctx, 0, sizeof(_glx_ctx));
 
-	make_cleanup(&glx_cleanup_str);
+	make_reinitable_cleanup(&glx_cleanup_str);
 
 	/* first: load libGL library */
 	load_gl_library(old_dlhandle);
@@ -1461,9 +1461,13 @@ void
 gl_reinit(void)
 {
 	TRACE(GLX, "reinit gl system\n");
+	/* We must save command list */
+	struct render_list saved_render_list = glx_ctx->base.base.render_list;
 	gl_close();
 	glx_ctx = NULL;
 	gl_init();
+	if (glx_ctx)
+		glx_ctx->base.base.render_list = saved_render_list;
 }
 
 void *

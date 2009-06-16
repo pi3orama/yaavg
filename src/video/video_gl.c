@@ -78,8 +78,19 @@ static void
 __engine_close(struct cleanup * str)
 {
 	assert(str == &engine_cleanup_str);
+	TRACE(OPENGL, "opengl engine is closeing\n");
 	remove_cleanup(str);
 	if (gl_ctx != NULL) {
+		if (gl_ctx->extensions != NULL) {
+			if (gl_ctx->major_version < 3) {
+				const GLubyte ** p = gl_ctx->extensions;
+				while (*p != NULL) {
+					free((void*)(*p));
+					p++;
+				}
+				free(gl_ctx->extensions);
+			}
+		}
 		gl_close();
 		gl_ctx = NULL;
 	}
@@ -107,7 +118,7 @@ engine_init(void)
 		ERROR(OPENGL, "gl_init failed\n");
 		THROW(EXCEPTION_FATAL, "gl_init failed");
 	} else {
-		make_cleanup(&engine_cleanup_str);
+		make_reinitable_cleanup(&engine_cleanup_str);
 		init_gl_engine();
 		return &gl_ctx->base;
 	}
@@ -119,10 +130,12 @@ void
 video_hook_reinit(struct reinit_hook * hook)
 {
 	assert(hook != NULL);
+	/* att tail, it is important.
+	 * some reinit, like event glx, depend on video reinit. */
 	if (list_head_deleted(&hook->list))
-		list_add(&hook->list, &reinit_list);
+		list_add_tail(&hook->list, &reinit_list);
 	else if (list_empty(&hook->list))
-		list_add(&hook->list, &reinit_list);
+		list_add_tail(&hook->list, &reinit_list);
 	return;
 }
 
@@ -142,7 +155,7 @@ static void
 exec_reinit_hooks(void)
 {
 	struct reinit_hook * pos, * n;
-	TRACE(OPENGL, "OpenGL reinit, exec hooks\n");
+	VERBOSE(OPENGL, "OpenGL reinit, exec hooks\n");
 	list_for_each_entry_safe(pos, n, &reinit_list, list) {
 		pos->fn(pos);
 	}
@@ -183,12 +196,9 @@ static bool_t
 check_extension(const char * conf_key, ...)
 {
 	va_list args;
-	const char * f, * e;
-
-	e = (const char *)(gl_ctx->extensions);
-	assert(e != NULL);
-
 	bool_t retval = FALSE;
+
+	assert(gl_ctx != NULL);
 
 	if (conf_key != NULL) {
 		retval = conf_get_bool(conf_key, TRUE);
@@ -197,23 +207,25 @@ check_extension(const char * conf_key, ...)
 			return FALSE;
 	}
 
-	retval = FALSE;
 
 	va_start(args, conf_key);
 
-	f = va_arg(args, const char *);
+	const char * f = va_arg(args, const char *);
 	while(f != NULL) {
 		assert(strlen(f) < 64);
-
 		TRACE(OPENGL, "check for feature %s\n", f);
-		if (match_word(f, e)) {
-			TRACE(OPENGL, "found feature %s\n", f);
-			va_end(args);
-			return TRUE;
+		const GLubyte ** p = gl_ctx->extensions;
+		while (*p != NULL) {
+			if (strcmp((char*)(*p), (char*)f) == 0) {
+				/* match */
+				TRACE(OPENGL, "found feature %s\n", f);
+				va_end(args);
+				return TRUE;
+			}
+			p ++;
 		}
 		f = va_arg(args, const char *);
 	}
-
 	va_end(args);
 	return FALSE;
 }
@@ -354,6 +366,50 @@ update_version(void)
 	return;
 }
 
+static void
+get_extensions(void)
+{
+	assert(gl_ctx != NULL);
+	if ((gl_ctx->major_version < 3) || (glGetStringi == NULL)) {
+		/* use glGetString */
+		const GLubyte * s = glGetString(GL_EXTENSIONS);
+		const GLubyte * p, *pp, *pw;
+		const GLubyte ** exts = NULL;
+		int nr = 0;
+		pp = p = pw = s;
+		/* scan the whole string use p */
+		while (*p != '\0') {
+			if ((*p == ' ') && (*pp != ' ')){
+				/* find a word */
+				exts = realloc(exts, (nr + 1) * sizeof(*exts));
+				assert(exts != NULL);
+
+				const GLubyte * ext = calloc(sizeof(char) * (p - pw + 1), 1);
+				assert(ext != NULL);
+				memcpy((char*)ext, (char*)pw, p - pw);
+				exts[nr++] = ext;
+			}
+
+			if ((*p != ' ') && (*pp == ' '))
+				pw = p;
+			pp = p++;
+		}
+		exts[nr] = NULL;
+		gl_ctx->extensions = exts;
+	} else {
+		const GLubyte ** exts = NULL;
+		int nr_exts = 0;
+		glGetIntegerv(GL_NUM_EXTENSIONS, &nr_exts);
+		gl_check_error();
+		TRACE(OPENGL, "gl3 has %d extensions\n", nr_exts);
+		exts = malloc(sizeof(*exts) * (nr_exts + 1));
+		for (int i = 0; i < nr_exts; i++)
+			exts[i] = (glGetStringi(GL_EXTENSIONS, i));
+		exts[nr_exts] = NULL;
+		gl_ctx->extensions = exts;
+	}
+	return;
+}
 
 static void
 init_gl_engine(void)
@@ -369,14 +425,26 @@ init_gl_engine(void)
 	gl_ctx->version    = glGetString(GL_VERSION);
 	update_version();
 	gl_ctx->glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
-	gl_ctx->extensions = glGetString(GL_EXTENSIONS);
+	/* after gl3 we cannot get extensions by glGetString */
+	get_extensions();
+#if 0
+	if (gl_ctx->major_version < 3)
+		gl_ctx->extensions = glGetString(GL_EXTENSIONS);
+	else
+#endif
 
+	GL_POP_ERROR();
 	VERBOSE(OPENGL, "GL engine info:\n");
 	VERBOSE(OPENGL, "Vendor     : %s\n", gl_ctx->vendor);
 	VERBOSE(OPENGL, "Renderer   : %s\n", gl_ctx->renderer);
 	VERBOSE(OPENGL, "Version    : %s\n", gl_ctx->version);
 	VERBOSE(OPENGL, "GLSL Ver   : %s\n", gl_ctx->glsl_version);
-	VERBOSE(OPENGL, "Extensions : %s\n", gl_ctx->extensions);
+	VERBOSE(OPENGL, "Extensions :\n");
+	const GLubyte ** p = gl_ctx->extensions;
+	while (*p != NULL) {	
+		VERBOSE(OPENGL, "\t%s\n", *p);
+		p ++;
+	}
 	/* Antialiasing settings */
 	int x;
 	glGetIntegerv(GL_SAMPLES, &x);
@@ -397,11 +465,11 @@ init_gl_engine(void)
 	/* Set other OpenGL properties */
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glEnable(GL_BLEND);
-	glEnable(GL_TEXTURE_1D);
-	glEnable(GL_TEXTURE_2D);
+	if (gl_ctx->major_version < 3) {
+		glEnable(GL_TEXTURE_1D);
+		glEnable(GL_TEXTURE_2D);
+	}
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	gl_check_error();
 
 	/* set all avaliable hints to NISTEST */
 	/* FIXME */
@@ -462,13 +530,17 @@ video_reshape(int w, int h)
 			vp_x, vp_y, vp_w, vp_h);
 	glViewport(vp_x, vp_y, vp_w, vp_h);
 
-	/* revert y axis */
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, 1, 0, 1, -1, 1);
+	/* FIXME */
+	/* gl3 has deprecated all matrix operations */
+	if (gl_ctx->major_version < 3) {
+		/* revert y axis */
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, 1, 0, 1, -1, 1);
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+	}
 
 
 	err = glGetError();
@@ -537,8 +609,10 @@ engine_begin_frame(void)
 	static int reinited = 0;
 	static tick_t last_time = 0;
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	if (gl_ctx->major_version < 3) {
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+	}
 
 	err = glGetError();
 	if (err != GL_NO_ERROR) {

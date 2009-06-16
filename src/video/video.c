@@ -66,8 +66,8 @@ video_init(void)
 		 * throw an exception */
 		THROW(EXCEPTION_FATAL, "Driver init failed");
 	}
+	make_reinitable_cleanup(&video_cleanup_str);
 	rlist_init(&(video_ctx->render_list));
-	make_cleanup(&video_cleanup_str);
 	game_ticks = 0;
 	video_set_caption("-- YAAVG --");
 	return video_ctx;

@@ -76,7 +76,7 @@ gl_init(void)
 	init_sdl();
 	
 	sdl_ctx = &_sdl_ctx;
-	make_cleanup(&gl_cleanup_str);
+	make_reinitable_cleanup(&gl_cleanup_str);
 
 	open_window();
 
@@ -87,10 +87,14 @@ void
 gl_reinit(void)
 {
 	TRACE(GLX, "reinit gl system\n");
+	/* We must save command list */
+	struct render_list saved_render_list = sdl_ctx->base.base.render_list;
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	sdl_ctx = NULL;
 	init_sdl();
 	open_window();
+	if (sdl_ctx)
+		sdl->base.base.render_list = saved_render_list;
 }
 
 void *

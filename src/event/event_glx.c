@@ -4,6 +4,7 @@
 #include <common/debug.h>
 #include <common/exception.h>
 #include <video/x_common.h>
+#include <video/video.h>	/* reinit hooks */
 #include <econfig/econfig.h>
 
 #include <X11/Xlib.h>
@@ -13,10 +14,28 @@
 static Display * display;
 static Window main_win;
 
-void event_init(void)
+static void
+__event_init(void)
 {
 	display = x_get_display();
 	main_win = x_get_main_window();
+}
+
+static void
+event_reinit(struct reinit_hook * h)
+{
+	__event_init();
+}
+
+static struct reinit_hook glx_event_reinit = {
+	.fn = event_reinit,
+};
+
+void event_init(void)
+{
+	__event_init();
+	/* hook a reinit hook */
+	video_hook_reinit(&glx_event_reinit);
 }
 
 int event_poll(void)
