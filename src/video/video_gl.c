@@ -425,13 +425,10 @@ init_gl_engine(void)
 	gl_ctx->version    = glGetString(GL_VERSION);
 	update_version();
 	gl_ctx->glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
+	if (GL_POP_ERROR())
+		WARNING(GLX, "Platform does not support GLSL\n");
 	/* after gl3 we cannot get extensions by glGetString */
 	get_extensions();
-#if 0
-	if (gl_ctx->major_version < 3)
-		gl_ctx->extensions = glGetString(GL_EXTENSIONS);
-	else
-#endif
 
 	GL_POP_ERROR();
 	VERBOSE(OPENGL, "GL engine info:\n");
@@ -453,7 +450,8 @@ init_gl_engine(void)
 	VERBOSE(OPENGL, "Sample buffers : %d\n", x);
 	if (x > 0)
 		glEnable(GL_MULTISAMPLE);
-	GL_POP_ERROR();
+	if (GL_POP_ERROR())
+		WARNING(GLX, "platform does not support multisample\n");
 
 	/* init opengl environment: */
 
@@ -531,7 +529,8 @@ video_reshape(int w, int h)
 	glViewport(vp_x, vp_y, vp_w, vp_h);
 
 	/* FIXME */
-	/* gl3 has deprecated all matrix operations */
+	/* glMatrixMode, glLoadIdentity, glOrtho have been
+	 * deprecated in gl 3 */
 	if (gl_ctx->major_version < 3) {
 		/* revert y axis */
 		glMatrixMode(GL_PROJECTION);
@@ -541,7 +540,6 @@ video_reshape(int w, int h)
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 	}
-
 
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
@@ -613,7 +611,6 @@ engine_begin_frame(void)
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 	}
-
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
 		ERROR(OPENGL, "engine_begin_frame failed: \"%s\" (0x%x)\n",
@@ -650,7 +647,7 @@ engine_end_frame(void)
 	return;
 }
 
-void
+bool_t
 #ifdef YAAVG_DEBUG_OFF
 gl_check_error_nodebug(void)
 #else
@@ -661,7 +658,7 @@ gl_check_error_debug(const char * file, const char * func, int line)
 	GLenum err;
 	err = glGetError();
 	if (err == GL_NO_ERROR)
-		return;
+		return FALSE;
 #ifndef YAAVG_DEBUG_OFF
 	WARNING(OPENGL, "glGetError() returns \"%s\" (0x%x) at %s:%s:%d\n",
 			glerrno_to_desc(err), err, file, func, line);
@@ -670,7 +667,7 @@ gl_check_error_debug(const char * file, const char * func, int line)
 			glerrno_to_desc(err), err);
 #endif
 	THROW(EXCEPTION_RENDER_ERROR, "OpenGL error: 0x%x", err);
-	return;
+	return TRUE;	/* useless */
 }
 
 
