@@ -231,5 +231,62 @@ load_identity(mat4x4 * d)
 	return;
 }
 
+void
+_math_translate(mat4x4 * m, float x, float y, float z)
+{
+#ifdef __SSE__
+	if (cpu_cap.have_sse2) {
+		struct {
+			mat4x4 m;
+			vec4 v;
+			uint8_t __padding[16];
+		} ATTR(packed) align;
+
+		mat4x4 * pm;
+		ALIGN_ELT(m);
+		vec4 * pv = ALIGN16(&align.v);
+		pv->v[0] = x, pv->v[1] = y;
+		pv->v[2] = z, pv->v[3] = 1.0f;
+
+		__m128 v0, v1, v2, v3;
+		__m128 m0, m1, m2, m3;
+
+		v0 = _mm_load_ps(pv->v);
+		v1 = _mm_load_ps(pv->v);
+		v2 = _mm_load_ps(pv->v);
+		v3 = _mm_load_ps(pv->v);
+
+		v0 = _mm_shuffle_ps(v0, v0, 0x00);
+		v1 = _mm_shuffle_ps(v1, v1, 0x55);
+		v2 = _mm_shuffle_ps(v2, v2, 0xaa);
+		v3 = _mm_shuffle_ps(v3, v3, 0xff);
+
+		m0 = _mm_mul_ps(pm->__m[0], v0);
+		m1 = _mm_mul_ps(pm->__m[1], v1);
+		m2 = _mm_mul_ps(pm->__m[2], v2);
+		m3 = _mm_load_ps(pm->m[3]);
+
+		m0 = _mm_add_ps(m0, m1);
+		m0 = _mm_add_ps(m0, m2);
+		m0 = _mm_add_ps(m0, m3);
+
+		_mm_store_ps(pm->m[3], m3);
+
+		if (pm != m)
+			cpy_obj(m, pm);
+	} else {
+#if 0
+	}	/* vim */
+#endif
+#endif
+	m->f[12] = m->f[0] * x + m->f[4] * y + m->f[8]  * z + m->f[12];
+	m->f[13] = m->f[1] * x + m->f[5] * y + m->f[9]  * z + m->f[13];
+	m->f[14] = m->f[2] * x + m->f[6] * y + m->f[10] * z + m->f[14];
+	m->f[15] = m->f[3] * x + m->f[7] * y + m->f[11] * z + m->f[15];
+#ifdef __SSE__
+	RBRA
+#endif
+}
+
 // vim:ts=4:sw=4
 

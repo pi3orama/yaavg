@@ -4,12 +4,18 @@ SET(SRC
 	matrix.c
 	math.c
 	math.h
+	trigon.c
+	trigon.h
+	modelview.h
+	modelview.c
 	)
 
 ADD_LIBRARY(math STATIC ${SRC})
 
 SET(CMAKE_C_FLAGS_DEBUG "-g -O3")
 SET(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+TARGET_LINK_LIBRARIES(math "-lm")
 
 
 SET(tests

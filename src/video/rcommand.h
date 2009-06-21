@@ -60,6 +60,8 @@ struct rcmd_operations {
 	render_func_t lrender;
 	render_func_t rrender;
 
+	int (*init)(struct render_command * command);
+
 	/* remove is a callback, notice the upper level the command has been
 	 * removed */
 	/* the return value of remove is useless,

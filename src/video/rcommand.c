@@ -10,6 +10,7 @@
 
 
 static struct rcmd_operations null_ops = {
+	.init		= NULL,
 	.render		= NULL,
 	.lrender	= NULL,
 	.rrender	= NULL,
@@ -59,6 +60,8 @@ rcmd_init(struct render_command * command,
 	command->cleanup.args = command;
 	/* we have inited cleanup's list to NULL in memset */
 	make_cleanup(&command->cleanup);
+	if (ops->init)
+		ops->init(command);
 }
 
 void

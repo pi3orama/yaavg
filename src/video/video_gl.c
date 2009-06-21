@@ -88,8 +88,9 @@ __engine_close(struct cleanup * str)
 					free((void*)(*p));
 					p++;
 				}
-				free(gl_ctx->extensions);
 			}
+			free(gl_ctx->extensions);
+			gl_ctx->extensions = NULL;
 		}
 		gl_close();
 		gl_ctx = NULL;
@@ -394,7 +395,10 @@ get_extensions(void)
 				pw = p;
 			pp = p++;
 		}
+		exts = realloc(exts, (nr + 1) * sizeof(*exts));
+		assert(exts != NULL);
 		exts[nr] = NULL;
+
 		gl_ctx->extensions = exts;
 	} else {
 		const GLubyte ** exts = NULL;
@@ -439,7 +443,7 @@ init_gl_engine(void)
 	VERBOSE(OPENGL, "Extensions :\n");
 	const GLubyte ** p = gl_ctx->extensions;
 	while (*p != NULL) {	
-		VERBOSE(OPENGL, "\t%s\n", *p);
+		TRACE(OPENGL, "\t%s\n", *p);
 		p ++;
 	}
 	/* Antialiasing settings */

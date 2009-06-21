@@ -5,6 +5,8 @@
 
 #include <common/debug.h>
 #include <math/math.h>
+#include <math/trigon.h>
+#include <common/math.h>
 #include <stdint.h>
 #include <signal.h>
 #ifdef __INTEL__
@@ -76,7 +78,7 @@ do_cpuid(uint32_t level, uint32_t regs[4])
 }
 #endif
 
-void
+static void
 cpu_detect(void)
 {
 #ifndef __INTEL__
@@ -132,6 +134,21 @@ cpu_detect(void)
 	}
 # endif
 #endif
+}
+
+void
+math_init(void)
+{
+	cpu_detect();
+	/* init sin table and tan table */
+	for (int i = 0; i < TRIGON_TABLE_SIZE; i++) {
+		/* although libc's manual says that tan generate overflow
+		 * when X near its singularities,
+		 * it is not true in my machine. */
+		float v = 2.0f * M_PI / (float)(TRIGON_TABLE_SIZE) * (float)(i);
+		sin_table[i] = sinf(v);
+		tan_table[i] = tanf(v);
+	}
 }
 
 // vim:ts=4:sw=4

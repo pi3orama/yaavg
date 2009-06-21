@@ -19,6 +19,7 @@ typedef union __mat4x4 {
 	__m128 __m[4];
 	vec4 v[4];
 	float m[4][4];
+	float f[16];
 } mat4x4 ATTR(aligned (128));
 
 extern void
@@ -29,6 +30,9 @@ mulmm(mat4x4 * d, mat4x4 * m1, mat4x4 * m2);
 
 extern void
 load_identity(mat4x4 * d);
+
+extern void
+_math_translate(mat4x4 * m, float x, float y, float z);
 
 static inline void
 print_vector(vec4 * v)

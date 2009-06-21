@@ -21,7 +21,7 @@ ADD_SUBDIRECTORY(video)
 
 
 SET(tests test_read_pngfile test_video test_opengl)
-build_tests("${tests}" "event;common;resource;video")
+build_tests("${tests}" "event;common;resource;video;math")
 
 
 # vim:tabstop=4:shiftwidth=4

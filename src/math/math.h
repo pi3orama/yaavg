@@ -24,7 +24,7 @@ extern struct cpu_cap cpu_cap;
 #define SSE2_ENABLE	(cpu_cap.have_sse2)
 
 extern void
-cpu_detect(void);
+math_init(void);
 
 #endif
 

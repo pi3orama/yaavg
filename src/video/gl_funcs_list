@@ -161,6 +161,8 @@ glCreateShader
 glShaderSource
 glCompileShader
 glDeleteShader
+glGetShaderiv
+glGetShaderInfoLog
 
 - Program Objects
 glCreateProgram
@@ -169,6 +171,8 @@ glDetachShader
 glLinkProgram
 glUseProgram
 glDeleteProgram
+glGetProgramiv
+glGetProgramInfoLog
 
 - gl3 get stringi
 glGetStringi

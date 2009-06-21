@@ -15,10 +15,115 @@
 #include <video/texture_gl.h>
 #include <event/event.h>
 
+#include <math/math.h>
+
+static const char * vertex_shader[] = {
+	"#version 130\n",
+	"uniform mat4 matProj;\n",
+	"in vec4 iPosition;\n",
+	"in vec4 iColor;\n",
+	"out vec4 voColor;\n",
+	"void main() {\n",
+	"    voColor = iColor;\n",
+	"    gl_Position = matProj * iPosition;",
+	"}\n",
+};
+
+static const char * fragment_shader[] = {
+	"#version 130\n",
+	"in vec4 voColor;\n",
+	"out vec4 fragColor;\n",
+	"void main() {\n",
+	"    fragColor = voColor;\n",
+	"}\n",
+};
+
+
+
 struct rcmd_draw {
 	struct render_command base;
 	tick_t total_time;
+	GLuint program;
+	GLuint vertex_shader;
+	GLuint fragment_shader;
 };
+
+static GLuint
+compile_shader(GLenum type, GLsizei count, const char ** lines)
+{
+	GLuint shader = glCreateShader(type);
+	assert(shader != 0);
+	glShaderSource(shader, count, lines, NULL);
+	/* compile and check */
+	GLint s;
+	glCompileShader(shader);
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &s);
+	if (s == GL_FALSE) {
+		GLint len;
+		char * log;
+		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
+		log = (char*)malloc(len);
+		glGetShaderInfoLog(shader, len, NULL, log);
+		THROW(EXCEPTION_FATAL, "compile error: %s\n", log);
+		free(log);
+	}
+	return shader;
+}
+
+static int
+init_program(GLuint vert, GLuint frag)
+{
+	GLuint prog;
+	prog = glCreateProgram();
+	if (vert != 0)
+		glAttachShader(prog, vert);
+	if (frag != 0)
+		glAttachShader(prog, frag);
+
+	GLint s;
+	glLinkProgram(prog);
+	glGetProgramiv(prog, GL_LINK_STATUS, &s);
+	if (s == GL_FALSE) {
+		GLint len;
+		char * log;
+		glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &len);
+		log = (char*) malloc(len);
+		glGetProgramInfoLog(prog, len, NULL, log);
+		THROW(EXCEPTION_FATAL, "link log: %s\n", log);
+		free(log);
+	}
+	return prog;
+}
+
+static int
+draw_init(struct render_command * __rcmd)
+{
+	struct rcmd_draw * rcmd =
+		container_of(__rcmd, struct rcmd_draw, base);
+	FORCE(SYSTEM, "Draw init\n");
+
+	rcmd->vertex_shader = compile_shader(GL_VERTEX_SHADER,
+			sizeof(vertex_shader) / sizeof(char*), vertex_shader);
+	rcmd->fragment_shader = compile_shader(GL_FRAGMENT_SHADER,
+			sizeof(fragment_shader) / sizeof(char*), fragment_shader);
+	rcmd->program = init_program(
+			rcmd->vertex_shader,
+			rcmd->fragment_shader);
+
+	return 0;
+}
+
+static int draw_remove(struct render_command * __rcmd,
+			rcmd_remove_reason_t reason, int flags)
+{
+	struct rcmd_draw * rcmd =
+		container_of(__rcmd, struct rcmd_draw, base);
+	FORCE(SYSTEM, "Draw remove\n");
+	glDeleteProgram(rcmd->program);
+	glDeleteShader(rcmd->vertex_shader);
+	glDeleteShader(rcmd->fragment_shader);
+	return 0;
+}
 
 static int
 draw_render(struct render_command * __rcmd,
@@ -26,6 +131,9 @@ draw_render(struct render_command * __rcmd,
 {
 	struct rcmd_draw * rcmd =
 		container_of(__rcmd, struct rcmd_draw, base);
+
+
+
 #if 0
 	glBegin(GL_LINES);
 	glVertex2d(0, 0);
@@ -36,7 +144,9 @@ draw_render(struct render_command * __rcmd,
 }
 
 static struct rcmd_operations draw_ops = {
+	.init	= draw_init,
 	.render = draw_render,
+	.remove = draw_remove,
 };
 
 struct rcmd_clear {
@@ -213,6 +323,8 @@ int main(int argc, char * argv[])
 //	DEBUG_INIT("/tmp/debug");
 	DEBUG_INIT(NULL);
 	VERBOSE(SYSTEM, "Start!!!\n");
+
+	math_init();
 
 	struct video_context * video_ctx = NULL;
 
