@@ -94,7 +94,7 @@ gl_reinit(void)
 	init_sdl();
 	open_window();
 	if (sdl_ctx)
-		sdl->base.base.render_list = saved_render_list;
+		sdl_ctx->base.base.render_list = saved_render_list;
 }
 
 void *

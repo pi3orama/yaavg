@@ -663,13 +663,20 @@ gl_check_error_debug(const char * file, const char * func, int line)
 	err = glGetError();
 	if (err == GL_NO_ERROR)
 		return FALSE;
+
+	/* according to gl3 specification section 2.5, gl can hold
+	 * only 1 error. */
+	do {
 #ifndef YAAVG_DEBUG_OFF
-	WARNING(OPENGL, "glGetError() returns \"%s\" (0x%x) at %s:%s:%d\n",
-			glerrno_to_desc(err), err, file, func, line);
+		WARNING(OPENGL, "glGetError() returns \"%s\" (0x%x) at %s:%s:%d\n",
+				glerrno_to_desc(err), err, file, func, line);
 #else
-	WARNING(OPENGL, "glGetError() returns \"%s\" (0x%x)\n",
-			glerrno_to_desc(err), err);
+		WARNING(OPENGL, "glGetError() returns \"%s\" (0x%x)\n",
+				glerrno_to_desc(err), err);
 #endif
+		err = glGetError();
+	} while(err != GL_NO_ERROR);
+
 	THROW(EXCEPTION_RENDER_ERROR, "OpenGL error: 0x%x", err);
 	return TRUE;	/* useless */
 }

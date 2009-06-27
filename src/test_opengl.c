@@ -17,7 +17,7 @@
 
 #include <math/math.h>
 
-static const char * vertex_shader[] = {
+static const char * vertex_shader_bak[] = {
 	"#version 130\n",
 	"uniform mat4 matProj;\n",
 	"in vec4 iPosition;\n",
@@ -26,6 +26,17 @@ static const char * vertex_shader[] = {
 	"void main() {\n",
 	"    voColor = iColor;\n",
 	"    gl_Position = matProj * iPosition;",
+	"}\n",
+};
+
+static const char * vertex_shader[] = {
+	"#version 130\n",
+	"in vec4 iPosition;\n",
+	"in vec4 iColor;\n",
+	"out vec4 voColor;\n",
+	"void main() {\n",
+	"    voColor = iColor;\n",
+	"    gl_Position = iPosition;",
 	"}\n",
 };
 
@@ -46,6 +57,7 @@ struct rcmd_draw {
 	GLuint program;
 	GLuint vertex_shader;
 	GLuint fragment_shader;
+	GLuint buffer;
 };
 
 static GLuint
@@ -95,6 +107,7 @@ init_program(GLuint vert, GLuint frag)
 	return prog;
 }
 
+
 static int
 draw_init(struct render_command * __rcmd)
 {
@@ -110,6 +123,25 @@ draw_init(struct render_command * __rcmd)
 			rcmd->vertex_shader,
 			rcmd->fragment_shader);
 
+
+	glGenBuffers(1, &rcmd->buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, rcmd->buffer);
+
+	const GLfloat varray[] = {
+		1.0f, 0.0f, 0.0f, /* red */
+		0.0f, 0.0f,       /* lower left */
+
+		0.0f, 1.0f, 0.0f, /* green */
+		0.5f, 0.0f,      /* lower right */
+
+		0.0f, 0.0f, 1.0f, /* blue */
+		0.0f, 0.5f       /* upper left */
+	};
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(varray), varray, GL_STATIC_DRAW);
+
+	GL_POP_ERROR();
+
 	return 0;
 }
 
@@ -122,6 +154,7 @@ static int draw_remove(struct render_command * __rcmd,
 	glDeleteProgram(rcmd->program);
 	glDeleteShader(rcmd->vertex_shader);
 	glDeleteShader(rcmd->fragment_shader);
+	glDeleteBuffers(1, &rcmd->buffer);
 	return 0;
 }
 
@@ -133,6 +166,28 @@ draw_render(struct render_command * __rcmd,
 		container_of(__rcmd, struct rcmd_draw, base);
 
 
+	glBindBuffer(GL_ARRAY_BUFFER, rcmd->buffer);
+
+	glUseProgram(rcmd->program);
+	{
+		GLuint vidx = glGetAttribLocation(rcmd->program, "iPosition");
+		GLuint cidx = glGetAttribLocation(rcmd->program, "iColor");
+
+enum {
+  numColorComponents = 3,
+  numVertexComponents = 2,
+  stride = sizeof(GLfloat) * (numColorComponents + numVertexComponents),
+  numElements = 3,
+};
+		glVertexAttribPointer(vidx, 2, GL_FLOAT, GL_FALSE, stride, NULL+(sizeof(GLfloat) * numColorComponents));
+		glEnableVertexAttribArray(vidx);
+
+		glVertexAttribPointer(cidx, 3, GL_FLOAT, GL_FALSE, stride, NULL);
+		glEnableVertexAttribArray(cidx);
+	}
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_POP_ERROR();
 
 #if 0
 	glBegin(GL_LINES);

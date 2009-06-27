@@ -177,4 +177,10 @@ glGetProgramInfoLog
 - gl3 get stringi
 glGetStringi
 
+- gl3 draw
+glDrawArrays
+glGetAttribLocation
+glEnableVertexAttribArray
+glVertexAttribPointer
+
 # 

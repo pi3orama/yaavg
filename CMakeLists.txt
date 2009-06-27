@@ -17,6 +17,9 @@ ENDIF (NOT CMAKE_COMPILER_IS_GNUCC)
 
 # MESSAGE(STATUS "Processor: ${CMAKE_SYSTEM_PROCESSOR}")
 
+SET(MARCH ${CMAKE_SYSTEM_PROCESSOR} CACHE STRING
+	"gcc -march option")
+
 
 # Build type
 SET(MARCH_CFLAGS "-march=${MARCH} -mtune=${MARCH}")
@@ -42,9 +45,6 @@ SET(VIDEO_ENGINE "OpenGL" CACHE STRING
 	"Video engine, can be OpenGL or SDL")
 SET(VIDEO_DRIVER "SDL" CACHE STRING
 	"Video driver, can be GLX or SDL for OpenGL")
-
-SET(MARCH ${CMAKE_SYSTEM_PROCESSOR} CACHE STRING
-	"gcc -march option")
 
 
 # Match driver and engine
