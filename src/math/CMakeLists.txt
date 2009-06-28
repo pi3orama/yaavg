@@ -6,8 +6,7 @@ SET(SRC
 	math.h
 	trigon.c
 	trigon.h
-	modelview.h
-	modelview.c
+	sqrt.h
 	)
 
 ADD_LIBRARY(math STATIC ${SRC})

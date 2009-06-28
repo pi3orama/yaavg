@@ -3,7 +3,10 @@
  * by WN @ Jun 20, 2009
  */
 
+#include <common/math.h>
 #include <math/matrix.h>
+#include <math/trigon.h>
+#include <math/sqrt.h>
 #include <stdint.h>
 #include <memory.h>
 
@@ -131,6 +134,7 @@ static inline void
 real_mulmm(mat4x4 * d, mat4x4 * ma, mat4x4 * mb)
 {
 #ifdef __SSE__
+//	if (0) {
 	if (cpu_cap.have_sse2) {
 		__m128 v00, v01, v02, v03;
 		__m128 v10, v11, v12, v13;
@@ -166,7 +170,7 @@ real_mulmm(mat4x4 * d, mat4x4 * ma, mat4x4 * mb)
 		v13 = _mm_mul_ps(ma->__m[3], v13);	\
 									\
 		v00 = _mm_add_ps(v00, v01);	\
-		v01 = _mm_add_ps(v10, v11);	\
+		v10 = _mm_add_ps(v10, v11);	\
 									\
 		v00 = _mm_add_ps(v00, v02);	\
 		v10 = _mm_add_ps(v10, v12);	\
@@ -232,7 +236,7 @@ load_identity(mat4x4 * d)
 }
 
 void
-_math_translate(mat4x4 * m, float x, float y, float z)
+_matrix_translate(mat4x4 * m, float x, float y, float z)
 {
 #ifdef __SSE__
 	if (cpu_cap.have_sse2) {
@@ -266,9 +270,9 @@ _math_translate(mat4x4 * m, float x, float y, float z)
 		m2 = _mm_mul_ps(pm->__m[2], v2);
 		m3 = _mm_load_ps(pm->m[3]);
 
-		m0 = _mm_add_ps(m0, m1);
-		m0 = _mm_add_ps(m0, m2);
-		m0 = _mm_add_ps(m0, m3);
+		m3 = _mm_add_ps(m0, m3);
+		m3 = _mm_add_ps(m1, m3);
+		m3 = _mm_add_ps(m2, m3);
 
 		_mm_store_ps(pm->m[3], m3);
 
@@ -286,6 +290,89 @@ _math_translate(mat4x4 * m, float x, float y, float z)
 #ifdef __SSE__
 	RBRA
 #endif
+}
+
+void
+_matrix_rotate(mat4x4 * m, float angle, float x, float y, float z)
+{
+	mat4x4 R;
+	load_identity(&R);
+	float s, c;
+	s = sin_d(angle);
+	c = cos_d(angle);
+#define M(row, col)	(R.m[col][row])
+	if ((x == 0.0f) && (y == 0.0F) && (z != 0.0f)) {
+		M(0, 0) = M(1, 1) = c;
+		if (z < 0.0f) {
+			M(0, 1) = s;
+			M(1, 0) = -s;
+		} else {
+			M(0, 1) = -s;
+			M(1, 0) = s;
+		}
+	} else if ((x == 0.0f) && (y != 0.0f) && (z == 0.0f)) {
+		M(0, 0) = M(2, 2) = c;
+		if (y < 0.0f) {
+			M(0, 2) = -s;
+			M(2, 0) = s;
+		} else {
+			M(0, 2) = s;
+			M(2, 0) = -s;
+		}
+	} else if ((x != 0.0f) && (y == 0.0f) && (z == 0.0f)) {
+		M(1,1) = M(2,2) = c;
+		if (x < 0.0F) {
+			M(1,2) = s;
+			M(2,1) = -s;
+		}
+		else {
+			M(1,2) = -s;
+			M(2,1) = s;
+		}
+	} else {
+		/* from MESA code */
+
+		const float mag = invert_sqrt(x * x + y * y + z * z);
+		x *= mag;
+		y *= mag;
+		z *= mag;
+
+		float xx = x * x;
+		float yy = y * y;
+		float zz = z * z;
+		float xy = x * y;
+		float yz = y * z;
+		float zx = z * x;
+		float xs = x * s;
+		float ys = y * s;
+		float zs = z * s;
+		float one_c = 1.0f - c;
+
+		/* We already hold the identity-matrix so we can skip some statements */
+		M(0,0) = (one_c * xx) + c;
+		M(0,1) = (one_c * xy) - zs;
+		M(0,2) = (one_c * zx) + ys;
+		/*    M(0,3) = 0.0F; */
+
+		M(1,0) = (one_c * xy) + zs;
+		M(1,1) = (one_c * yy) + c;
+		M(1,2) = (one_c * yz) - xs;
+		/*    M(1,3) = 0.0F; */
+
+		M(2,0) = (one_c * zx) - ys;
+		M(2,1) = (one_c * yz) + xs;
+		M(2,2) = (one_c * zz) + c;
+		/*    M(2,3) = 0.0F; */
+
+		/*
+		   M(3,0) = 0.0F;
+		   M(3,1) = 0.0F;
+		   M(3,2) = 0.0F;
+		   M(3,3) = 1.0F;
+		   */
+	}
+#undef M
+	mulmm(m, m, &R);
 }
 
 // vim:ts=4:sw=4

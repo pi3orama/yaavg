@@ -32,7 +32,10 @@ extern void
 load_identity(mat4x4 * d);
 
 extern void
-_math_translate(mat4x4 * m, float x, float y, float z);
+_matrix_translate(mat4x4 * m, float x, float y, float z);
+
+extern void
+_matrix_rotate(mat4x4 * m, float angle, float x, float y, float z);
 
 static inline void
 print_vector(vec4 * v)

@@ -182,5 +182,8 @@ glDrawArrays
 glGetAttribLocation
 glEnableVertexAttribArray
 glVertexAttribPointer
-
+glGetFragDataLocation
+glBindFragDataLocation
+glGetUniformLocation
+glUniformMatrix4fv
 # 

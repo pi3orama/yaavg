@@ -22,6 +22,7 @@ static struct conf_entry entries[] = {
 //	{"video.viewport.h", TypeInteger, vcast(768)},
 	{"video.mspf.fallback", TypeInteger, vcast(100)},
 //	{"video.mspf", TypeInteger, vcast(0)},
+//	{"video.mspf", TypeInteger, vcast(8)},	/* 17ms: 60fps */
 	{"video.mspf", TypeInteger, vcast(17)},	/* 17ms: 60fps */
 //	{"video.fullscreen", TypeBool, vcast(FALSE)},
 	{"video.fullscreen", TypeBool, vcast(FALSE)},
@@ -43,6 +44,7 @@ static struct conf_entry entries[] = {
 	{"video.opengl.gl3context", TypeBool, vcast(TRUE)},
 	{"video.opengl.bpp", TypeInteger, vcast(32)},
 	/* vsync related */
+//	{"video.opengl.swapcontrol", TypeInteger, vcast(1)},
 	{"video.opengl.swapcontrol", TypeInteger, vcast(0)},
 	{"video.opengl.multisample", TypeInteger, vcast(0)},
 //	{"video.opengl.multisample", TypeInteger, vcast(4)},

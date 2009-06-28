@@ -9,9 +9,12 @@
 #include <common/debug.h>
 
 #if defined(_M_IX86) || defined(i386) || defined(__i386) || defined(__i386__)
-    #ifndef __INTEL__
-        #define __INTEL__
-    #endif
+# ifndef __INTEL__
+#  define __INTEL__
+# endif
+# ifndef __X86_32__
+#  define __X86_32__
+# endif
 #endif /* x86 */
 
 

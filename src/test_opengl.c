@@ -15,7 +15,7 @@
 #include <video/texture_gl.h>
 #include <event/event.h>
 
-#include <math/math.h>
+#include <math/matrix.h>
 
 static const char * vertex_shader_bak[] = {
 	"#version 130\n",
@@ -32,20 +32,23 @@ static const char * vertex_shader_bak[] = {
 static const char * vertex_shader[] = {
 	"#version 130\n",
 	"in vec4 iPosition;\n",
+	"uniform mat4 iModelView;\n"
 	"in vec4 iColor;\n",
 	"out vec4 voColor;\n",
 	"void main() {\n",
 	"    voColor = iColor;\n",
-	"    gl_Position = iPosition;",
+	"    gl_Position = iModelView * iPosition;\n",
 	"}\n",
 };
 
 static const char * fragment_shader[] = {
 	"#version 130\n",
 	"in vec4 voColor;\n",
+	"out vec4 fragColorO;\n",
 	"out vec4 fragColor;\n",
 	"void main() {\n",
-	"    fragColor = voColor;\n",
+	"    fragColorO = voColor;\n",
+	"    fragColor = voColor * 2;\n",
 	"}\n",
 };
 
@@ -58,6 +61,9 @@ struct rcmd_draw {
 	GLuint vertex_shader;
 	GLuint fragment_shader;
 	GLuint buffer;
+
+	mat4x4 modelview;
+	GLuint idx_mv;
 };
 
 static GLuint
@@ -76,7 +82,7 @@ compile_shader(GLenum type, GLsizei count, const char ** lines)
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
 		log = (char*)malloc(len);
 		glGetShaderInfoLog(shader, len, NULL, log);
-		THROW(EXCEPTION_FATAL, "compile error: %s\n", log);
+		THROW(EXCEPTION_FATAL, "compile error: %s", log);
 		free(log);
 	}
 	return shader;
@@ -91,6 +97,20 @@ init_program(GLuint vert, GLuint frag)
 		glAttachShader(prog, vert);
 	if (frag != 0)
 		glAttachShader(prog, frag);
+
+	/* must bind draw buffer before the program linkage, according to GL3 spec
+	 * section 3.9.2 - Shader outputs:
+	 *
+	 * The binding of a user-defined varying out variable to a fragment color
+	 * number can be specified explicitly. The command
+	 * 
+	 * void BindFragDataLocation( uint program, uint colorNumber, const char
+	 * *name );
+	 * 
+	 * specifies that the varying out variable name in program should be bound
+	 * to fragment color colorNumber when the program is next linked.
+	 */
+	glBindFragDataLocation(prog, 0, "fragColor");
 
 	GLint s;
 	glLinkProgram(prog);
@@ -122,6 +142,8 @@ draw_init(struct render_command * __rcmd)
 	rcmd->program = init_program(
 			rcmd->vertex_shader,
 			rcmd->fragment_shader);
+	
+	load_identity(&rcmd->modelview);
 
 
 	glGenBuffers(1, &rcmd->buffer);
@@ -165,6 +187,8 @@ draw_render(struct render_command * __rcmd,
 	struct rcmd_draw * rcmd =
 		container_of(__rcmd, struct rcmd_draw, base);
 
+//	_matrix_translate(&rcmd->modelview, .005, 0.005, .0);
+	_matrix_rotate(&rcmd->modelview, 1.0f, 1.0f, 0.0f, 1.0f);
 
 	glBindBuffer(GL_ARRAY_BUFFER, rcmd->buffer);
 
@@ -173,18 +197,22 @@ draw_render(struct render_command * __rcmd,
 		GLuint vidx = glGetAttribLocation(rcmd->program, "iPosition");
 		GLuint cidx = glGetAttribLocation(rcmd->program, "iColor");
 
-enum {
-  numColorComponents = 3,
-  numVertexComponents = 2,
-  stride = sizeof(GLfloat) * (numColorComponents + numVertexComponents),
-  numElements = 3,
-};
+		enum {
+			numColorComponents = 3,
+			numVertexComponents = 2,
+			stride = sizeof(GLfloat) * (numColorComponents + numVertexComponents),
+			numElements = 3,
+		};
 		glVertexAttribPointer(vidx, 2, GL_FLOAT, GL_FALSE, stride, NULL+(sizeof(GLfloat) * numColorComponents));
 		glEnableVertexAttribArray(vidx);
 
 		glVertexAttribPointer(cidx, 3, GL_FLOAT, GL_FALSE, stride, NULL);
 		glEnableVertexAttribArray(cidx);
+
+		GLuint idx_mv = glGetUniformLocation(rcmd->program, "iModelView");
+		glUniformMatrix4fv(rcmd->idx_mv, 1, GL_FALSE, rcmd->modelview.f);
 	}
+
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_POP_ERROR();

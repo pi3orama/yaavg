@@ -9,8 +9,6 @@ SET(SRC rlist.c rcommand.c
 		utils_x11.c
 		utils_x11.h
 		x_common.h
-		vmatrix.h
-		vmatrix.c
 		gl_funcs.h
 		glx_funcs.h)
 
