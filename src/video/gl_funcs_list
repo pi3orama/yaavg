@@ -186,4 +186,7 @@ glGetFragDataLocation
 glBindFragDataLocation
 glGetUniformLocation
 glUniformMatrix4fv
+glVertexAttrib3f
+glVertexAttrib4f
+
 # 

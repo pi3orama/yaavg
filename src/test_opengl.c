@@ -142,7 +142,10 @@ draw_init(struct render_command * __rcmd)
 	rcmd->program = init_program(
 			rcmd->vertex_shader,
 			rcmd->fragment_shader);
-	
+
+	GLuint cidx = glGetAttribLocation(rcmd->program, "iColor");
+	glVertexAttrib3f(cidx, 1.0f, 0.1f, 0.1f);
+
 	load_identity(&rcmd->modelview);
 
 
@@ -196,7 +199,6 @@ draw_render(struct render_command * __rcmd,
 	glUseProgram(rcmd->program);
 	{
 		GLuint vidx = glGetAttribLocation(rcmd->program, "iPosition");
-		GLuint cidx = glGetAttribLocation(rcmd->program, "iColor");
 
 		enum {
 			numColorComponents = 3,
@@ -206,9 +208,6 @@ draw_render(struct render_command * __rcmd,
 		};
 		glVertexAttribPointer(vidx, 2, GL_FLOAT, GL_FALSE, stride, NULL+(sizeof(GLfloat) * numColorComponents));
 		glEnableVertexAttribArray(vidx);
-
-		glVertexAttribPointer(cidx, 3, GL_FLOAT, GL_FALSE, stride, NULL);
-		glEnableVertexAttribArray(cidx);
 
 		GLuint idx_mv = glGetUniformLocation(rcmd->program, "iModelView");
 		glUniformMatrix4fv(rcmd->idx_mv, 1, GL_FALSE, rcmd->modelview.f);
