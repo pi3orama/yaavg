@@ -143,7 +143,9 @@ draw_init(struct render_command * __rcmd)
 			rcmd->vertex_shader,
 			rcmd->fragment_shader);
 
+	GLuint pidx = glGetAttribLocation(rcmd->program, "iPosition");
 	GLuint cidx = glGetAttribLocation(rcmd->program, "iColor");
+	WARNING(SYSTEM, "XXXX %d, %d\n", cidx, pidx);
 	glVertexAttrib3f(cidx, 1.0f, 0.1f, 0.1f);
 
 	load_identity(&rcmd->modelview);
@@ -153,14 +155,14 @@ draw_init(struct render_command * __rcmd)
 	glBindBuffer(GL_ARRAY_BUFFER, rcmd->buffer);
 
 	const GLfloat varray[] = {
-		1.0f, 0.0f, 0.0f, /* red */
-		0.0f, 0.0f,       /* lower left */
-
-		0.0f, 1.0f, 0.0f, /* green */
-		0.5f, 0.0f,      /* lower right */
-
-		0.0f, 0.0f, 1.0f, /* blue */
-		0.0f, 0.5f       /* upper left */
+		0.0, 0.0, 0.0,
+		0.0, 0.0, 1.0,
+		0.0, 1.0, 0.0,
+		0.0, 1.0, 1.0,
+		1.0, 0.0, 0.0,
+		1.0, 0.0, 1.0,
+		1.0, 1.0, 0.0,
+		1.0, 1.0, 1.0,
 	};
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(varray), varray, GL_STATIC_DRAW);
@@ -190,9 +192,13 @@ draw_render(struct render_command * __rcmd,
 	struct rcmd_draw * rcmd =
 		container_of(__rcmd, struct rcmd_draw, base);
 
-	_matrix_translate(&rcmd->modelview, .005, 0.005, .0);
-	_matrix_rotate(&rcmd->modelview, 1.0f, 1.0f, 0.0f, 1.0f);
-	_matrix_scale(&rcmd->modelview, 1.001f, 1.002f, 1.0f);
+	static int n = 0;
+	if (n == 0) {
+		_matrix_scale(&rcmd->modelview, 0.3f, 0.3f, 0.3f);
+	}
+	n++;
+//	_matrix_translate(&rcmd->modelview, .005, 0.005, .0);
+	_matrix_rotate(&rcmd->modelview, 0.1f * delta_ticks, 1.0f, 1.0f, 1.0f);
 
 	glBindBuffer(GL_ARRAY_BUFFER, rcmd->buffer);
 
@@ -200,20 +206,31 @@ draw_render(struct render_command * __rcmd,
 	{
 		GLuint vidx = glGetAttribLocation(rcmd->program, "iPosition");
 
-		enum {
-			numColorComponents = 3,
-			numVertexComponents = 2,
-			stride = sizeof(GLfloat) * (numColorComponents + numVertexComponents),
-			numElements = 3,
-		};
-		glVertexAttribPointer(vidx, 2, GL_FLOAT, GL_FALSE, stride, NULL+(sizeof(GLfloat) * numColorComponents));
+		glVertexAttribPointer(vidx, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 		glEnableVertexAttribArray(vidx);
 
 		GLuint idx_mv = glGetUniformLocation(rcmd->program, "iModelView");
 		glUniformMatrix4fv(rcmd->idx_mv, 1, GL_FALSE, rcmd->modelview.f);
 	}
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	int elements[] = {
+		0, 1,
+		0, 2,
+		1, 3,
+		2, 3,
+
+		0, 4,
+		1, 5,
+		2, 6,
+		3, 7,
+
+		4, 5,
+		4, 6,
+		5, 7,
+		6, 7
+	};
+	glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, elements);
+//	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_POP_ERROR();
 
