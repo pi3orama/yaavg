@@ -187,8 +187,9 @@ draw_render(struct render_command * __rcmd,
 	struct rcmd_draw * rcmd =
 		container_of(__rcmd, struct rcmd_draw, base);
 
-//	_matrix_translate(&rcmd->modelview, .005, 0.005, .0);
+	_matrix_translate(&rcmd->modelview, .005, 0.005, .0);
 	_matrix_rotate(&rcmd->modelview, 1.0f, 1.0f, 0.0f, 1.0f);
+	_matrix_scale(&rcmd->modelview, 1.001f, 1.002f, 1.0f);
 
 	glBindBuffer(GL_ARRAY_BUFFER, rcmd->buffer);
 
