@@ -13,6 +13,7 @@
 #include <memory.h>
 
 #include <unistd.h>
+#include <errno.h>
 
 #ifdef HAVE_EXECINFO_H
 /* backtrace */
@@ -97,6 +98,10 @@ debug_init(const char * filename)
 		colorful_terminal = 1;
 	} else {
 		colorful_terminal = 0;
+		/* reset errno.
+		 * for a non-tty file,
+		 * isatty set errno to 25: ENOTTY */
+		errno = 0;
 	}
 
 	/* install signal handlers */
