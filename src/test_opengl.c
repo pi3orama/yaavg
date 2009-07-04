@@ -31,24 +31,23 @@ static const char * vertex_shader_bak[] = {
 static const char * vertex_shader[] = {
 	"#version 130\n",
 	"in vec4 iPosition;\n",
+	"in vec2 texCoord;\n",
 	"uniform mat4 iModelView;\n"
 	"out vec4 voColor;\n",
+	"out vec2 voTexCoord;\n",
 	"void main() {\n",
 	"    gl_Position = iModelView * iPosition;\n",
-	"    gl_PointSize = 256;\n",
+	"    voTexCoord = texCoord;\n"
 	"}\n",
 };
 
 static const char * fragment_shader[] = {
 	"#version 130\n",
 	"uniform sampler2D inTex;\n",
+	"in vec2 voTexCoord;\n",
 	"out vec4 fragColor;\n",
 	"void main() {\n",
-//	"    fragColor.r = 1;\n"
-//	"    fragColor.g = gl_PointCoord.t;\n"
-    "    fragColor = texture(inTex, gl_PointCoord);\n"
-//  "    fragColor = texture(inTex, vec2(0.5, 0.3));\n"
-//	"    fragColor.g = voColor.g;\n"
+    "    fragColor = texture(inTex, voTexCoord);\n"
 	"}\n",
 };
 
@@ -156,6 +155,9 @@ draw_init(struct render_command * __rcmd)
 	GL_POP_ERROR();
 	rcmd->idx_position = glGetAttribLocation(rcmd->program, "iPosition");
 	GL_POP_ERROR();
+	rcmd->idx_texcoord = glGetAttribLocation(rcmd->program, "texCoord");
+	GL_POP_ERROR();
+
 //	rcmd->idx_color = glGetAttribLocation(rcmd->program, "iColor");
 //	GL_POP_ERROR();
 //	glVertexAttrib3f(rcmd->idx_color, 1.0f, 0.0f, 0.1f);
@@ -168,14 +170,10 @@ draw_init(struct render_command * __rcmd)
 	glBindBuffer(GL_ARRAY_BUFFER, rcmd->buffer);
 
 	const GLfloat varray[] = {
-		0.0, 0.0, 0.0,
-		0.0, 0.0, 1.0,
-		0.0, 1.0, 0.0,
-		0.0, 1.0, 1.0,
-		1.0, 0.0, 0.0,
-		1.0, 0.0, 1.0,
-		1.0, 1.0, 0.0,
-		1.0, 1.0, 1.0,
+		0.0, 0.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0, 1.0,
+		1.0, 1.0, 0.0, 1.0, 1.0,
+		1.0, 0.0, 0.0, 1.0, 0.0,
 	};
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(varray), varray, GL_STATIC_DRAW);
@@ -221,38 +219,26 @@ draw_render(struct render_command * __rcmd,
 
 	static int n = 0;
 	if (n == 0) {
-		_matrix_scale(&rcmd->modelview, 0.3f, 0.3f, 0.3f);
+		_matrix_scale(&rcmd->modelview, 0.9f, 0.9f, 0.9f);
 	}
 	n++;
 	//	_matrix_translate(&rcmd->modelview, .005, 0.005, .0);
-	_matrix_rotate(&rcmd->modelview, 0.1f * delta_ticks, 1.0f, 1.0f, 1.0f);
+	 _matrix_rotate(&rcmd->modelview, 0.1f * delta_ticks, 1.0f, 1.0f, 1.0f);
 
 	glBindBuffer(GL_ARRAY_BUFFER, rcmd->buffer);
 
 	glUseProgram(rcmd->program);
-	glVertexAttribPointer(rcmd->idx_position, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glVertexAttribPointer(rcmd->idx_position, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), NULL);
 	glEnableVertexAttribArray(rcmd->idx_position);
 
+	glVertexAttribPointer(rcmd->idx_texcoord, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 
+			NULL + 3 * sizeof(float));
+	GL_POP_ERROR();
+	glEnableVertexAttribArray(rcmd->idx_texcoord);
+	GL_POP_ERROR();
 
 
 	glUniformMatrix4fv(rcmd->idx_mv, 1, GL_FALSE, rcmd->modelview.f);
-
-	int elements[] = {
-		0, 1,
-		0, 2,
-		1, 3,
-		2, 3,
-
-		0, 4,
-		1, 5,
-		2, 6,
-		3, 7,
-
-		4, 5,
-		4, 6,
-		5, 7,
-		6, 7
-	};
 
 	glActiveTexture(GL_TEXTURE0);
 	/* Enable targets of all dimensionalities,
@@ -263,11 +249,10 @@ draw_render(struct render_command * __rcmd,
 	glUniform1i(rcmd->idx_tex, 0);
 	GL_POP_ERROR();
 
-	//	glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, elements);
-	//	glDrawArrays(GL_TRIANGLES, 0, 3);
+	//glPointSize(16);
+	glDrawArrays(GL_POLYGON, 0, 4);
 
-	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-	//	glPointSize(32);
+	//glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 	GL_POP_ERROR();
 
 
@@ -283,12 +268,10 @@ draw_render(struct render_command * __rcmd,
 	 * These make there's no way to enable POINT SPRITE in NV's
 	 * forward compatible context.
 	 */
-	glEnable(GL_POINT_SPRITE);
-	
-	glPointParameteri(GL_POINT_SPRITE_COORD_ORIGIN,
-			GL_LOWER_LEFT);
-
-	glDrawElements(GL_POINTS, 2, GL_UNSIGNED_INT, elements);
+//	glEnable(GL_POINT_SPRITE);
+//	glPointParameteri(GL_POINT_SPRITE_COORD_ORIGIN,
+//			GL_LOWER_LEFT);
+//	glDrawElements(GL_POINTS, 2, GL_UNSIGNED_INT, elements);
 	GL_POP_ERROR();
 
 
