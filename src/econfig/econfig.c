@@ -42,6 +42,8 @@ static struct conf_entry entries[] = {
 //	{"video.opengl.gllibrary", TypeString, vcast((const char*)"/usr/local/lib/libGL.so")},
 //	{"video.opengl.gl3context", TypeBool, vcast(FALSE)},
 	{"video.opengl.gl3context", TypeBool, vcast(TRUE)},
+//	{"video.opengl.gl3forwardcompatible", TypeBool, vcast(TRUE)},
+	{"video.opengl.gl3forwardcompatible", TypeBool, vcast(FALSE)},
 	{"video.opengl.bpp", TypeInteger, vcast(32)},
 	/* vsync related */
 //	{"video.opengl.swapcontrol", TypeInteger, vcast(1)},

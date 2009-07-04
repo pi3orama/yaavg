@@ -21,7 +21,6 @@ static const char * vertex_shader_bak[] = {
 	"#version 130\n",
 	"uniform mat4 matProj;\n",
 	"in vec4 iPosition;\n",
-	"in vec4 iColor;\n",
 	"out vec4 voColor;\n",
 	"void main() {\n",
 	"    voColor = iColor;\n",
@@ -33,22 +32,23 @@ static const char * vertex_shader[] = {
 	"#version 130\n",
 	"in vec4 iPosition;\n",
 	"uniform mat4 iModelView;\n"
-	"in vec4 iColor;\n",
 	"out vec4 voColor;\n",
 	"void main() {\n",
-	"    voColor = iColor;\n",
 	"    gl_Position = iModelView * iPosition;\n",
+	"    gl_PointSize = 256;\n",
 	"}\n",
 };
 
 static const char * fragment_shader[] = {
 	"#version 130\n",
-	"in vec4 voColor;\n",
-	"out vec4 fragColorO;\n",
+	"uniform sampler2D inTex;\n",
 	"out vec4 fragColor;\n",
 	"void main() {\n",
-	"    fragColorO = voColor;\n",
-	"    fragColor = voColor * 2;\n",
+//	"    fragColor.r = 1;\n"
+//	"    fragColor.g = gl_PointCoord.t;\n"
+    "    fragColor = texture(inTex, gl_PointCoord);\n"
+//  "    fragColor = texture(inTex, vec2(0.5, 0.3));\n"
+//	"    fragColor.g = voColor.g;\n"
 	"}\n",
 };
 
@@ -64,6 +64,12 @@ struct rcmd_draw {
 
 	mat4x4 modelview;
 	GLuint idx_mv;
+	GLuint idx_tex;
+	GLuint idx_position;
+	GLuint idx_texcoord;
+
+	struct texture_gl * tex;
+	struct texture_gl * tex2;
 };
 
 static GLuint
@@ -143,10 +149,17 @@ draw_init(struct render_command * __rcmd)
 			rcmd->vertex_shader,
 			rcmd->fragment_shader);
 
-	GLuint pidx = glGetAttribLocation(rcmd->program, "iPosition");
-	GLuint cidx = glGetAttribLocation(rcmd->program, "iColor");
-	WARNING(SYSTEM, "XXXX %d, %d\n", cidx, pidx);
-	glVertexAttrib3f(cidx, 1.0f, 0.1f, 0.1f);
+	GL_POP_ERROR();
+	rcmd->idx_mv = glGetUniformLocation(rcmd->program, "iModelView");
+	GL_POP_ERROR();
+	rcmd->idx_tex = glGetUniformLocation(rcmd->program, "inTex");
+	GL_POP_ERROR();
+	rcmd->idx_position = glGetAttribLocation(rcmd->program, "iPosition");
+	GL_POP_ERROR();
+//	rcmd->idx_color = glGetAttribLocation(rcmd->program, "iColor");
+//	GL_POP_ERROR();
+//	glVertexAttrib3f(rcmd->idx_color, 1.0f, 0.0f, 0.1f);
+//	GL_POP_ERROR();
 
 	load_identity(&rcmd->modelview);
 
@@ -169,6 +182,16 @@ draw_init(struct render_command * __rcmd)
 
 	GL_POP_ERROR();
 
+	res_id_t texres;
+	char * fn = "common/rgb.png";
+	texres = (uint64_t)(uint32_t)fn;
+	struct rectangle rect = {
+		0, 0, 4096, 4096
+	};
+
+	rcmd->tex = texgl_create(texres, rect, NULL, NULL);
+	GL_POP_ERROR();
+
 	return 0;
 }
 
@@ -182,6 +205,10 @@ static int draw_remove(struct render_command * __rcmd,
 	glDeleteShader(rcmd->vertex_shader);
 	glDeleteShader(rcmd->fragment_shader);
 	glDeleteBuffers(1, &rcmd->buffer);
+
+	if (rcmd->tex)
+		TEXGL_RELEASE(rcmd->tex);
+
 	return 0;
 }
 
@@ -197,21 +224,18 @@ draw_render(struct render_command * __rcmd,
 		_matrix_scale(&rcmd->modelview, 0.3f, 0.3f, 0.3f);
 	}
 	n++;
-//	_matrix_translate(&rcmd->modelview, .005, 0.005, .0);
+	//	_matrix_translate(&rcmd->modelview, .005, 0.005, .0);
 	_matrix_rotate(&rcmd->modelview, 0.1f * delta_ticks, 1.0f, 1.0f, 1.0f);
 
 	glBindBuffer(GL_ARRAY_BUFFER, rcmd->buffer);
 
 	glUseProgram(rcmd->program);
-	{
-		GLuint vidx = glGetAttribLocation(rcmd->program, "iPosition");
+	glVertexAttribPointer(rcmd->idx_position, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(rcmd->idx_position);
 
-		glVertexAttribPointer(vidx, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-		glEnableVertexAttribArray(vidx);
 
-		GLuint idx_mv = glGetUniformLocation(rcmd->program, "iModelView");
-		glUniformMatrix4fv(rcmd->idx_mv, 1, GL_FALSE, rcmd->modelview.f);
-	}
+
+	glUniformMatrix4fv(rcmd->idx_mv, 1, GL_FALSE, rcmd->modelview.f);
 
 	int elements[] = {
 		0, 1,
@@ -229,17 +253,62 @@ draw_render(struct render_command * __rcmd,
 		5, 7,
 		6, 7
 	};
-	glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, elements);
-//	glDrawArrays(GL_TRIANGLES, 0, 3);
 
+	glActiveTexture(GL_TEXTURE0);
+	/* Enable targets of all dimensionalities,
+	 * including TEXTURE_2D, have been deprecated */
+	//	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, rcmd->tex->hwtexs[0]);
+
+	glUniform1i(rcmd->idx_tex, 0);
 	GL_POP_ERROR();
 
+	//	glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, elements);
+	//	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+	//	glPointSize(32);
+	GL_POP_ERROR();
+
+
+	/* STRANGE:
+	 * according to gl3 spec E.1: 
+	 *
+	 * Non-sprite points - Enable/Disable targets POINT_SMOOTH
+	 * and POINT_SPRITE, and all associated state. Point rasterization is always
+	 * performed as though POINT SPRITE were enabled.
+	 *
+	 * however, in NV's implentmetion, POINT_SPRITE is disabled
+	 * by default, while glEnable target GL_POINT_SPRITE is disabled too.
+	 * These make there's no way to enable POINT SPRITE in NV's
+	 * forward compatible context.
+	 */
+	glEnable(GL_POINT_SPRITE);
+	
+	glPointParameteri(GL_POINT_SPRITE_COORD_ORIGIN,
+			GL_LOWER_LEFT);
+
+	glDrawElements(GL_POINTS, 2, GL_UNSIGNED_INT, elements);
+	GL_POP_ERROR();
+
+
 #if 0
-	glBegin(GL_LINES);
-	glVertex2d(0, 0);
-	glVertex2d(1, 1);
+	glUseProgram(0);
+	glEnable(GL_TEXTURE_2D);
+	glBegin(GL_POLYGON);
+	glTexCoord2f(1.0, 1.0);
+	glVertex2d(0.0, 0.0);
+	glTexCoord2f(0.0, 1.0);
+	glVertex2d(-0.4, 0.0);
+	glTexCoord2f(0.0, 0.0);
+	glVertex2d(-0.4, -0.4);
+	glTexCoord2f(1.0, 0.0);
+	glVertex2d(0.0, -0.4);
 	glEnd();
 #endif
+
+
+
 	return RENDER_OK;
 }
 
@@ -248,6 +317,12 @@ static struct rcmd_operations draw_ops = {
 	.render = draw_render,
 	.remove = draw_remove,
 };
+
+
+
+/* ****************************************************************************** */
+
+
 
 struct rcmd_clear {
 	struct render_command base;
@@ -264,6 +339,9 @@ clear_render(struct render_command * __rcmd,
 static struct rcmd_operations clear_ops = {
 	.render = clear_render,
 };
+
+
+/* ****************************************************************************** */
 
 
 static struct time_controller {
@@ -445,6 +523,11 @@ int main(int argc, char * argv[])
 
 		time_controller.mspf = mspf;
 		time_controller.mspf_fallback = mspf_fallback;
+
+
+
+		/* create textures */
+
 
 		/* link commands */
 		struct rcmd_draw draw_cmd;

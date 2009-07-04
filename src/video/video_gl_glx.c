@@ -591,6 +591,17 @@ glx_create_context(void)
 					   	GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 					None
 				};
+
+				bool_t fc = conf_get_bool("video.opengl.gl3forwardcompatible",
+						FALSE);
+				if (fc) {
+					VERBOSE(GLX, "Enable gl3 forward compatible context\n");
+				} else {
+					VERBOSE(GLX, "Disable gl3 forward compatible context\n");
+					context_attribs[4] = None;
+					context_attribs[5] = None;
+				}
+
 				context = glXCreateContextAttribsARB(d,
 						_glx_ctx.fbconfig[0], NULL, True, context_attribs);
 				XSync(d, False);

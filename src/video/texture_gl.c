@@ -542,6 +542,8 @@ load_hwtexs(struct texture_gl * tex)
 		}
 	}
 
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	release_bitmap(tex);
 	ALLOC_HWMEM(tex->occupied_hwmem);
 

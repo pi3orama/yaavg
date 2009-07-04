@@ -189,4 +189,13 @@ glUniformMatrix4fv
 glVertexAttrib3f
 glVertexAttrib4f
 
+- gl3 texture
+glActiveTexture
+glUniform1ui
+glUniform1i
+
+- ???
+glPointParameteri
+glPointParameterf
+
 # 
