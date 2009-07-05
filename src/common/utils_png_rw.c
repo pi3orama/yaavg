@@ -27,6 +27,7 @@
 
 #include <resource/bitmap.h>
 
+/* ****************** READ UTILS ********************** */
 struct png_reader {
 	png_rw_ptr read_fn;
 	png_voidp io_ptr;

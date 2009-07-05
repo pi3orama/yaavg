@@ -27,21 +27,6 @@
 		GC_FREE_BLOCK_SET(tex->hwtexs);		\
 } while (0)
 
-static LIST_HEAD(texture_gl_list);
-
-static void
-insert_texgl(struct texture_gl * tex)
-{
-	struct list_head * pos;
-	list_for_each(pos, &texture_gl_list) {
-		struct texture_gl * t;
-		t = list_entry(pos, typeof(*t), list);
-		if (t->gl_params.importance >= tex->gl_params.importance)
-			break;
-	}
-	__list_add(&tex->list, pos->prev, pos);
-}
-
 static void
 texture_gl_cleanup(struct cleanup * str);
 
@@ -107,6 +92,8 @@ load_bitmap(struct texture_gl * tex)
 	b = GET_BITMAP(tex->base.bitmap_res_id);
 	assert(b != NULL);
 	SET_TEXGL_BITMAP(tex, b);
+	GRAB_BITMAP(b);
+
 	/* save bitmap layout */
 	memcpy(&tex->__dummy_bitmap, b, sizeof(*b));
 	tex->dummy_bitmap = &tex->__dummy_bitmap;
@@ -130,7 +117,6 @@ load_bitmap(struct texture_gl * tex)
 			THROW(EXCEPTION_FATAL,
 					"Unknown texture format: 0x%x\n", TEXGL_DUMMY_BITMAP(tex)->format);
 	}
-
 }
 
 static void
@@ -255,11 +241,6 @@ init_texgl(struct texture_gl * tex)
 				"tex %p use NORMAL (%d x %d)\n",
 				tex, tex->tile_w, tex->tile_h);
 	}
-
-	/* force release bitmap, don't care whether to use bitmap data.
-	 * If the hwtex needs be built immediately, load_texgl will call
-	 * load_bitmap; else, we need't this bitmap. */
-	release_bitmap(tex);
 	return;
 }
 
@@ -344,11 +325,8 @@ build_phybitmap(struct texture_gl * tex)
 			}
 		}
 	}
-	release_bitmap(tex);
 }
 
-/* after load_hwtexs, bitmap will have been released, 
- * no matter whether directly use bitmap data */
 static void
 load_hwtexs(struct texture_gl * tex)
 {
@@ -373,7 +351,6 @@ load_hwtexs(struct texture_gl * tex)
 
 	if (tex->gl_params.target == GL_TEXTURE_3D) {
 		WARNING(OPENGL, "3D texture hasn't implemented\n");
-		release_bitmap(tex);
 		return;
 	}
 
@@ -415,7 +392,6 @@ load_hwtexs(struct texture_gl * tex)
 
 			TRACE(OPENGL, "begin load tex %p's tile %d into hwmem\n",
 					tex, nr);
-
 			switch (target) {
 				case GL_TEXTURE_1D:
 					if (tex->tile_w == get_tile_width(tex, x, y)) {
@@ -509,17 +485,13 @@ load_hwtexs(struct texture_gl * tex)
 		}
 	}
 
+	/* Unbind texture */
 	glBindTexture(GL_TEXTURE_2D, 0);
-
-	release_bitmap(tex);
 	ALLOC_HWMEM(tex->occupied_hwmem);
 
 	return;
 }
 
-/* 
- * after load_texgl, bitmap is released
- */
 static void
 load_texgl(struct texture_gl * tex)
 {
@@ -527,7 +499,6 @@ load_texgl(struct texture_gl * tex)
 		return;
 	if (tex->hwtexs == NULL)
 		load_hwtexs(tex);
-	release_bitmap(tex);
 }
 
 static void
@@ -541,6 +512,8 @@ texgl_reinit_hook(struct reinit_hook * hook)
 		glGenTextures(tex->nr_hwtexs, tex->hwtexs);
 		TRY_CLEANUP(gl_check_error, free_hwtexs(tex));
 		load_hwtexs(tex);
+		if (!tex->use_bitmap_data)
+			release_bitmap(tex);
 	}
 }
 
@@ -559,12 +532,11 @@ texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
 	if (gl_params == NULL)
 		gl_params = &default_gl_param;
 
-	TRACE(OPENGL, "create texture from bitmap %llu {"  RECT_FMT "}\n",
+	TRACE(OPENGL, "create texture from bitmap %llu {" RECT_FMT "}\n",
 			bitmap_res_id, RECT_ARG(&rect));
 
 	tex = alloc_texture_gl();
 	
-	tex->base.cleanup.args = tex;
 	tex->base.cleanup.function = texture_gl_cleanup;
 
 	tex_common_init(&tex->base, bitmap_res_id, rect, params);
@@ -576,20 +548,22 @@ texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
 
 	tex->gl_params = *gl_params;
 
-	/* insert into priority list */
-	insert_texgl(tex);
 	make_cleanup(&tex->base.cleanup);
 
 	if (bitmap_res_id == 0)
 		return tex;
 
 	/* compute hw data */
+	/* init_texgl will grab the bitmap */
 	init_texgl(tex);
-	if ((tex->base.params.pin) || (tex->gl_params.imm)) {
-		load_texgl(tex);
-	}
 
-	release_bitmap(tex);
+	load_texgl(tex);
+
+	if (tex->base.params.pin)
+		free_phy_bitmap(tex);
+
+	if ((!tex->use_bitmap_data) || (tex->base.params.pin))
+		release_bitmap(tex);
 	return tex;
 }
 

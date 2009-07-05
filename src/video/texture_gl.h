@@ -24,9 +24,6 @@ __BEGIN_DECLS
 
 struct texture_gl_params {
 
-	/* imm texture is load into hw mem immediately */
-	bool_t imm;
-
 	/* more important, more unlikely be free when hwmem shortage. */
 	/* if importance larger than 100, the texture will never be removed */
 	int importance;
@@ -42,7 +39,6 @@ struct texture_gl_params {
 };
 
 #define TEXTURE_GL_PARAM_INIT {	\
-	TRUE,						\
 	50,							\
 	GL_TEXTURE_2D,				\
 	GL_LINEAR,					\
@@ -83,7 +79,6 @@ struct texture_gl {
 	GLenum tex_data_format;
 	int nr_hwtexs;
 	int nw, nh;
-
 
 	enum {
 		TEXGL_NPOT,

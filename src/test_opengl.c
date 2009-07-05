@@ -174,6 +174,11 @@ draw_init(struct render_command * __rcmd)
 		0.0, 1.0, 0.0, 0.0, 1.0,
 		1.0, 1.0, 0.0, 1.0, 1.0,
 		1.0, 0.0, 0.0, 1.0, 0.0,
+
+		0.0, 0.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0, 1.0,
+		1.0, 1.0, 1.0, 1.0, 1.0,
+		1.0, 0.0, 1.0, 1.0, 0.0,
 	};
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(varray), varray, GL_STATIC_DRAW);
@@ -184,12 +189,35 @@ draw_init(struct render_command * __rcmd)
 	char * fn = "common/rgb.png";
 	texres = (uint64_t)(uint32_t)fn;
 	struct rectangle rect = {
-		0, 0, 4096, 4096
+		0, 0, 64, 64
 	};
 
-	rcmd->tex = texgl_create(texres, rect, NULL, NULL);
+	struct texture_params params = TEXTURE_PARAM_INIT;
+	params.pin = TRUE;
+
+	rcmd->tex = texgl_create(texres, rect, &params, NULL);
 	GL_POP_ERROR();
 
+	WARNING(SYSTEM, "tex->bitmap=%p\n", rcmd->tex->base.bitmap);
+	if (rcmd->tex->base.bitmap != NULL)
+		WARNING(SYSTEM, "tex->bitmap.refcount=%d\n", rcmd->tex->base.bitmap->base.ref_count);
+
+
+	res_id_t texres2;
+	char * fn2 = "common/rgb.png";
+	texres2 = (uint64_t)(uint32_t)fn2;
+	struct rectangle rect2 = {
+		0, 0, 64, 64
+	};
+	struct texture_params params2 = TEXTURE_PARAM_INIT;
+	struct texture_gl_params gl_params = TEXTURE_GL_PARAM_INIT;
+	gl_params.mag_filter = GL_NEAREST;
+	gl_params.min_filter = GL_NEAREST;
+	rcmd->tex2 = texgl_create(texres, rect2, &params, &gl_params);
+	GL_POP_ERROR();
+	WARNING(SYSTEM, "tex2->bitmap=%p\n", rcmd->tex2->base.bitmap);
+	if (rcmd->tex2->base.bitmap != NULL)
+		WARNING(SYSTEM, "tex2->bitmap.refcount=%d\n", rcmd->tex2->base.bitmap->base.ref_count);
 	return 0;
 }
 
@@ -206,7 +234,8 @@ static int draw_remove(struct render_command * __rcmd,
 
 	if (rcmd->tex)
 		TEXGL_RELEASE(rcmd->tex);
-
+	if (rcmd->tex2)
+		TEXGL_RELEASE(rcmd->tex2);
 	return 0;
 }
 
@@ -249,8 +278,16 @@ draw_render(struct render_command * __rcmd,
 	glUniform1i(rcmd->idx_tex, 0);
 	GL_POP_ERROR();
 
-	//glPointSize(16);
+	glEnable(GL_DEPTH_TEST);
+
+
+	GL_POP_ERROR();
 	glDrawArrays(GL_POLYGON, 0, 4);
+
+	/* the texture params, such as mag_filter, is bind to
+	 * texture object, not the texture unit. */
+	glBindTexture(GL_TEXTURE_2D, rcmd->tex2->hwtexs[0]);
+	glDrawArrays(GL_POLYGON, 4, 4);
 
 	//glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 	GL_POP_ERROR();
@@ -316,6 +353,7 @@ clear_render(struct render_command * __rcmd,
 		dtick_t delta_ticks)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT);
 	return RENDER_OK;
 }
 
