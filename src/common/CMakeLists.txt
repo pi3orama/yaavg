@@ -3,7 +3,9 @@ SET(SRC debug.c
 	utils.c
 	utils_sdl.c
 	utils_common.c
-	utils_png.c
+	utils_png.h
+	utils_png_rw.c
+	utils_png_bitmap.c
 	utils_linux.c
 	mm.c
 	utils.h

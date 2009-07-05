@@ -64,9 +64,6 @@ copy_pixels(struct bitmap * b, int x, int y, int n, uint8_t * dest)
 extern struct bitmap *
 res_load_bitmap(res_id_t id) THROWS(EXCEPTION_RESOURCE_LOST);
 
-extern void
-bitmap_shrink(struct gc_tag * tag, enum gc_power p);
-
 static inline struct bitmap *
 alloc_bitmap(int width, int height, bitmap_format_t format)
 {
@@ -75,7 +72,6 @@ alloc_bitmap(int width, int height, bitmap_format_t format)
 			(width * height * format + 15), 	/* pad 15 byte for align use */
 			offsetof(struct bitmap, base.gc_tag),
 			0,
-			bitmap_shrink,
 			NULL);
 
 	bitmap->w = width;
@@ -83,7 +79,7 @@ alloc_bitmap(int width, int height, bitmap_format_t format)
 	bitmap->format = format;
 
 	bitmap->base.data_size = width * height * format + 15;
-	bitmap->base.ref_count = 1;
+	bitmap->base.ref_count = 0;
 	bitmap->base.type = RES_BITMAP;
 	bitmap->base.id = 0;
 

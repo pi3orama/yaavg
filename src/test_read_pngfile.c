@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <common/utils.h>
+#include <common/utils_png.h>
 #include <resource/bitmap.h>
 int main()
 {
@@ -8,10 +9,17 @@ int main()
 
 	volatile struct exception exp;
 	TRY_CATCH(exp, MASK_ALL) {
-		bitmapA = read_from_pngfile("./common/rgb.png");
-		bitmapB = read_from_pngfile("./common/rgba.png");
+		bitmapA = read_bitmap_from_pngfile("./common/rgb.png");
+		bitmapB = read_bitmap_from_pngfile("./common/rgba.png");
 		push_cleanup(&bitmapA->base.cleanup);
 		push_cleanup(&bitmapB->base.cleanup);
+
+		write_to_pngfile_rgb("/tmp/out.png", bitmapA->data,
+				bitmapA->w, bitmapA->h);
+		write_to_pngfile_rgba("/tmp/out2.png", bitmapB->data,
+				bitmapB->w, bitmapB->h);
+		write_to_pngfile_rgba("/tmp/out3.png", bitmapB->data,
+				bitmapB->w, bitmapB->h);
 	}
 	CATCH(exp) {
 		case EXCEPTION_NO_ERROR:

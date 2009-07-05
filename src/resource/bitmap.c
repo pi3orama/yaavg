@@ -10,12 +10,12 @@
 #include <common/exception.h>
 #include <common/debug.h>
 #include <common/utils.h>
+#include <common/utils_png.h>
 #include <common/list.h>
 
 #include <resource/bitmap.h>
 
 #include <assert.h>
-
 
 struct bitmap *
 res_load_bitmap(res_id_t resid)
@@ -25,40 +25,11 @@ res_load_bitmap(res_id_t resid)
 	 * the metadata of the resource. */
 	struct bitmap * bitmap;
 
-	/* search from res pool first */
-	struct resource * res = res_search(resid, RES_BITMAP);
-	if (res != NULL) {
-		return container_of(res, struct bitmap, base);
-	}
-
 	char * filename = (char*)((uint32_t)resid);
-	bitmap = read_from_pngfile(filename);
+	bitmap = read_bitmap_from_pngfile(filename);
 	assert(bitmap != NULL);
 	bitmap->base.id = resid;
-	RES_BIRTH(&bitmap->base);
 	return bitmap;
-}
-
-void
-bitmap_shrink(struct gc_tag * tag, enum gc_power p)
-{
-	struct bitmap * b;
-	b = (struct bitmap *)tag->ptr;
-	if (b->base.ref_count <= 0) {
-		RES_DIE(&b->base);
-		BITMAP_CLEANUP(b);
-		return;
-	}
-
-	if (p >= GC_DESTROY) {
-		WARNING(MEMORY, "bitmap %p destroied while refcount = %d > 0\n",
-				b, b->base.ref_count);
-		RES_DIE(&b->base);
-		BITMAP_CLEANUP(b);
-		return;
-	}
-
-	return;
 }
 
 // vim:tabstop=4:shiftwidth=4

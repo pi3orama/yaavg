@@ -12,17 +12,6 @@
 #include <common/mm.h>
 #include <stdint.h>
 
-enum gc_power {
-	GC_NORMAL,
-	GC_LIGHT,
-	GC_MEDIUM,
-	GC_HARD,
-	GC_DESTROY,
-};
-
-struct gc_tag ;
-typedef void (*gc_shrink_t)(struct gc_tag * tag, enum gc_power p) THROWS(all);
-
 /* gc free objects. currently, there are
  * only 1 list. however, there will be more free
  * lists for different type of objects */
@@ -40,9 +29,6 @@ struct gc_tag {
 	struct list_head gc_list;
 	int size;
 	uint32_t flags;
-	/* shrink is called when memory shortage. */
-	/* shrink can be NULL */
-	gc_shrink_t shrink;
 	/* ptr is the malloc returned pointer */
 	void * ptr;
 	void * pprivate;
@@ -72,11 +58,11 @@ struct gc_tag {
 
 void *
 gc_malloc(size_t size, int tag_offset, uint32_t flags,
-		gc_shrink_t shrink, void * pprivate);
+		void * pprivate);
 
 void *
 gc_calloc(size_t size, int tag_offset, uint32_t flags,
-		gc_shrink_t shrink, void * pprivate);
+		void * pprivate);
 
 void
 gc_free(struct gc_tag * tag);
@@ -88,7 +74,7 @@ gc_free(struct gc_tag * tag);
 		if ((s) <= sizeof(*tag))	\
 			ptr = NULL;			\
 		else {					\
-			tag = xalloc((s) + sizeof(*tag), 0, 0, NULL, NULL);	\
+			tag = xalloc((s) + sizeof(*tag), 0, 0, NULL);	\
 			if (tag == NULL)	\
 				ptr = NULL;		\
 			else				\
@@ -120,12 +106,10 @@ do {	\
 
 #define GC_TAG	struct gc_tag __gc_tag
 
-#define GC_SHRINK(t, p)	(t)->shrink((t), (p))
-
 #define GC_SIMPLE_MALLOC(ptr, member) \
 	gc_malloc(sizeof(*ptr), offsetof(typeof(*ptr), member), 0, NULL, NULL)
 #define GC_SIMPLE_CALLOC(ptr, member) \
-	gc_calloc(sizeof(*ptr), offsetof(typeof(*ptr), member), 0, NULL, NULL)
+	gc_calloc(sizeof(*ptr), offsetof(typeof(*ptr), member), 0, NULL)
 
 #define GC_SIMPLE_FREE(ptr, member) \
 	gc_free(&ptr->member)
@@ -147,6 +131,33 @@ alloc_mem(size_t size, bool_t fill);
 
 void
 free_mem(void * p);
+
+static inline void *
+xmalloc(size_t size)
+{
+	void * ptr;
+	ptr = malloc(size);
+	if (ptr == NULL)
+		THROW(EXCEPTION_FATAL, "Out of memory");
+	return ptr;
+}
+
+static inline void *
+xcalloc(size_t count, size_t eltsize)
+{
+	void * ptr;
+	ptr = calloc(count, eltsize);
+	if (ptr == NULL)
+		THROW(EXCEPTION_FATAL, "Out of memory");
+	return ptr;
+}
+
+
+static inline void
+xfree(void * ptr)
+{
+	free(ptr);
+}
 
 #endif
 // vim:tabstop=4:shiftwidth=4

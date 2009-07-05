@@ -102,7 +102,6 @@ struct texture_gl {
 #define TEXGL_DUMMY_BITMAP(t)	({assert((t)->dummy_bitmap != NULL); (t)->dummy_bitmap;})
 
 #define TEXGL_CLEANUP(t)	TEX_CLEANUP(&((t)->base))
-#define TEXGL_SHRINK(t, p)	TEX_SHRINK(&((t)->base), (p))
 
 #define TEXGL_GRAB(t)		TEX_GRAB(&(t)->base)
 #define TEXGL_RELEASE(t)	TEX_RELEASE(&(t)->base)

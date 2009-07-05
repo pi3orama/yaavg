@@ -3,6 +3,7 @@
 #include <common/debug.h>
 
 #include <common/utils.h>
+#include <common/utils_png.h>
 
 #include <stdio.h>
 #include <stdlib.h>

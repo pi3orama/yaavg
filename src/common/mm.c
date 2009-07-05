@@ -74,7 +74,7 @@ free_mem(void * p)
 
 static void *
 inter_alloc(size_t size, int tag_offset, uint32_t flags,
-		gc_shrink_t shrink, void * pprivate, bool_t fill)
+		void * pprivate, bool_t fill)
 {
 	void * r;
 	struct gc_tag * t;
@@ -87,7 +87,6 @@ inter_alloc(size_t size, int tag_offset, uint32_t flags,
 
 	t->size = size;
 	t->flags = flags;
-	t->shrink = shrink;
 	t->ptr = r;
 	t->pprivate = pprivate;
 
@@ -100,18 +99,18 @@ inter_alloc(size_t size, int tag_offset, uint32_t flags,
 
 void *
 gc_malloc(size_t size, int tag_offset, uint32_t flags,
-		gc_shrink_t shrink, void * pprivate)
+		void * pprivate)
 {
 	return inter_alloc(size, tag_offset, flags,
-			shrink, pprivate, FALSE);
+			pprivate, FALSE);
 }
 
 void *
 gc_calloc(size_t size, int tag_offset, uint32_t flags,
-		gc_shrink_t shrink, void * pprivate)
+		void * pprivate)
 {
 	return inter_alloc(size, tag_offset, flags,
-			shrink, pprivate, TRUE);
+			pprivate, TRUE);
 }
 
 void
@@ -132,13 +131,8 @@ gc_cleanup(void)
 		WARNING(MEMORY, "object %p still active when destroy\n",
 				pos->ptr);
 		GC_REMOVE(pos);
-		if (pos->shrink) {
-			TRACE(MEMORY, "call shrink for object %p\n", pos->ptr);
-			pos->shrink(pos, GC_DESTROY);
-		} else {
-			TRACE(MEMORY, "free object %p\n", pos->ptr);
-			free_mem(pos->ptr);
-		}
+		TRACE(MEMORY, "free object %p\n", pos->ptr);
+		free_mem(pos->ptr);
 	}
 
 	list_for_each_entry_safe(pos, n, &gc_free_list.head, gc_list) {

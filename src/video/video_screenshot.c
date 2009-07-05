@@ -5,6 +5,7 @@
 #include <common/debug.h>
 #include <common/exception.h>
 #include <common/utils.h>
+#include <common/utils_png.h>
 
 #include <common/mm.h>
 

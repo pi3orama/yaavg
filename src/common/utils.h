@@ -35,25 +35,6 @@ void NORETURN throw_reinit_exception(
 		int reinit_exp_level, const char * reinit_msg,
 		int fatal_exp_level, const char * fatal_msg) ATTR_NORETURN ;
 
-/* 
- * write `buffer' to `filename'. w/h is the size of buffer. 
- */
-void
-write_to_pngfile_rgb(char * filename, uint8_t * buffer,
-		int w, int h) THROWS(CONTINUE, FATAL);
-
-/* 
- * same as write_to_pngfile_rgb, except buffer format is rgba
- */
-void
-write_to_pngfile_rgba(char * filename, uint8_t * buffer,
-		int w, int h) THROWS(CONTINUE, FATAL);
-
-struct bitmap;
-
-struct bitmap *
-read_from_pngfile(char * filename) THROWS(RESOURCE_LOST, FATAL);
-
 static inline int
 count_1s(uint32_t c1)
 {

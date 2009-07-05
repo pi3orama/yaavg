@@ -43,8 +43,6 @@ insert_texgl(struct texture_gl * tex)
 }
 
 static void
-texture_gl_shrink(struct gc_tag * tag, enum gc_power p);
-static void
 texture_gl_cleanup(struct cleanup * str);
 
 static inline struct texture_gl *
@@ -54,7 +52,6 @@ alloc_texture_gl(void)
 	tex = gc_calloc(sizeof(*tex),
 			offsetof(struct texture_gl, base.__gc_tag),
 			0,
-			texture_gl_shrink,
 			NULL);
 	TRACE(MEMORY, "alloc result: %p\n", tex);
 	INIT_LIST_HEAD(&tex->list);
@@ -148,36 +145,6 @@ free_hwmem(struct texture_gl * tex)
 		
 		FREE_HWMEM(tex->occupied_hwmem);
 	}
-}
-
-static void
-texture_gl_shrink(struct gc_tag * tag, enum gc_power p)
-{
-	struct texture_gl * tex;
-	tex = (struct texture_gl *)tag->ptr;
-	TRACE(OPENGL, "shrink texture %p, power=%d\n", tex, p);
-
-	switch (p) {
-		case GC_DESTROY:
-			WARNING(MEMORY, "gl texture %p destroied\n",
-					tex);
-			TEXGL_CLEANUP(tex);
-			break;
-		case GC_HARD:
-			free_hwmem(tex);
-		case GC_MEDIUM:
-			release_bitmap(tex);
-		case GC_LIGHT:
-			free_phy_bitmap(tex);
-		case GC_NORMAL:
-			if (tex->base.params.pin) {
-				free_phy_bitmap(tex);
-			}
-			break;
-		default:
-			INTERNAL_ERROR(MEMORY, "shrink power %d unknown\n", p);
-	}
-	return;
 }
 
 static void
@@ -622,7 +589,6 @@ texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
 		load_texgl(tex);
 	}
 
-	TEXGL_SHRINK(tex, GC_NORMAL);
 	release_bitmap(tex);
 	return tex;
 }

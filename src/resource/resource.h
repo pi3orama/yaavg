@@ -33,28 +33,13 @@ struct resource {
 	res_id_t id;
 };
 
-#define RES_GRAB(r) do {} while(0)
-#define RES_PENDING(r) do {} while(0)
-
-struct resource *
-res_search(res_id_t id, res_type_t type);
-
-extern void
-res_birth(struct resource * res);
-
-extern void
-res_die(struct resource * res);
-
-#define RES_BIRTH(r) do {res_birth(r);} while(0)
-#define RES_DIE(r) do {res_die(r);} while(0)
-
 #define RES_CLEANUP(r) ((r)->cleanup.function(&((r)->cleanup)))
 
 static inline void
 res_grab_resource(struct resource * res)
 {
-	if (res->ref_count == 0)
-		RES_GRAB(res);
+	if (res->ref_count < 0)
+		res->ref_count = 0;
 	res->ref_count ++;
 }
 
@@ -64,7 +49,7 @@ res_put_resource(struct resource * res)
 {
 	res->ref_count --;
 	if (res->ref_count <= 0)
-		RES_PENDING(res);
+		RES_CLEANUP(res);
 }
 
 #endif

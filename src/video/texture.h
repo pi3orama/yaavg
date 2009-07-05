@@ -58,7 +58,6 @@ struct texture {
 #define SET_TEX_BITMAP(t, b)	do {(t)->bitmap = (b);}while(0)
 
 #define TEX_CLEANUP(t)		CLEANUP(&((t)->cleanup))
-#define TEX_SHRINK(t, p)	GC_SHRINK((&(t)->__gc_tag), (p))
 
 #define TEX_GRAB(t)		do	{		\
 	if (((t)->ref_count) == 0)		\
