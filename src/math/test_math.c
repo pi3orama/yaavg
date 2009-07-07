@@ -19,19 +19,23 @@ int main()
 		TRACE(SYSTEM, "system doesn't support sse2\n");
 	}
 
-#define check(n)	\
-	FORCE(SYSTEM, "sin_d("#n")=%f, sin("#n")=%f\n", sin_d(n), sinf(n / 180.0f * M_PI)); \
-	FORCE(SYSTEM, "cos_d("#n")=%f, cos("#n")=%f\n", cos_d(n), cosf(n / 180.0f * M_PI)); \
-	FORCE(SYSTEM, "tan_d("#n")=%f, tan("#n")=%f\n", tan_d(n), tanf(n / 180.0f * M_PI)); \
+	/* test matrix invert */
+	mat4x4 d;
+	mat4x4 s = {
+		.f = {
+			0,0,1,0,
+			1,0,1,0,
+			1,1,1,0,
+			0,0,0,1,
+		}
+	};
 
-	check(26);
-	check(-26);
 
-	check(186);
-	check(-186);
+	invert_matrix(&d, &s);
 
-	check(3678.43);
-	check(-3678.43);
+	print_matrix(&s);
+
+	print_matrix(&d);
 
 	return 0;
 }

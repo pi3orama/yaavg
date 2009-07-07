@@ -32,6 +32,9 @@ extern void
 load_identity(mat4x4 * d);
 
 extern void
+invert_matrix(mat4x4 * d, mat4x4 * s);
+
+extern void
 _matrix_translate(mat4x4 * m, float x, float y, float z);
 
 extern void
