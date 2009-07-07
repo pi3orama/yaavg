@@ -567,6 +567,59 @@ texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
 	return tex;
 }
 
+static void
+fillmesh4(struct texture_gl * tex,
+		struct tex_point * o_points,
+		struct hwtex_idx * elements,
+		struct tex_point * i_points)
+{
+	int nr = 0;
+	float * points =
+		alloca((tex->nr_hwtexs + tex->nh + tex->nw + 1) * sizeof(float));
+
+	/* for each point */
+	for (int y = 0; x < tex->nh + 1; y++) {
+		for (int x = 0; x < tex->nw; x++) {
+			wrat = (float)
+			nr ++;
+		}
+		/* last line is special */
+	}
+}
+
+static void
+fillmesh3(struct texture_gl * tex,
+		struct tex_point * o_points,
+		struct hwtex_idx * elements,
+		struct tex_point * i_points)
+{
+	
+}
+
+void
+texgl_fillmesh(struct texture_gl * tex,
+		struct tex_point * o_points,
+		struct hwtex_idx * elements,
+		int nr_ipoints,
+		struct tex_point * i_points)
+{
+	switch (nr_ipoints) {
+		case 4:
+			fillmesh4(tex, o_points, elements,
+					i_points);
+			break;
+		case 3:
+			fillmesh3(tex, o_points, elements,
+					i_points);
+			break;
+		default:
+			THROW(EXCEPTION_FATAL, "wrong nr_ipoints: %d",
+					nr_ipoints);
+			break;
+	}
+	return;
+}
+
 #endif	/* VIDEO_OPENGL_ENGINE */
 
 // vim:tabstop=4:shiftwidth=4

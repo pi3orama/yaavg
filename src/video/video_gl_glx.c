@@ -182,7 +182,7 @@ glx_cleanup(struct cleanup * str)
 		}
 
 		if (wm_win) {
-			TRACE(GLX, "Destory fs_win 0x%x\n", wm_win);
+			TRACE(GLX, "Destory wm_win 0x%x\n", wm_win);
 			XDestroyWindow(d, wm_win);
 			_glx_ctx.wm_win = 0;
 			XCheckError();
