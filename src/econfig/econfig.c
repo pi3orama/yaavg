@@ -12,14 +12,10 @@
 
 #define vcast(x)	(union _conf_value)(x)
 static struct conf_entry entries[] = {
-//	{"video.resolution.w", TypeInteger, vcast(1024)},
-//	{"video.resolution.h", TypeInteger, vcast(768)},
 	{"video.resolution.w", TypeInteger, vcast(800)},
 	{"video.resolution.h", TypeInteger, vcast(600)},
 	{"video.viewport.w", TypeInteger, vcast(800)},
 	{"video.viewport.h", TypeInteger, vcast(600)},
-//	{"video.viewport.w", TypeInteger, vcast(1024)},
-//	{"video.viewport.h", TypeInteger, vcast(768)},
 	{"video.mspf.fallback", TypeInteger, vcast(100)},
 //	{"video.mspf", TypeInteger, vcast(0)},
 //	{"video.mspf", TypeInteger, vcast(8)},	/* 17ms: 60fps */
@@ -62,10 +58,10 @@ static struct conf_entry entries[] = {
 //	{"video.opengl.texture.maxsize", TypeInteger, vcast(64)},
 	{"video.opengl.texture.maxsize", TypeInteger, vcast(0)},
 	{"video.opengl.texture.enableCOMPRESSION", TypeBool, vcast(TRUE)},
-//	{"video.opengl.texture.enableNPOT", TypeBool, vcast(TRUE)},
-	{"video.opengl.texture.enableNPOT", TypeBool, vcast(FALSE)},
-//	{"video.opengl.texture.enableRECT", TypeBool, vcast(TRUE)},
-	{"video.opengl.texture.enableRECT", TypeBool, vcast(FALSE)},
+	{"video.opengl.texture.enableNPOT", TypeBool, vcast(TRUE)},
+//	{"video.opengl.texture.enableNPOT", TypeBool, vcast(FALSE)},
+	{"video.opengl.texture.enableRECT", TypeBool, vcast(TRUE)},
+//	{"video.opengl.texture.enableRECT", TypeBool, vcast(FALSE)},
 	{"video.opengl.glx.confinemouse", TypeBool, vcast(FALSE)},
 //	{"video.opengl.glx.confinemouse", TypeBool, vcast(TRUE)},
 	/* Don't set it to TRUE unless you're sure what you're doing */

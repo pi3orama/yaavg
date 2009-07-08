@@ -414,7 +414,6 @@ real_invert_matrix(mat4x4 * d, mat4x4 * s)
 	else
 #endif
 		normal_invert4x4(d->f, s->f);
-	
 }
 
 void

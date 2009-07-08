@@ -105,15 +105,15 @@ draw_render(struct render_command * __rcmd,
 		ipoints[n].u.f.ty = _ty;	\
 	} while(0)
 	setpts(0, 0.0, 0.0, 0.0, 0.0, 0.0);
-	setpts(1, 1.0, 0.0, 0.0, 1.0, 0.0);
-	setpts(2, 0.7, 1.0, 0.0, 1.0, 1.0);
-	setpts(3, 0.0, .7, 0.0, 0.0, 1.0);
+	setpts(1, 0.5, 0.0, 0.0, 1.0, 0.0);
+	setpts(2, 1.0, .5, 0.0, 1.0, 1.0);
+	setpts(3, 0.0, 1.0, 0.0, 0.0, 1.0);
 
 #undef setpts
 
 	texgl_fillmesh(tex,
 			opoints,
-			4,
+			3,
 			ipoints);
 
 

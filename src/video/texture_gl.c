@@ -18,6 +18,10 @@
 #include <common/utils.h>
 #include <math/matrix.h>
 
+#ifdef HAVE_ALLOCA_H
+# include <alloca.h>
+#endif
+
 #ifdef VIDEO_OPENGL_ENGINE
 
 #define FREE_HWMEM(n)	do {} while(0)
@@ -611,18 +615,150 @@ texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
 }
 
 static void
+fast_fillmesh4(struct texture_gl * tex,
+		struct tex_point * o_points,
+		struct tex_point * i_points)
+{
+	SILENT(OPENGL, "fastmesh 4\n");
+	assert(tex->nr_hwtexs == 1);
+	memcpy(o_points, i_points, 4 * sizeof(*i_points));
+
+	if (tex->internal_type == TEXGL_RECT) {
+#define ___setp(n, axis, v)	do { \
+		o_points[n].u.i.it##axis = v;	\
+	} while(0)
+
+
+#define __setp(n, vx, vy)	do { \
+		___setp(n, x, vx);	\
+		___setp(n, y, vy);	\
+	} while(0)
+
+		int tw = tex->base.rect.w;
+		int th = tex->base.rect.h;
+
+		__setp(0, 0, 0);
+		__setp(1, tw, 0);
+		__setp(2, tw, th);
+		__setp(3, 0, th);
+#undef ___setp
+	} else {
+		
+#define ___setp(n, axis, v) do { \
+		o_points[n].u.f.t##axis = v;\
+	} while(0)
+		__setp(0, 0.0, 0.0);
+		__setp(1, 1.0, 0.0);
+		__setp(2, 1.0, 1.0);
+		__setp(3, 0.0, 1.0);
+	}
+#undef ___setp
+#undef __setp
+}
+
+struct vec3 {
+	float x, y, z;
+};
+
+static void
+fill_opoints(struct texture_gl * tex,
+		struct tex_point * o_points,
+		struct vec3 * points)
+{
+	/* for each texture, form o_points */
+	int nr = 0;
+	for (int y = 0; y < tex->nh; y++) {
+		for (int x = 0; x < tex->nw; x++) {
+			struct tex_point * o = &o_points[4 * nr];
+			int np0 = (tex->nw + 1) * (y) + x;
+			int np1 = (tex->nw + 1) * (y) + x + 1;
+			int np2 = (tex->nw + 1) * (y + 1) + x + 1;
+			int np3 = (tex->nw + 1) * (y + 1) + x;
+
+#define ___seto(n, axis)	\
+			o[n].p##axis = points[np##n].axis
+#define __seto(n)	\
+			do {	\
+				___seto(n, x);	\
+				___seto(n, y);	\
+				___seto(n, z);	\
+			} while(0)
+			__seto(0);
+			__seto(1);
+			__seto(2);
+			__seto(3);
+#undef __seto
+#undef ___seto
+
+			if (tex->internal_type == TEXGL_RECT) {
+				int itx, ity;
+				itx = get_tile_width(tex, x, y);
+				ity = get_tile_height(tex, x, y);
+				o[0].u.i.itx = o_points[0].u.i.ity = 0;
+
+				o[1].u.i.itx = itx;
+				o[1].u.i.ity = 0;
+
+				o[2].u.i.itx = itx;
+				o[2].u.i.ity = ity;
+
+				o[3].u.i.itx = 0;
+				o[3].u.i.ity = ity;
+			} else {
+				float tx, ty;
+				tx = (float)get_tile_width(tex, x, y) / (float)tex->tile_w;
+				ty = (float)get_tile_height(tex, x, y) / (float)tex->tile_h;
+
+				SILENT(OPENGL, "tx=%f, ty=%f\n", tx, ty);
+				o[0].u.f.tx = o[0].u.f.ty = 0.0f;
+
+				o[1].u.f.tx = tx;
+				o[1].u.f.ty = 0.0;
+
+				o[2].u.f.tx = tx;
+				o[2].u.f.ty = ty;
+
+				o[3].u.f.tx = 0.0;
+				o[3].u.f.ty = ty;
+			}
+
+			SILENT(OPENGL, "for texture %d:\n", nr);
+			for (int i = 0; i < 4; i++) {
+				SILENT(OPENGL, "\tp%d: %f %f %f %f %f\n",
+						i,
+						o[i].px,
+						o[i].py,
+						o[i].pz,
+						o[i].u.f.tx,
+						o[i].u.f.ty
+						);
+			}
+
+			nr++;
+		}
+	}
+	
+}
+
+static void
 fillmesh4(struct texture_gl * tex,
 		struct tex_point * o_points,
 		struct tex_point * i_points)
 {
 	SILENT(OPENGL, "fillmesh 4\n");
 
-	struct vec3 {
-		float x, y, z;
-	};
+	if (tex->nr_hwtexs == 1) {
+		fast_fillmesh4(tex, o_points, i_points);
+		return;
+	}
+
 	int nr = 0;
 	struct vec3 * points =
+#ifdef HAVE_ALLOCA
 		alloca((tex->nr_hwtexs + tex->nh + tex->nw + 1) * sizeof(*points));
+#else
+		GC_MALLOC_BLOCK((tex->nr_hwtexs + tex->nh + tex->nw + 1) * sizeof(*points));
+#endif
 
 #define hinterp(p0, p1, axis)	\
 	i_points[p0].p##axis + (i_points[p1].p##axis - i_points[p0].p##axis) * \
@@ -633,7 +769,6 @@ fillmesh4(struct texture_gl * tex,
 	for (int y = 0; y < tex->nh + 1; y++) {
 		/* clamp line */
 		float x0, y0, z0, x1, y1, z1;
-
 
 		SILENT(OPENGL, "for hwtex (??, %d):\n", y);
 
@@ -685,79 +820,11 @@ fillmesh4(struct texture_gl * tex,
 		nr ++;
 	}
 
-	/* for each texture, form o_points */
-	nr = 0;
-	for (int y = 0; y < tex->nh; y++) {
-		for (int x = 0; x < tex->nw; x++) {
-			struct tex_point * o = &o_points[4 * nr];
-			int np0 = (tex->nw + 1) * (y) + x;
-			int np1 = (tex->nw + 1) * (y) + x + 1;
-			int np2 = (tex->nw + 1) * (y + 1) + x + 1;
-			int np3 = (tex->nw + 1) * (y + 1) + x;
+	fill_opoints(tex, o_points, points);
 
-#define ___seto(n, axis)	\
-			o[n].p##axis = points[np##n].axis
-#define __seto(n)	\
-			do {	\
-				___seto(n, x);	\
-				___seto(n, y);	\
-				___seto(n, z);	\
-			} while(0)
-			__seto(0);
-			__seto(1);
-			__seto(2);
-			__seto(3);
-#undef __seto
-#undef ___seto
-
-
-			if (tex->internal_type == TEXGL_RECT) {
-				int itx, ity;
-				itx = get_tile_width(tex, x, y);
-				ity = get_tile_height(tex, x, y);
-				o[0].u.i.itx = o_points[0].u.i.ity = 0;
-
-				o[1].u.i.itx = itx;
-				o[1].u.i.ity = 0;
-
-				o[2].u.i.itx = itx;
-				o[2].u.i.ity = ity;
-
-				o[3].u.i.itx = 0;
-				o[3].u.i.ity = ity;
-			} else {
-				float tx, ty;
-				tx = (float)get_tile_width(tex, x, y) / (float)tex->tile_w;
-				ty = (float)get_tile_height(tex, x, y) / (float)tex->tile_h;
-
-				SILENT(OPENGL, "tx=%f, ty=%f\n", tx, ty);
-				o[0].u.f.tx = o[0].u.f.ty = 0.0f;
-
-				o[1].u.f.tx = tx;
-				o[1].u.f.ty = 0.0;
-
-				o[2].u.f.tx = tx;
-				o[2].u.f.ty = ty;
-
-				o[3].u.f.tx = 0.0;
-				o[3].u.f.ty = ty;
-			}
-
-			SILENT(OPENGL, "for texture %d:\n", nr);
-			for (int i = 0; i < 4; i++) {
-				SILENT(OPENGL, "\tp%d: %f %f %f %f %f\n",
-						i,
-						o[i].px,
-						o[i].py,
-						o[i].pz,
-						o[i].u.f.tx,
-						o[i].u.f.ty
-						);
-			}
-
-			nr++;
-		}
-	}
+#ifndef HAVE_ALLOCA
+	GC_FREE_BLOCK_SET(points);
+#endif
 }
 
 static void
@@ -765,11 +832,87 @@ fillmesh3(struct texture_gl * tex,
 		struct tex_point * o_points,
 		struct tex_point * i_points)
 {
-	mat4x4 M, A, B;
-	load_identity(&A);
-	load_identity(&B);
+	mat4x4 M, T, P;
+	load_identity(&T);
+	load_identity(&P);
 
-//	A.m[0][0] = i_points[0]. 
+	T.m[0][0] = i_points[0].u.f.tx;
+	T.m[0][1] = i_points[0].u.f.ty;
+	T.m[0][2] = 1.0f;
+	T.m[0][3] = 0.0f;
+
+
+	T.m[1][0] = i_points[1].u.f.tx;
+	T.m[1][1] = i_points[1].u.f.ty;
+	T.m[1][2] = 1.0f;
+	T.m[1][3] = 0.0f;
+
+	T.m[2][0] = i_points[2].u.f.tx;
+	T.m[2][1] = i_points[2].u.f.ty;
+	T.m[2][2] = 1.0f;
+	T.m[2][3] = 0.0f;
+
+	P.m[0][0] = i_points[0].px;
+	P.m[0][1] = i_points[0].py;
+	P.m[0][2] = i_points[0].pz;
+	P.m[0][3] = 0.0f;
+
+	P.m[1][0] = i_points[1].px;
+	P.m[1][1] = i_points[1].py;
+	P.m[1][2] = i_points[1].pz;
+	P.m[1][3] = 0.0f;
+
+	P.m[2][0] = i_points[2].px;
+	P.m[2][1] = i_points[2].py;
+	P.m[2][2] = i_points[2].pz;
+	P.m[2][3] = 0.0f;
+
+	invert_matrix(&T, &T);
+
+	mulmm(&M, &P, &T);
+
+	struct vec3 * points = 
+#ifdef HAVE_ALLOCA
+		alloca((tex->nr_hwtexs + tex->nh + tex->nw + 1) * sizeof(*points));
+#else
+		GC_MALLOC_BLOCK((tex->nr_hwtexs + tex->nh + tex->nw + 1) * sizeof(*points));
+#endif
+
+	float ty = 0.0f;
+	int nr = 0;
+	/* for each point */
+	for (int y = 0; y < tex->nh + 1; y++) {
+		float tx = 0.0f;
+		for (int x = 0; x < tex->nw + 1; x++) {
+			vec4 tv, pv;
+			tv.v[0] = tx;
+			tv.v[1] = ty;
+			tv.v[2] = 1.0f;
+			tv.v[3] = 0.0f;
+
+			mulmv(&pv, &M, &tv);
+
+			points[nr].x = pv.v[0];
+			points[nr].y = pv.v[1];
+			points[nr].z = pv.v[2];
+
+			nr++;
+			tx += (float)tex->tile_w / (float)tex->base.rect.w;
+			if (tx > 1.0f)
+				tx = 1.0f;
+		}
+
+		if (y == tex->nh)
+			ty = 1.0f;
+		else
+			ty += (float)tex->tile_h / (float)tex->base.rect.h;
+	}
+
+	fill_opoints(tex, o_points, points);
+
+#ifndef HAVE_ALLOCA
+	GC_FREE_BLOCK_SET(points);
+#endif
 }
 
 void
