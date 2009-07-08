@@ -471,6 +471,13 @@ init_gl_engine(void)
 		glEnable(GL_TEXTURE_1D);
 		glEnable(GL_TEXTURE_2D);
 	}
+
+	/* FIXME */
+	/* GL_TEXTURE_1D, GL_TEXTURE_2D... Enable target have been deprecated in gl3,
+	 * however, GL_TEXTURE_RECTANGLE not. */
+	if (gl_tex_RECT_enabled())
+		glEnable(GL_TEXTURE_RECTANGLE);
+
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	/* set all avaliable hints to NISTEST */

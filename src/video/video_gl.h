@@ -42,7 +42,7 @@ struct gl_context {
 	bool_t texture_NPOT;
 #define gl_tex_NPOT_enabled()	(gl_ctx->texture_NPOT)
 	bool_t texture_RECT;
-#define gl_tex_RECT_enabled()	(gl_ctx->texture_NPOT)
+#define gl_tex_RECT_enabled()	(gl_ctx->texture_RECT)
 	bool_t texture_COMPRESSION;
 #define gl_tex_compression_enabled()	(gl_ctx->texture_COMPRESSION)
 };

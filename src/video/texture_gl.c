@@ -16,6 +16,7 @@
 #include <video/texture_gl.h>
 
 #include <common/utils.h>
+#include <math/matrix.h>
 
 #ifdef VIDEO_OPENGL_ENGINE
 
@@ -359,7 +360,10 @@ load_hwtexs(struct texture_gl * tex)
 	GLenum format;
 	GLenum type = GL_UNSIGNED_BYTE;
 
-	if (gl_tex_compression_enabled())
+	bool_t use_compress =
+		gl_tex_compression_enabled() && (tex->internal_type != TEXGL_RECT);
+
+	if (use_compress)
 		internalformat = GL_COMPRESSED_RGBA;
 	else
 		internalformat = GL_RGBA;
@@ -369,25 +373,57 @@ load_hwtexs(struct texture_gl * tex)
 	for (y = 0; y < tex->nh; y ++) {
 		for (x = 0; x < tex->nw; x++) {
 			uint8_t * data;
-			GLenum target = tex->gl_params.target;
+			GLenum target;
+
+			if (tex->internal_type == TEXGL_RECT)
+				target = GL_TEXTURE_RECTANGLE;
+			else
+				target = tex->gl_params.target;
+
 			data = tile_to_phydata(tex, x, y);
 			glBindTexture(target, tex->hwtexs[nr]);
 			TRACE(OPENGL, "tex %p: start load hwtex %d from phy data %p\n",
 					tex, nr, data);
+			
+			if (target != GL_TEXTURE_RECTANGLE) {
+				glTexParameteri(target, GL_TEXTURE_WRAP_S,
+						tex->gl_params.wrap_s);
+				if ((target == GL_TEXTURE_2D) || (target == GL_TEXTURE_3D))
+					glTexParameteri(target, GL_TEXTURE_WRAP_T,
+							tex->gl_params.wrap_t);
+				if (target == GL_TEXTURE_3D)
+					glTexParameteri(target, GL_TEXTURE_WRAP_R,
+							tex->gl_params.wrap_r);
+				glTexParameteri(target, GL_TEXTURE_MAG_FILTER,
+						tex->gl_params.mag_filter);
+				glTexParameteri(target, GL_TEXTURE_MIN_FILTER,
+						tex->gl_params.min_filter);
+			} else {
+				GLenum ws = tex->gl_params.wrap_s;
+				GLenum wt = tex->gl_params.wrap_t;
+				GLenum maf = tex->gl_params.mag_filter;
+				GLenum mif = tex->gl_params.min_filter;
 
-			glTexParameteri(target, GL_TEXTURE_WRAP_S,
-					tex->gl_params.wrap_s);
-			if ((target == GL_TEXTURE_2D) || (target == GL_TEXTURE_3D))
-				glTexParameteri(target, GL_TEXTURE_WRAP_T,
-						tex->gl_params.wrap_t);
-			if (target == GL_TEXTURE_3D)
-				glTexParameteri(target, GL_TEXTURE_WRAP_R,
-						tex->gl_params.wrap_r);
+				if ((ws == GL_REPEAT) || (ws == GL_MIRRORED_REPEAT))
+					ws = GL_CLAMP_TO_EDGE;
+				if ((wt == GL_REPEAT) || (wt == GL_MIRRORED_REPEAT))
+					wt = GL_CLAMP_TO_EDGE;
+				if ((maf != GL_NEAREST) && (maf != GL_LINEAR))
+					maf = GL_LINEAR;
+				if ((mif != GL_NEAREST) && (mif != GL_LINEAR))
+					mif = GL_LINEAR;
 
-			glTexParameteri(target, GL_TEXTURE_MAG_FILTER,
-					tex->gl_params.mag_filter);
-			glTexParameteri(target, GL_TEXTURE_MIN_FILTER,
-					tex->gl_params.min_filter);
+				tex->gl_params.wrap_s = ws;
+				tex->gl_params.wrap_t = wt;
+				tex->gl_params.mag_filter = maf;
+				tex->gl_params.min_filter = mif;
+
+				glTexParameteri(target, GL_TEXTURE_WRAP_S, ws);
+				glTexParameteri(target, GL_TEXTURE_WRAP_T, wt);
+				glTexParameteri(target, GL_TEXTURE_MAG_FILTER, maf);
+				glTexParameteri(target, GL_TEXTURE_MIN_FILTER, mif);
+			}
+
 			gl_check_error();
 
 			TRACE(OPENGL, "begin load tex %p's tile %d into hwmem\n",
@@ -421,10 +457,11 @@ load_hwtexs(struct texture_gl * tex)
 					}
 					break;
 				case GL_TEXTURE_2D:
+				case GL_TEXTURE_RECTANGLE:
 					if ((tex->tile_w == get_tile_width(tex, x, y)) &&
 							(tex->tile_h == get_tile_height(tex, x, y)))
 					{
-						glTexImage2D(GL_TEXTURE_2D,
+						glTexImage2D(target,
 								0,
 								internalformat,
 								tex->tile_w,
@@ -434,7 +471,7 @@ load_hwtexs(struct texture_gl * tex)
 								type,
 								data);
 					} else {
-						glTexImage2D(GL_TEXTURE_2D,
+						glTexImage2D(target,
 								0,
 								internalformat,
 								tex->tile_w,
@@ -443,7 +480,7 @@ load_hwtexs(struct texture_gl * tex)
 								format,
 								type,
 								NULL);
-						glTexSubImage2D(GL_TEXTURE_2D,
+						glTexSubImage2D(target,
 								0, 0, 0,
 								get_tile_width(tex, x, y),
 								get_tile_height(tex, x, y),
@@ -461,7 +498,7 @@ load_hwtexs(struct texture_gl * tex)
 
 			TRACE(OPENGL, "Finish load texture %d\n", nr);
 			/* check result */
-			if (gl_tex_compression_enabled()) {
+			if (use_compress) {
 				GLint c, f, s;
 				glGetTexLevelParameteriv(
 						target, 0, GL_TEXTURE_COMPRESSED, &c);
@@ -573,17 +610,126 @@ fillmesh4(struct texture_gl * tex,
 		struct hwtex_idx * elements,
 		struct tex_point * i_points)
 {
+	struct vec3 {
+		float x, y, z;
+	};
 	int nr = 0;
-	float * points =
-		alloca((tex->nr_hwtexs + tex->nh + tex->nw + 1) * sizeof(float));
+	struct vec3 * points =
+		alloca((tex->nr_hwtexs + tex->nh + tex->nw + 1) * sizeof(*points));
+
+#define hinterp(p0, p1, axis)	\
+	i_points[p0].p##axis + (i_points[p1].p##axis - i_points[p0].p##axis) * \
+	y * ((float)tex->tile_h / (float)tex->base.rect.h)
+
 
 	/* for each point */
-	for (int y = 0; x < tex->nh + 1; y++) {
+	for (int y = 0; y < tex->nh + 1; y++) {
+		/* clamp line */
+		float x0, y0, z0, x1, y1, z1;
+
+		if (y < tex->nh) {
+			x0 = hinterp(0, 3, x);
+			y0 = hinterp(0, 3, y);
+			z0 = hinterp(0, 3, z);
+
+			x1 = hinterp(1, 2, x);
+			y1 = hinterp(1, 2, y);
+			z1 = hinterp(1, 2, z);
+#undef hinterp
+		} else {
+			x0 = i_points[3].px;
+			y0 = i_points[3].py;
+			z0 = i_points[3].pz;
+
+			x1 = i_points[2].px;
+			y1 = i_points[2].py;
+			z1 = i_points[2].pz;
+		}
+
+#define winterp(axis)	\
+		axis##0 + (axis##1 - axis##0) * x \
+			* ((float)tex->tile_w / (float)tex->base.rect.w)
+
 		for (int x = 0; x < tex->nw; x++) {
-			wrat = (float)
+			float x2, y2, z2;
+			x2 = winterp(x);
+			y2 = winterp(x);
+			z2 = winterp(x);
+#undef winterp
+			points[nr].x = x2;
+			points[nr].y = y2;
+			points[nr].z = z2;
 			nr ++;
 		}
-		/* last line is special */
+		/* last column is special */
+		points[nr].x = x1;
+		points[nr].y = y1;
+		points[nr].z = z1;
+		nr ++;
+	}
+
+	/* for each texture, form o_points */
+	nr = 0;
+	for (int y = 0; y < tex->nh; y++) {
+		for (int x = 0; x < tex->nw; x++) {
+			struct tex_point * o = &o_points[4 * nr];
+			int np0 = (tex->nw + 1) * (y + 1) + x;
+			int np1 = (tex->nw + 1) * (y + 1) + x + 1;
+			int np2 = (tex->nw + 1) * (y) + x + 1;
+			int np3 = (tex->nw + 1) * (y) + x;
+
+#define ___seto(n, axis)	\
+			o[n].p##axis = points[np##n].axis
+#define __seto(n)	\
+			do {	\
+				___seto(n, x);	\
+				___seto(n, y);	\
+				___seto(n, z);	\
+			} while(0)
+			__seto(0);
+			__seto(1);
+			__seto(2);
+			__seto(3);
+#undef __seto
+#undef ___seto
+
+
+			if (tex->internal_type == TEXGL_RECT) {
+				int itx, ity;
+				itx = get_tile_width(tex, x, y);
+				ity = get_tile_height(tex, x, y);
+				o_points[0].u.itx = o_points[0].u.ity = 0;
+
+				o_points[1].u.itx = itx;
+				o_points[1].u.ity = 0;
+
+				o_points[2].u.itx = itx;
+				o_points[2].u.ity = ity;
+
+				o_points[3].u.itx = 0;
+				o_points[3].u.ity = ity;
+			} else {
+				float tx, ty;
+				float scalew, scaleh;
+				scalew = (float)get_tile_width(tex, x, y) / (float)tex->tile_w;
+				scaleh = (float)get_tile_height(tex, x, y) / (float)tex->tile_h;
+				tx = (float)get_tile_width(tex, x, y) / (float)tex->base.rect.w * scalew;
+				ty = (float)get_tile_height(tex, x, y) / (float)tex->base.rect.h * scaleh;
+
+				o_points[0].u.tx = o_points[0].u.ty = 0.0f;
+
+				o_points[1].u.tx = tx;
+				o_points[1].u.ty = 0;
+
+				o_points[2].u.tx = tx;
+				o_points[2].u.ty = ty;
+
+				o_points[3].u.tx = 0;
+				o_points[3].u.ty = ty;
+			}
+
+			nr++;
+		}
 	}
 }
 
@@ -593,7 +739,11 @@ fillmesh3(struct texture_gl * tex,
 		struct hwtex_idx * elements,
 		struct tex_point * i_points)
 {
-	
+	mat4x4 M, A, B;
+	load_identity(&A);
+	load_identity(&B);
+
+//	A.m[0][0] = i_points[0]. 
 }
 
 void
