@@ -10,7 +10,8 @@
 #include <stdint.h>
 #include <signal.h>
 #ifdef __INTEL__
-# include <cpuid.h>
+/* some very old gcc doesn't has cpuid.h */
+# include <common/cpuid.h>
 # ifdef __SSE__
 #  include <xmmintrin.h>
 # endif

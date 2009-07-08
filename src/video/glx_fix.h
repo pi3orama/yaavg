@@ -743,8 +743,10 @@ typedef Bool ( * PFNGLXWAITFORSBCOMLPROC) (Display *dpy, GLXDrawable drawable, i
 #define GLX_NV_float_buffer 1
 #endif
 
-#ifndef GLX_SGIX_hyperpipe
+#if ! (defined(GLX_SGIX_hyperpipe) || defined(GLX_SGIX_hyperpipe_group))
+
 #define GLX_SGIX_hyperpipe 1
+#define GLX_SGIX_hyperpipe_group 1
 
 typedef struct {
     char    pipeName[GLX_HYPERPIPE_PIPE_NAME_LENGTH_SGIX];
