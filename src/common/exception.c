@@ -152,9 +152,9 @@ void
 print_exception(enum debug_level l, enum debug_component c,
 		struct exception exp)
 {
-	DEBUG_MSG(l, c, "exception happend at func %s, line %d:\n",
+	DEBUG_MSG_DY(l, c, "exception happend at func %s, line %d:\n",
 			exp.func, exp.line);
-	DEBUG_MSG(l, c, "\tmessage: \"%s\", with value: %d\n",
+	DEBUG_MSG_DY(l, c, "\tmessage: \"%s\", with value: %d\n",
 			exp.message, exp.val);
 	return;
 }

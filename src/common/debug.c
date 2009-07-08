@@ -408,6 +408,8 @@ void
 message_out(int prefix, enum debug_level l, enum debug_component c, char * fmt, ...)
 {
 	va_list ap;
+	if (l < VERBOSE)
+		return;
 	va_start(ap, fmt);
 	vmessage_out(prefix, l, c, fmt, ap);
 	va_end(ap);

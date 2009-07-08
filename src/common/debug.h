@@ -72,14 +72,36 @@ extern void debug_out(int prefix, enum debug_level level, enum debug_component c
 extern void set_comp_level(enum debug_component comp, enum debug_level level);
 extern enum debug_level get_comp_level(enum debug_component comp);
 # define DEBUG_MSG(level, comp, str...) do{ debug_out(1, level, comp, __FUNCTION__, __LINE__, str); } while(0)
+# define DEBUG_MSG_DY(level, comp, str...) DEBUG_MSG(level, comp, str)
 # define DEBUG_MSG_CONT(level, comp, str...) do{ debug_out(0, level, comp, __FUNCTION__, __LINE__, str); } while(0)
 #else
 # define debug_out(z, a, b, c, d, e,...) do{} while(0)
 # define set_comp_level(a, b)   do {} while(0)
 # define get_comp_level(a)   ({SILENT;})
 extern void message_out(int prefix, enum debug_level, enum debug_component, char * fmt, ...);
-# define DEBUG_MSG(level, comp, str...) do{ message_out(1, level, comp, str); } while(0)
-# define DEBUG_MSG_CONT(level, comp, str...) do{ message_out(0, level, comp, str); } while(0)
+
+# define DEBUG_MSG_SILENT(comp, str...)		do {} while(0)
+# define DEBUG_MSG_TRACE(comp, str...)		do {} while(0)
+# define DEBUG_MSG_VERBOSE(comp, str...)	do{ message_out(1, VERBOSE, comp, str); } while(0)
+# define DEBUG_MSG_WARNING(comp, str...)	do{ message_out(1, WARNING, comp, str); } while(0)
+# define DEBUG_MSG_ERROR(comp, str...)		do{ message_out(1, ERROR, comp, str); } while(0)
+# define DEBUG_MSG_FATAL(comp, str...)		do{ message_out(1, FATAL, comp, str); } while(0)
+# define DEBUG_MSG_FORCE(comp, str...)		do {} while(0)
+
+# define DEBUG_MSG_CONT_SILENT(comp, str...)		do {} while(0)
+# define DEBUG_MSG_CONT_TRACE(comp, str...)		do {} while(0)
+# define DEBUG_MSG_CONT_VERBOSE(comp, str...)		do{ message_out(0, VERBOSE, comp, str); } while(0)
+# define DEBUG_MSG_CONT_WARNING(comp, str...)		do{ message_out(0, WARNING, comp, str); } while(0)
+# define DEBUG_MSG_CONT_ERROR(comp, str...)		do{ message_out(0, ERROR, comp, str); } while(0)
+# define DEBUG_MSG_CONT_FATAL(comp, str...)		do{ message_out(0, FATAL, comp, str); } while(0)
+# define DEBUG_MSG_CONT_FORCE(comp, str...)		do {} while(0)
+
+
+# define DEBUG_MSG(level, comp, str...) DEBUG_MSG_##level(comp, str)
+# define DEBUG_MSG_CONT(level, comp, str...) DEBUG_MSG_CONT_##level(comp, str)
+# define DEBUG_MSG_DY(level, comp, str...) do{ message_out(1, l, comp, str); } while(0)
+//# define DEBUG_MSG(level, comp, str...) do{ message_out(1, level, comp, str); } while(0)
+//# define DEBUG_MSG_CONT(level, comp, str...) do{ message_out(0, level, comp, str); } while(0)
 #endif
 
 #define DEBUG_INIT(file)	do { debug_init(file);} while(0)

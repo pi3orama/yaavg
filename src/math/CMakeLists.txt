@@ -12,7 +12,7 @@ SET(SRC
 ADD_LIBRARY(math STATIC ${SRC})
 
 SET(CMAKE_C_FLAGS_DEBUG "-g -O3 -Wno-uninitialized")
-SET(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -Wno-uninitialized")
+SET(CMAKE_C_FLAGS_RELEASE "-O3 -DYAAVG_DEBUG_OFF -Wno-uninitialized")
 
 TARGET_LINK_LIBRARIES(math "-lm")
 
