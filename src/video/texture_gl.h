@@ -85,6 +85,8 @@ struct texture_gl {
 		TEXGL_RECT,
 		TEXGL_NORMAL,
 	} internal_type;
+	/* GL_TEXTURE_2D or GL_TEXTURE_RECTANGLE */
+	GLenum texgl_target;
 	int tile_w, tile_h;
 
 	/* for opengl texture size profile */

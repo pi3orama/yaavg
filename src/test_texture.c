@@ -120,26 +120,39 @@ draw_render(struct render_command * __rcmd,
 //	THROW(EXCEPTION_FATAL, "XXXXX");
 
 
+	glEnable(tex->texgl_target);
 	for (int i = 0 ; i < tex->nr_hwtexs; i++) {
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, rcmd->tex->hwtexs[i]);
+		glBindTexture(tex->texgl_target, rcmd->tex->hwtexs[i]);
 
 		glBegin(GL_POLYGON);
 
-
 		struct tex_point * ps = &opoints[4 * i];
 
-		glTexCoord2fv(&(ps[0].u.f.tx));
-		glVertex3fv(&(ps[0].px));
+		if (tex->texgl_target != GL_TEXTURE_RECTANGLE) {
+			glTexCoord2fv(&(ps[0].u.f.tx));
+			glVertex3fv(&(ps[0].px));
 
-		glTexCoord2fv(&(ps[1].u.f.tx));
-		glVertex3fv(&(ps[1].px));
+			glTexCoord2fv(&(ps[1].u.f.tx));
+			glVertex3fv(&(ps[1].px));
 
-		glTexCoord2fv(&(ps[2].u.f.tx));
-		glVertex3fv(&(ps[2].px));
+			glTexCoord2fv(&(ps[2].u.f.tx));
+			glVertex3fv(&(ps[2].px));
 
-		glTexCoord2fv(&(ps[3].u.f.tx));
-		glVertex3fv(&(ps[3].px));
+			glTexCoord2fv(&(ps[3].u.f.tx));
+			glVertex3fv(&(ps[3].px));
+		} else {
+			glTexCoord2iv(&(ps[0].u.i.itx));
+			glVertex3fv(&(ps[0].px));
+
+			glTexCoord2iv(&(ps[1].u.i.itx));
+			glVertex3fv(&(ps[1].px));
+
+			glTexCoord2iv(&(ps[2].u.i.itx));
+			glVertex3fv(&(ps[2].px));
+
+			glTexCoord2iv(&(ps[3].u.i.itx));
+			glVertex3fv(&(ps[3].px));
+		}
 
 		glEnd();
 	}

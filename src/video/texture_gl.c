@@ -203,6 +203,7 @@ init_texgl(struct texture_gl * tex)
 	if (nw * nh == 1) {
 		if ((rect->w == potw) && (rect->h == poth)) {
 			tex->internal_type = TEXGL_NORMAL;
+			tex->texgl_target = GL_TEXTURE_2D;
 			tex->tile_w = rect->w;
 			tex->tile_h = rect->h;
 			TRACE(OPENGL,
@@ -211,6 +212,7 @@ init_texgl(struct texture_gl * tex)
 		} else {
 			if (gl_tex_NPOT_enabled()) {
 				tex->internal_type = TEXGL_NPOT;
+				tex->texgl_target = GL_TEXTURE_2D;
 				tex->tile_w = rect->w;
 				tex->tile_h = rect->h;
 				TRACE(OPENGL,
@@ -218,6 +220,7 @@ init_texgl(struct texture_gl * tex)
 						tex, tex->tile_w, tex->tile_h);
 			} else if (gl_tex_RECT_enabled()) {
 				tex->internal_type = TEXGL_RECT;
+				tex->texgl_target = GL_TEXTURE_RECTANGLE;
 				tex->tile_w = rect->w;
 				tex->tile_h = rect->h;
 				TRACE(OPENGL,
@@ -225,6 +228,7 @@ init_texgl(struct texture_gl * tex)
 						tex, tex->tile_w, tex->tile_h);
 			} else {
 				tex->internal_type = TEXGL_NORMAL;
+				tex->texgl_target = GL_TEXTURE_2D;
 				tex->tile_w = potw;
 				tex->tile_h = poth;
 				TRACE(OPENGL,
@@ -234,6 +238,7 @@ init_texgl(struct texture_gl * tex)
 		}
 	} else {
 		tex->internal_type = TEXGL_NORMAL;
+		tex->texgl_target = GL_TEXTURE_2D;
 		tex->tile_w = rect->w > gl_max_texture_size() ?
 			gl_max_texture_size() : potw;
 		tex->tile_h = rect->h > gl_max_texture_size() ?
