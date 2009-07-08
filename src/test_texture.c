@@ -91,24 +91,59 @@ draw_render(struct render_command * __rcmd,
 {
 	struct rcmd_draw * rcmd =
 		container_of(__rcmd, struct rcmd_draw, base);
+	struct texture_gl * tex;
+
+	tex = rcmd->tex;
+
+	struct tex_point ipoints[4], *opoints;
+	opoints = alloca(sizeof(*opoints) * tex->nr_hwtexs * 4);
+#define setpts(n, x, y, z, _tx, _ty)	do {	\
+		ipoints[n].px = x;	\
+		ipoints[n].py = y;	\
+		ipoints[n].pz = z;	\
+		ipoints[n].u.f.tx = _tx;	\
+		ipoints[n].u.f.ty = _ty;	\
+	} while(0)
+	setpts(0, 0.0, 0.0, 0.0, 0.0, 0.0);
+	setpts(1, 1.0, 0.0, 0.0, 1.0, 0.0);
+	setpts(2, 0.7, 1.0, 0.0, 1.0, 1.0);
+	setpts(3, 0.0, .7, 0.0, 0.0, 1.0);
+
+#undef setpts
+
+	texgl_fillmesh(tex,
+			opoints,
+			4,
+			ipoints);
 
 
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, rcmd->tex->hwtexs[0]);
-	glBegin(GL_POLYGON);
+//	THROW(EXCEPTION_FATAL, "XXXXX");
 
-	glTexCoord2f(0.0, 0.0);
-	glVertex2f(0, 0);
 
-	glTexCoord2f(1.0, 0.0);
-	glVertex2f(0.5, 0);
+	for (int i = 0 ; i < tex->nr_hwtexs; i++) {
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, rcmd->tex->hwtexs[i]);
 
-	glTexCoord2f(1.0, 1.0);
-	glVertex2f(0.5, 0.5);
+		glBegin(GL_POLYGON);
 
-	glTexCoord2f(0.0, 1.0);
-	glVertex2f(0, 0.5);
-	glEnd();
+
+		struct tex_point * ps = &opoints[4 * i];
+
+		glTexCoord2fv(&(ps[0].u.f.tx));
+		glVertex3fv(&(ps[0].px));
+
+		glTexCoord2fv(&(ps[1].u.f.tx));
+		glVertex3fv(&(ps[1].px));
+
+		glTexCoord2fv(&(ps[2].u.f.tx));
+		glVertex3fv(&(ps[2].px));
+
+		glTexCoord2fv(&(ps[3].u.f.tx));
+		glVertex3fv(&(ps[3].px));
+
+		glEnd();
+	}
+
 
 #if 0
 

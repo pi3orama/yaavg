@@ -115,19 +115,19 @@ texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
 struct tex_point {
 	float px, py, pz;
 	union {
-		float tx, ty;
-		int itx, ity;
+		struct {
+			float tx, ty;
+		} f;
+		struct {
+			int itx, ity;
+		} i;
 	} u;
-};
-
-struct hwtex_idx {
-	int bl, br, ur, ul;
 };
 
 /* 
  * texgl_fillmesh:
  *
- * for each hwtex, create a point list and an elements list. OpenGL can
+ * for each hwtex, create a point list. OpenGL can
  * use those lists to render the whole texture.
  * 
  * i_points is a struct tex_point array, at least 3 elements,
@@ -143,15 +143,10 @@ struct hwtex_idx {
  * o_points is output tex_point array. It shall has at least(and most)
  * tex->nr_hwtexs * 4 elements, each element describe a
  * point.
- *
- * elements is an array of int, it has tex->nr_hwtexs elements. each
- * hwtex_idx describe the index of its corresponding tex_points, under
- * counter-clockwise order. this structure can be used in glDrawElements.
  */
 extern void
 texgl_fillmesh(struct texture_gl * tex,
 		struct tex_point * o_points,
-		struct hwtex_idx * elements,
 		int nr_ipoints,
 		struct tex_point * i_points);
 

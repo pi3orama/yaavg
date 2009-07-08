@@ -370,15 +370,16 @@ load_hwtexs(struct texture_gl * tex)
 
 	format = tex->tex_data_format;
 
+	GLenum target;
+
+	if (tex->internal_type == TEXGL_RECT)
+		target = GL_TEXTURE_RECTANGLE;
+	else
+		target = tex->gl_params.target;
+
 	for (y = 0; y < tex->nh; y ++) {
 		for (x = 0; x < tex->nw; x++) {
 			uint8_t * data;
-			GLenum target;
-
-			if (tex->internal_type == TEXGL_RECT)
-				target = GL_TEXTURE_RECTANGLE;
-			else
-				target = tex->gl_params.target;
 
 			data = tile_to_phydata(tex, x, y);
 			glBindTexture(target, tex->hwtexs[nr]);
@@ -523,7 +524,7 @@ load_hwtexs(struct texture_gl * tex)
 	}
 
 	/* Unbind texture */
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(target, 0);
 	ALLOC_HWMEM(tex->occupied_hwmem);
 
 	return;
@@ -607,9 +608,10 @@ texgl_create(res_id_t bitmap_res_id, struct rectangle rect,
 static void
 fillmesh4(struct texture_gl * tex,
 		struct tex_point * o_points,
-		struct hwtex_idx * elements,
 		struct tex_point * i_points)
 {
+	SILENT(OPENGL, "fillmesh 4\n");
+
 	struct vec3 {
 		float x, y, z;
 	};
@@ -626,6 +628,9 @@ fillmesh4(struct texture_gl * tex,
 	for (int y = 0; y < tex->nh + 1; y++) {
 		/* clamp line */
 		float x0, y0, z0, x1, y1, z1;
+
+
+		SILENT(OPENGL, "for hwtex (??, %d):\n", y);
 
 		if (y < tex->nh) {
 			x0 = hinterp(0, 3, x);
@@ -646,6 +651,9 @@ fillmesh4(struct texture_gl * tex,
 			z1 = i_points[2].pz;
 		}
 
+		SILENT(OPENGL, "clamped pts: (%f, %f, %f), (%f, %f, %f)\n",
+				x0, y0, z0, x1, y1, z1);
+
 #define winterp(axis)	\
 		axis##0 + (axis##1 - axis##0) * x \
 			* ((float)tex->tile_w / (float)tex->base.rect.w)
@@ -653,18 +661,22 @@ fillmesh4(struct texture_gl * tex,
 		for (int x = 0; x < tex->nw; x++) {
 			float x2, y2, z2;
 			x2 = winterp(x);
-			y2 = winterp(x);
-			z2 = winterp(x);
+			y2 = winterp(y);
+			z2 = winterp(z);
 #undef winterp
 			points[nr].x = x2;
 			points[nr].y = y2;
 			points[nr].z = z2;
+			SILENT(OPENGL, "pts at (%d, %d): (%f, %f, %f)\n",
+					x, y, points[nr].x, points[nr].y, points[nr].z);
 			nr ++;
 		}
 		/* last column is special */
 		points[nr].x = x1;
 		points[nr].y = y1;
 		points[nr].z = z1;
+		SILENT(OPENGL, "pts at (%d, %d): (%f, %f, %f)\n",
+				tex->nw, y, points[nr].x, points[nr].y, points[nr].z);
 		nr ++;
 	}
 
@@ -673,10 +685,10 @@ fillmesh4(struct texture_gl * tex,
 	for (int y = 0; y < tex->nh; y++) {
 		for (int x = 0; x < tex->nw; x++) {
 			struct tex_point * o = &o_points[4 * nr];
-			int np0 = (tex->nw + 1) * (y + 1) + x;
-			int np1 = (tex->nw + 1) * (y + 1) + x + 1;
-			int np2 = (tex->nw + 1) * (y) + x + 1;
-			int np3 = (tex->nw + 1) * (y) + x;
+			int np0 = (tex->nw + 1) * (y) + x;
+			int np1 = (tex->nw + 1) * (y) + x + 1;
+			int np2 = (tex->nw + 1) * (y + 1) + x + 1;
+			int np3 = (tex->nw + 1) * (y + 1) + x;
 
 #define ___seto(n, axis)	\
 			o[n].p##axis = points[np##n].axis
@@ -698,34 +710,44 @@ fillmesh4(struct texture_gl * tex,
 				int itx, ity;
 				itx = get_tile_width(tex, x, y);
 				ity = get_tile_height(tex, x, y);
-				o_points[0].u.itx = o_points[0].u.ity = 0;
+				o[0].u.i.itx = o_points[0].u.i.ity = 0;
 
-				o_points[1].u.itx = itx;
-				o_points[1].u.ity = 0;
+				o[1].u.i.itx = itx;
+				o[1].u.i.ity = 0;
 
-				o_points[2].u.itx = itx;
-				o_points[2].u.ity = ity;
+				o[2].u.i.itx = itx;
+				o[2].u.i.ity = ity;
 
-				o_points[3].u.itx = 0;
-				o_points[3].u.ity = ity;
+				o[3].u.i.itx = 0;
+				o[3].u.i.ity = ity;
 			} else {
 				float tx, ty;
-				float scalew, scaleh;
-				scalew = (float)get_tile_width(tex, x, y) / (float)tex->tile_w;
-				scaleh = (float)get_tile_height(tex, x, y) / (float)tex->tile_h;
-				tx = (float)get_tile_width(tex, x, y) / (float)tex->base.rect.w * scalew;
-				ty = (float)get_tile_height(tex, x, y) / (float)tex->base.rect.h * scaleh;
+				tx = (float)get_tile_width(tex, x, y) / (float)tex->tile_w;
+				ty = (float)get_tile_height(tex, x, y) / (float)tex->tile_h;
 
-				o_points[0].u.tx = o_points[0].u.ty = 0.0f;
+				SILENT(OPENGL, "tx=%f, ty=%f\n", tx, ty);
+				o[0].u.f.tx = o[0].u.f.ty = 0.0f;
 
-				o_points[1].u.tx = tx;
-				o_points[1].u.ty = 0;
+				o[1].u.f.tx = tx;
+				o[1].u.f.ty = 0.0;
 
-				o_points[2].u.tx = tx;
-				o_points[2].u.ty = ty;
+				o[2].u.f.tx = tx;
+				o[2].u.f.ty = ty;
 
-				o_points[3].u.tx = 0;
-				o_points[3].u.ty = ty;
+				o[3].u.f.tx = 0.0;
+				o[3].u.f.ty = ty;
+			}
+
+			SILENT(OPENGL, "for texture %d:\n", nr);
+			for (int i = 0; i < 4; i++) {
+				SILENT(OPENGL, "\tp%d: %f %f %f %f %f\n",
+						i,
+						o[i].px,
+						o[i].py,
+						o[i].pz,
+						o[i].u.f.tx,
+						o[i].u.f.ty
+						);
 			}
 
 			nr++;
@@ -736,7 +758,6 @@ fillmesh4(struct texture_gl * tex,
 static void
 fillmesh3(struct texture_gl * tex,
 		struct tex_point * o_points,
-		struct hwtex_idx * elements,
 		struct tex_point * i_points)
 {
 	mat4x4 M, A, B;
@@ -749,17 +770,16 @@ fillmesh3(struct texture_gl * tex,
 void
 texgl_fillmesh(struct texture_gl * tex,
 		struct tex_point * o_points,
-		struct hwtex_idx * elements,
 		int nr_ipoints,
 		struct tex_point * i_points)
 {
 	switch (nr_ipoints) {
 		case 4:
-			fillmesh4(tex, o_points, elements,
+			fillmesh4(tex, o_points, 
 					i_points);
 			break;
 		case 3:
-			fillmesh3(tex, o_points, elements,
+			fillmesh3(tex, o_points, 
 					i_points);
 			break;
 		default:
